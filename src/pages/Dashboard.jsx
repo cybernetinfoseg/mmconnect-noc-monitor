@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -12,8 +10,7 @@ import {
   Building2, 
   RefreshCw,
   Activity,
-  AlertTriangle,
-  CloudDownload
+  AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,24 +24,14 @@ export default function Dashboard() {
   const [localFilter, setLocalFilter] = useState(null);
   const [clienteFilter, setClienteFilter] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [syncing, setSyncing] = useState(false);
 
-  // Fetch terminals with auto-refresh every 5 minutes (300000ms)
+  // Fetch terminals with auto-refresh every 5 seconds
   const { data: terminals = [], isLoading, refetch } = useQuery({
     queryKey: ['terminals'],
     queryFn: () => base44.entities.Terminal.list(),
-    refetchInterval: 300000, // 5 minutes
+    refetchInterval: 5000,
     onSuccess: () => setLastRefresh(new Date()),
   });
-
-  // Real-time subscription for immediate updates
-  useEffect(() => {
-    const unsubscribe = base44.entities.Terminal.subscribe((event) => {
-      refetch();
-      setLastRefresh(new Date());
-    });
-    return unsubscribe;
-  }, [refetch]);
 
   // Fetch alerts
   const { data: alerts = [] } = useQuery({
@@ -87,19 +74,6 @@ export default function Dashboard() {
     };
   }, [filteredTerminals]);
 
-  const handleSyncTerminais = async () => {
-    setSyncing(true);
-    try {
-      const { data } = await base44.functions.invoke('syncTerminais', {});
-      alert(`Sincronização concluída!\n${data.created} criados, ${data.updated} atualizados`);
-      refetch();
-    } catch (error) {
-      alert(`Erro na sincronização: ${error.message}`);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
       {/* Header */}
@@ -124,16 +98,6 @@ export default function Dashboard() {
                 {lastRefresh.toLocaleTimeString('pt-BR')}
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncTerminais}
-              disabled={syncing}
-              className="bg-emerald-600 border-emerald-500 text-white hover:bg-emerald-700"
-            >
-              <CloudDownload className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Sincronizando...' : 'Sync TimeAccess'}
-            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -242,7 +206,7 @@ export default function Dashboard() {
                 <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider flex items-center justify-between">
                   <span>Terminais</span>
                   <span className="text-xs font-normal text-slate-400">
-                    Tempo real + refresh: 5min
+                    Auto-refresh: 5s
                   </span>
                 </CardTitle>
               </CardHeader>

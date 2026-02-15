@@ -48,11 +48,11 @@ export default function Terminais() {
   
   const queryClient = useQueryClient();
 
-  // Fetch terminals
+  // Fetch terminals with auto-refresh every 5 seconds (tempo real)
   const { data: terminals = [], isLoading } = useQuery({
     queryKey: ['terminals-manage'],
     queryFn: () => base44.entities.Terminal.list('-created_date'),
-    refetchInterval: 10000,
+    refetchInterval: 5000, // Auto-refresh em tempo real
   });
 
   // Fetch clientes
@@ -218,7 +218,10 @@ export default function Terminais() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
-              <p className="text-sm text-slate-500">Verificação TCP via backend em rede local e externa</p>
+              <p className="text-sm text-emerald-600 flex items-center gap-1">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                Monitoramento TCP em tempo real (auto-refresh 5s) + Verificação automática 5 min
+              </p>
             </div>
           </div>
           

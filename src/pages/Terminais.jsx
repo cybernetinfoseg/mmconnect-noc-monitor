@@ -97,25 +97,85 @@ export default function Terminais() {
     }
   });
 
-  // Monitor mutation (via backend - única forma confiável de acessar IPs locais)
+  // Testar terminal diretamente do navegador (para IPs locais)
+  const testDirectFromBrowser = async (terminal) => {
+    const startTime = Date.now();
+    let host = '';
+    let port = terminal.porta || 5005;
+
+    switch (terminal.tipo_conexao) {
+      case 'ip_local':
+        host = terminal.ip_local;
+        break;
+      case 'p2s':
+        host = terminal.ip_local;
+        break;
+      default:
+        return null; // Outros tipos usam backend
+    }
+
+    if (!host) return null;
+
+    try {
+      // Tentar acesso direto via fetch - navegador pedirá permissão de rede local
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      await fetch(`http://${host}:${port}`, {
+        method: 'GET',
+        mode: 'no-cors', // Importante para rede local
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      const latencia = Date.now() - startTime;
+
+      // Atualizar status no banco
+      await base44.entities.Terminal.update(terminal.id, {
+        status: 'online',
+        latencia_ms: latencia,
+        ultimo_ping: new Date().toISOString(),
+        ultimo_check: new Date().toISOString(),
+        segundos_sem_ping: 0
+      });
+
+      return { success: true, status: 'online', latencia };
+    } catch (error) {
+      // Se falhar, marcar como offline
+      await base44.entities.Terminal.update(terminal.id, {
+        status: 'offline',
+        ultimo_check: new Date().toISOString()
+      });
+
+      return { success: true, status: 'offline', error: error.message };
+    }
+  };
+
+  // Monitor mutation - usa browser para IPs locais, backend para outros
   const monitorMutation = useMutation({
     mutationFn: async (terminal) => {
+      // Para IPs locais, testar direto do navegador
+      if (terminal.tipo_conexao === 'ip_local' || terminal.tipo_conexao === 'p2s') {
+        const result = await testDirectFromBrowser(terminal);
+        if (result) return result;
+      }
+
+      // Para outros tipos (DNS, IP público, API), usar backend
       const response = await base44.functions.invoke('monitorTerminal', { 
         terminalId: terminal.id 
       });
       
-      if (response.data.success) {
-        const statusText = response.data.status === 'online' ? '✅ ONLINE' : '❌ OFFLINE';
-        const latenciaText = response.data.latencia ? ` (${response.data.latencia}ms)` : '';
-        toast.success(`${terminal.nome}: ${statusText}${latenciaText}`);
-      } else {
-        toast.error(`${terminal.nome}: ${response.data.error || 'Erro ao verificar'}`);
-      }
-      
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, terminal) => {
       queryClient.invalidateQueries(['terminals-manage']);
+      
+      if (data.success || data.status) {
+        const status = data.status || (data.success ? 'online' : 'offline');
+        const statusText = status === 'online' ? '✅ ONLINE' : '❌ OFFLINE';
+        const latenciaText = data.latencia ? ` (${data.latencia}ms)` : '';
+        toast.success(`${terminal.nome}: ${statusText}${latenciaText}`);
+      }
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
@@ -133,9 +193,15 @@ export default function Terminais() {
     
     for (const terminal of terminaisAtivos) {
       try {
-        await base44.functions.invoke('monitorTerminal', { 
-          terminalId: terminal.id 
-        });
+        // IPs locais: testar direto do navegador
+        if (terminal.tipo_conexao === 'ip_local' || terminal.tipo_conexao === 'p2s') {
+          await testDirectFromBrowser(terminal);
+        } else {
+          // Outros: usar backend
+          await base44.functions.invoke('monitorTerminal', { 
+            terminalId: terminal.id 
+          });
+        }
       } catch (error) {
         console.error(`Erro ao verificar ${terminal.nome}:`, error);
       }
@@ -220,7 +286,7 @@ export default function Terminais() {
               <h1 className="text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
               <p className="text-sm text-emerald-600 flex items-center gap-1">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                Monitoramento TCP em tempo real (auto-refresh 5s) + Verificação automática 5 min
+                Acesso direto rede local via navegador + Auto-refresh 5s
               </p>
             </div>
           </div>

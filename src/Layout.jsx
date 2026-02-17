@@ -23,6 +23,7 @@ const navItems = [
   { name: 'Clientes', page: 'Clientes', icon: Building2 },
   { name: 'Histórico', page: 'History', icon: History },
   { name: 'Incidentes', page: 'Incidents', icon: AlertTriangle },
+  { name: 'Agent Local', page: 'AgentConfig', icon: Bot },
 ];
 
 export default function Layout({ children, currentPageName }) {

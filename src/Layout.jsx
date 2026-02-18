@@ -1,6 +1,7 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
+import { AnimatePresence, motion } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Monitor, 

@@ -136,12 +136,12 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1920px] mx-auto p-6 space-y-6">
+      <div className="max-w-[1920px] mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Filters */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-end gap-4"
+          className="flex flex-wrap items-end gap-3"
         >
           <FilterDropdown
             label="Filtrar por Local"

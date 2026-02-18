@@ -215,35 +215,36 @@ export default function Terminais() {
       <div className="max-w-[1920px] mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-100 rounded-xl shrink-0">
               <Monitor className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
-              <p className="text-sm text-emerald-600 flex items-center gap-1">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                Verificação TCP Socket (Rede Local + Externa) • Auto-refresh 5s
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
+              <p className="text-xs sm:text-sm text-emerald-600 flex items-center gap-1">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0"></div>
+                <span className="hidden sm:inline">TCP Socket • </span>Auto-refresh 5s
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button 
               onClick={verificarTodos} 
               disabled={verificandoTodos || terminals.length === 0}
               variant="outline"
+              size="sm"
               className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
             >
               <RefreshCw className={cn(
-                "h-4 w-4 mr-2",
+                "h-4 w-4 sm:mr-2",
                 verificandoTodos && "animate-spin"
               )} />
-              {verificandoTodos ? 'Verificando...' : 'Verificar Todos'}
+              <span className="hidden sm:inline">{verificandoTodos ? 'Verificando...' : 'Verificar Todos'}</span>
             </Button>
-            <Button onClick={handleNew} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Terminal
+            <Button onClick={handleNew} size="sm" className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Novo Terminal</span>
             </Button>
           </div>
         </div>

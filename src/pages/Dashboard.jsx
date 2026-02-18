@@ -92,23 +92,21 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
       {/* Header */}
-      <div className="bg-slate-900 text-white px-6 py-4">
-        <div className="max-w-[1920px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/20 rounded-lg">
-                <Activity className="h-6 w-6 text-emerald-400" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight">NOC Monitor</h1>
-                <p className="text-xs text-slate-400">Monitoramento de Terminais Biométricos</p>
-                <p className="text-xs text-emerald-400/70 font-mono mt-0.5">App ID: 697aa46c9998c30665e2e19a</p>
-              </div>
+      <div className="bg-slate-900 text-white px-4 sm:px-6 py-4">
+        <div className="max-w-[1920px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-500/20 rounded-lg shrink-0">
+              <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">NOC Monitor</h1>
+              <p className="text-xs text-slate-400">Terminais Biométricos</p>
+              <p className="text-xs text-emerald-400/70 font-mono mt-0.5 hidden sm:block">App ID: 697aa46c9998c30665e2e19a</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="text-right">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-right hidden sm:block">
               <p className="text-xs text-slate-400">Última atualização</p>
               <p className="text-sm font-mono text-slate-200">
                 {lastRefresh.toLocaleTimeString('pt-BR')}
@@ -121,8 +119,8 @@ export default function Dashboard() {
               disabled={isMonitoring}
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"
             >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isMonitoring && "animate-spin")} />
-              Atualizar
+              <RefreshCw className={cn("h-4 w-4 sm:mr-2", isMonitoring && "animate-spin")} />
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
             <Button
               size="sm"
@@ -130,8 +128,8 @@ export default function Dashboard() {
               disabled={isMonitoring}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              <Activity className={cn("h-4 w-4 mr-2", isMonitoring && "animate-pulse")} />
-              Verificar Agora
+              <Activity className={cn("h-4 w-4 sm:mr-2", isMonitoring && "animate-pulse")} />
+              <span className="hidden sm:inline">Verificar Agora</span>
             </Button>
           </div>
         </div>

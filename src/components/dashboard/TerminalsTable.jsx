@@ -97,6 +97,12 @@ export default function TerminalsTable({ terminals, maxRows = 15, compact = fals
                   Sem Ping
                 </div>
               </th>
+              <th className={cn(
+                "text-center font-semibold text-slate-600 uppercase tracking-wider",
+                compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs"
+              )}>
+                Ação
+              </th>
             </tr>
           </thead>
           <tbody>

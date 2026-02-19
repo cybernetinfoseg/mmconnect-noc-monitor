@@ -73,12 +73,21 @@ export default function Dashboard() {
 
   // Apply filters
   const filteredTerminals = useMemo(() => {
-    return terminals.filter(t => {
+    let list = terminals.filter(t => {
       if (localFilter && t.local !== localFilter) return false;
-      if (clienteFilter && t.cliente !== clienteFilter) return false;
+      if (clienteFilter && (t.cliente !== clienteFilter && t.cliente_nome !== clienteFilter)) return false;
+      if (statusFilter && t.status !== statusFilter) return false;
       return true;
     });
-  }, [terminals, localFilter, clienteFilter]);
+    if (sortBy === 'status') {
+      list = [...list].sort((a, b) => a.status === 'offline' ? -1 : 1);
+    } else if (sortBy === 'nome') {
+      list = [...list].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+    } else if (sortBy === 'ping') {
+      list = [...list].sort((a, b) => (b.segundos_sem_ping || 0) - (a.segundos_sem_ping || 0));
+    }
+    return list;
+  }, [terminals, localFilter, clienteFilter, statusFilter, sortBy]);
 
   // Calculate KPIs
   const stats = useMemo(() => {

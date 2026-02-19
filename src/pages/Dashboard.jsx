@@ -180,11 +180,34 @@ export default function Dashboard() {
             options={clientes}
             placeholder="Todos os clientes"
           />
-          {(localFilter || clienteFilter) && (
+          <FilterDropdown
+            label="Status"
+            icon={Activity}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={['online', 'offline']}
+            placeholder="Todos os status"
+          />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              Ordenar por
+            </label>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            >
+              <option value="status">Status (offline primeiro)</option>
+              <option value="nome">Nome (A-Z)</option>
+              <option value="ping">Sem ping (maior primeiro)</option>
+            </select>
+          </div>
+          {(localFilter || clienteFilter || statusFilter) && (
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => { setLocalFilter(null); setClienteFilter(null); }}
+                onClick={() => { setLocalFilter(null); setClienteFilter(null); setStatusFilter(null); }}
                 className="text-slate-500 hover:text-slate-700"
               >
                 Limpar filtros

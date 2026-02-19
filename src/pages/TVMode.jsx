@@ -20,11 +20,16 @@ import moment from 'moment';
 export default function TVMode() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch terminals with auto-refresh every 5 minutes
-  const { data: terminals = [], refetch } = useQuery({
+  // Read filters from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const localFilter = urlParams.get('local') || null;
+  const clienteFilter = urlParams.get('cliente') || null;
+
+  // Fetch terminals with auto-refresh every 5 seconds
+  const { data: allTerminals = [], refetch } = useQuery({
     queryKey: ['terminals-tv'],
     queryFn: () => base44.entities.Terminal.filter({ ativo: true }),
-    refetchInterval: 300000, // 5 minutos
+    refetchInterval: 5000,
   });
 
   // Manual refresh

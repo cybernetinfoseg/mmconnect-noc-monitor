@@ -250,7 +250,9 @@ export default function TVMode() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: index * 0.02 }}
+                onClick={() => setSelectedTerminal(terminal)}
                 className={cn(
+                  "cursor-pointer",
                   "relative overflow-hidden rounded-2xl p-5 transition-all duration-300",
                   terminal.status === 'offline'
                     ? "bg-red-500/10 border border-red-500/30"

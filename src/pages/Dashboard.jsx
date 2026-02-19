@@ -169,15 +169,24 @@ export default function Dashboard() {
             placeholder="Todos os clientes"
           />
           {(localFilter || clienteFilter) && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => { setLocalFilter(null); setClienteFilter(null); }}
-              className="text-slate-500 hover:text-slate-700"
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => { setLocalFilter(null); setClienteFilter(null); }}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                Limpar filtros
+              </Button>
+            )}
+            <Link
+              to={`/TVMode${localFilter || clienteFilter ? `?${new URLSearchParams([...(localFilter ? [['local', localFilter]] : []), ...(clienteFilter ? [['cliente', clienteFilter]] : [])]).toString()}` : ''}`}
+              className="ml-auto"
             >
-              Limpar filtros
-            </Button>
-          )}
+              <Button variant="outline" size="sm" className="gap-1.5 text-slate-600">
+                <Tv className="h-4 w-4" />
+                <span className="hidden sm:inline">Modo TV</span>
+              </Button>
+            </Link>
         </motion.div>
 
         {/* KPIs */}

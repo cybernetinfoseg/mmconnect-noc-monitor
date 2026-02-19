@@ -4,7 +4,6 @@ import { X, CalendarClock, Clock, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
-import { create_automation } from '@/api/base44Client';
 
 const PRESETS = [
   { label: 'A cada 5 min', interval: 5, unit: 'minutes' },

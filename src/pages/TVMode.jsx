@@ -102,6 +102,7 @@ export default function TVMode() {
     return allTerminals.filter(t => {
       if (localFilter && t.local !== localFilter) return false;
       if (clienteFilter && t.cliente_nome !== clienteFilter && t.cliente !== clienteFilter) return false;
+      if (statusFilterMirror && t.status !== statusFilterMirror) return false;
       if (tvSettings.onlyOffline && t.status !== 'offline') return false;
       return true;
     });

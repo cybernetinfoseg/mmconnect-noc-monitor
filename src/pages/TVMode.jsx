@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import StatusBadge from '../components/dashboard/StatusBadge';
 import LiveClock from '../components/dashboard/LiveClock';
+import TerminalDetailModal from '../components/tv/TerminalDetailModal';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
 

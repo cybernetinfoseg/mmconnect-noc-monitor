@@ -46,6 +46,26 @@ export default function Clientes() {
     queryFn: () => base44.entities.Cliente.list('-created_date'),
   });
 
+  const { data: allTerminals = [] } = useQuery({
+    queryKey: ['terminals-all'],
+    queryFn: () => base44.entities.Terminal.list(),
+    refetchInterval: 30000,
+  });
+
+  // Map: cliente nome -> { total, online, offline }
+  const terminalCountsByCliente = useMemo(() => {
+    const map = {};
+    allTerminals.forEach(t => {
+      const key = t.cliente_nome || t.cliente || '';
+      if (!key) return;
+      if (!map[key]) map[key] = { total: 0, online: 0, offline: 0 };
+      map[key].total++;
+      if (t.status === 'online') map[key].online++;
+      else map[key].offline++;
+    });
+    return map;
+  }, [allTerminals]);
+
   const saveMutation = useMutation({
     mutationFn: (data) => {
       if (editingCliente) {

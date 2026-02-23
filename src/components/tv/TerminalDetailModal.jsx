@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
 import StatusBadge from '../dashboard/StatusBadge';
-import ScheduleCheckModal from './ScheduleCheckModal';
+
 
 const formatTimeSince = (seconds) => {
   if (!seconds || seconds < 0) return '—';

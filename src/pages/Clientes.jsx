@@ -10,8 +10,12 @@ import {
   Search,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  Monitor,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
+import ClienteTerminaisModal from '../components/clientes/ClienteTerminaisModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +37,7 @@ export default function Clientes() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
   const [formData, setFormData] = useState({});
+  const [viewingTerminaisCliente, setViewingTerminaisCliente] = useState(null);
   
   const queryClient = useQueryClient();
 
@@ -40,6 +45,26 @@ export default function Clientes() {
     queryKey: ['clientes-manage'],
     queryFn: () => base44.entities.Cliente.list('-created_date'),
   });
+
+  const { data: allTerminals = [] } = useQuery({
+    queryKey: ['terminals-all'],
+    queryFn: () => base44.entities.Terminal.list(),
+    refetchInterval: 30000,
+  });
+
+  // Map: cliente nome -> { total, online, offline }
+  const terminalCountsByCliente = useMemo(() => {
+    const map = {};
+    allTerminals.forEach(t => {
+      const key = t.cliente_nome || t.cliente || '';
+      if (!key) return;
+      if (!map[key]) map[key] = { total: 0, online: 0, offline: 0 };
+      map[key].total++;
+      if (t.status === 'online') map[key].online++;
+      else map[key].offline++;
+    });
+    return map;
+  }, [allTerminals]);
 
   const saveMutation = useMutation({
     mutationFn: (data) => {
@@ -187,6 +212,32 @@ export default function Clientes() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
+                    {/* Terminal counts */}
+                    {(() => {
+                      const counts = terminalCountsByCliente[cliente.nome] || { total: 0, online: 0, offline: 0 };
+                      return (
+                        <button
+                          onClick={() => setViewingTerminaisCliente(cliente)}
+                          className="w-full flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100"
+                        >
+                          <Monitor className="h-4 w-4 text-blue-500 shrink-0" />
+                          <span className="text-xs font-semibold text-slate-600">{counts.total} terminais</span>
+                          {counts.total > 0 && (
+                            <>
+                              <span className="ml-auto flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                                <Wifi className="h-3 w-3" />{counts.online}
+                              </span>
+                              {counts.offline > 0 && (
+                                <span className="flex items-center gap-1 text-xs text-red-600 font-medium">
+                                  <WifiOff className="h-3 w-3" />{counts.offline}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </button>
+                      );
+                    })()}
+
                     {cliente.cnpj && (
                       <div className="text-sm text-slate-600">
                         <span className="text-slate-500">CNPJ:</span> {cliente.cnpj}
@@ -249,6 +300,11 @@ export default function Clientes() {
           </Card>
         )}
       </div>
+
+      <ClienteTerminaisModal
+        cliente={viewingTerminaisCliente}
+        onClose={() => setViewingTerminaisCliente(null)}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

@@ -68,7 +68,7 @@ export default function Dashboard() {
   );
 
   const clientes = useMemo(() => 
-    [...new Set(terminals.map(t => t.cliente).filter(Boolean))].sort(),
+    [...new Set(terminals.map(t => t.cliente_nome || t.cliente).filter(Boolean))].sort(),
     [terminals]
   );
 
@@ -76,7 +76,7 @@ export default function Dashboard() {
   const filteredTerminals = useMemo(() => {
     let list = terminals.filter(t => {
       if (localFilter && t.local !== localFilter) return false;
-      if (clienteFilter && (t.cliente !== clienteFilter && t.cliente_nome !== clienteFilter)) return false;
+      if (clienteFilter && t.cliente_nome !== clienteFilter && t.cliente !== clienteFilter) return false;
       if (statusFilter && t.status !== statusFilter) return false;
       return true;
     });

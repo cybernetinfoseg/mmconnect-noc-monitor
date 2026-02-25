@@ -16,14 +16,13 @@ import {
   Network,
   FileText,
   Zap,
-  RefreshCw,
-  CalendarClock
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
 import StatusBadge from '../dashboard/StatusBadge';
-import ScheduleCheckModal from './ScheduleCheckModal';
+
 
 const formatTimeSince = (seconds) => {
   if (!seconds || seconds < 0) return '—';
@@ -47,8 +46,6 @@ export default function TerminalDetailModal({ terminal, onClose }) {
   const queryClient = useQueryClient();
   const [isPinging, setIsPinging] = useState(false);
   const [pingResult, setPingResult] = useState(null);
-  const [showSchedule, setShowSchedule] = useState(false);
-
   const handlePing = async () => {
     setIsPinging(true);
     setPingResult(null);
@@ -162,15 +159,6 @@ export default function TerminalDetailModal({ terminal, onClose }) {
                   : <Zap className="h-3.5 w-3.5 text-yellow-400" />
                 }
                 <span className="hidden sm:inline">{isPinging ? 'A verificar...' : 'Verificar'}</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSchedule(true)}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5"
-              >
-                <CalendarClock className="h-3.5 w-3.5 text-blue-400" />
-                <span className="hidden sm:inline">Agendar</span>
               </Button>
               <button
                 onClick={onClose}
@@ -334,13 +322,7 @@ export default function TerminalDetailModal({ terminal, onClose }) {
         </motion.div>
       </motion.div>
 
-      {/* Schedule Modal */}
-      {showSchedule && (
-        <ScheduleCheckModal
-          terminal={terminal}
-          onClose={() => setShowSchedule(false)}
-        />
-      )}
+
     </AnimatePresence>
   );
 }

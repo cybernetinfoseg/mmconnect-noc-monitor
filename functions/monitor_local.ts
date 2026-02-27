@@ -19,10 +19,10 @@ from typing import Dict, List, Optional
 
 # ==================== CONFIGURAÇÃO ====================
 APP_ID = "697aa46c9998c30665e2e19a"
-MONITOR_API_KEY = "SUA_CHAVE_AQUI"  # Substitua pelo valor do secret MONITOR_API_KEY
+MONITOR_API_KEY = "!Uolcor20"  # Valor do secret API_KEY no Base44
 
 # URLs das funções backend
-BASE_URL = f"https://{APP_ID}.base44.app/api/functions"
+BASE_URL = f"https://app.base44.com/api/apps/{APP_ID}/functions"
 GET_TERMINALS_URL = f"{BASE_URL}/getLocalTerminals/invoke"
 UPDATE_STATUS_URL = f"{BASE_URL}/updateTerminalStatus/invoke"
 

@@ -153,19 +153,21 @@ export default function TerminalDetailModal({ terminal, onClose }) {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <StatusBadge status={terminal.status} pulse />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handlePing}
-                disabled={isPinging}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5"
-              >
-                {isPinging
-                  ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  : <Zap className="h-3.5 w-3.5 text-yellow-400" />
-                }
-                <span className="hidden sm:inline">{isPinging ? 'A verificar...' : 'Verificar'}</span>
-              </Button>
+              {terminal.tipo_conexao !== 'ip_local' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handlePing}
+                  disabled={isPinging}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5"
+                >
+                  {isPinging
+                    ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    : <Zap className="h-3.5 w-3.5 text-yellow-400" />
+                  }
+                  <span className="hidden sm:inline">{isPinging ? 'A verificar...' : 'Verificar'}</span>
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"

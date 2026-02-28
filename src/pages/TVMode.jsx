@@ -308,17 +308,39 @@ export default function TVMode() {
                         <StatusBadge status={terminal.status} />
                       </div>
                       <div className="space-y-1.5 text-sm">
-                        {tvSettings.showLocal !== false && (
+                        {tvSettings.showLocal !== false && terminal.local && (
                           <p className="text-slate-400 truncate">
                             <span className="text-slate-500">Local:</span> {terminal.local}
                           </p>
                         )}
-                        {tvSettings.showCliente !== false && (
+                        {tvSettings.showCliente !== false && (terminal.cliente_nome || terminal.cliente) && (
                           <p className="text-slate-400 truncate">
                             <span className="text-slate-500">Cliente:</span> {terminal.cliente_nome || terminal.cliente}
                           </p>
                         )}
-                        {tvSettings.showLatencia && terminal.latencia_ms && (
+                        {/* Informação de conexão */}
+                        {terminal.tipo_conexao === 'ip_local' && terminal.ip_local && (
+                          <p className="text-slate-500 font-mono text-xs truncate mt-1">
+                            📡 {terminal.ip_local}:{terminal.porta || 5005}
+                            <span className="ml-1 text-blue-400/60 not-italic font-sans">(local)</span>
+                          </p>
+                        )}
+                        {terminal.tipo_conexao === 'ip_publico' && terminal.ip_publico && (
+                          <p className="text-slate-500 font-mono text-xs truncate mt-1">
+                            🌐 {terminal.ip_publico}:{terminal.porta || 5005}
+                          </p>
+                        )}
+                        {terminal.tipo_conexao === 'dns' && terminal.dns && (
+                          <p className="text-slate-500 font-mono text-xs truncate mt-1">
+                            🔗 {terminal.dns}:{terminal.porta || 5005}
+                          </p>
+                        )}
+                        {terminal.tipo_conexao === 'api' && terminal.api_endpoint && (
+                          <p className="text-slate-500 font-mono text-xs truncate mt-1">
+                            🔧 {terminal.api_endpoint}
+                          </p>
+                        )}
+                        {tvSettings.showLatencia && terminal.latencia_ms != null && (
                           <p className="text-slate-400 truncate">
                             <span className="text-slate-500">Latência:</span> {terminal.latencia_ms}ms
                           </p>
@@ -331,7 +353,10 @@ export default function TVMode() {
                             "text-sm font-mono",
                             terminal.status === 'offline' ? "text-red-400 font-semibold" : "text-slate-400"
                           )}>
-                            {formatTimeSince(terminal.segundos_sem_ping)}
+                            {terminal.ultimo_ping ? moment(terminal.ultimo_ping).format('HH:mm:ss') : '—'}
+                            {terminal.segundos_sem_ping > 0 && (
+                              <span className="ml-1 text-xs text-slate-500">({formatTimeSince(terminal.segundos_sem_ping)})</span>
+                            )}
                           </span>
                         </div>
                       )}

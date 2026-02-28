@@ -52,7 +52,7 @@ export default function Terminais() {
   const { data: terminals = [], isLoading } = useQuery({
     queryKey: ['terminals-manage'],
     queryFn: () => base44.entities.Terminal.list('-created_date'),
-    refetchInterval: 5000, // Auto-refresh em tempo real
+    refetchInterval: 30000, // Auto-refresh 30s
   });
 
   // Fetch clientes
@@ -241,7 +241,7 @@ export default function Terminais() {
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
               <p className="text-xs sm:text-sm text-emerald-600 flex items-center gap-1">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0"></div>
-                <span className="hidden sm:inline">TCP Socket • </span>Auto-refresh 5s
+                TCP Socket • Auto-refresh 30s
               </p>
             </div>
           </div>

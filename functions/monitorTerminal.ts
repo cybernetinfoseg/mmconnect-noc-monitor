@@ -72,9 +72,17 @@ Deno.serve(async (req) => {
                     errorMsg = fetchError.message;
                 }
             } 
-            // Para conexões baseadas em IP/porta, fazer teste TCP socket (similar ao script Python)
+            // Para conexões baseadas em IP/porta, fazer teste TCP socket
             else if (host) {
-                // Método direto: Conexão TCP socket na porta especificada
+                // ip_local não pode ser verificado pelo servidor (IP privado inacessível via internet)
+                if (terminal.tipo_conexao === 'ip_local') {
+                    return Response.json({
+                        success: false,
+                        error: 'ip_local_only',
+                        message: 'Terminais IP Local só podem ser verificados pelo Monitor Local (script Python rodando na sua rede).'
+                    }, { status: 422 });
+                }
+
                 try {
                     const connectPromise = Deno.connect({ 
                         hostname: host, 
@@ -86,14 +94,11 @@ Deno.serve(async (req) => {
                     );
                     
                     const conn = await Promise.race([connectPromise, timeoutPromise]);
-                    
-                    // Se chegou aqui, a porta está aberta/acessível
                     conn.close();
                     status = 'online';
                     latencia = Date.now() - startTime;
                     
                 } catch (socketError) {
-                    // Falha na conexão = offline
                     status = 'offline';
                     errorMsg = socketError.message || 'Porta fechada ou inacessível';
                 }

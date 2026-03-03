@@ -25,6 +25,7 @@ const navItems = [
   { name: 'Histórico', page: 'History', icon: History },
   { name: 'Incidentes', page: 'Incidents', icon: AlertTriangle },
   { name: 'Alertas', page: 'Alertas', icon: Bell },
+  { name: 'Administração', page: 'Administracao', icon: Shield },
 ];
 
 // Pages shown in the bottom bar on mobile

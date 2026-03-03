@@ -11,7 +11,13 @@ import {
   CheckCircle,
   XCircle,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Bot,
+  Key,
+  Download,
+  Terminal,
+  Copy,
+  Info
 } from 'lucide-react';
 import {
   AlertDialog,

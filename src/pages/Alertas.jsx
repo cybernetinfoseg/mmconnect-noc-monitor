@@ -97,9 +97,11 @@ export default function Alertas() {
               <Bell className="h-12 w-12 mx-auto mb-4 text-slate-300" />
               <p className="text-slate-500 font-medium">Nenhuma regra de alerta criada</p>
               <p className="text-sm text-slate-400 mt-1">Crie regras para receber notificações sobre eventos importantes</p>
-              <Button onClick={handleNew} className="mt-4 bg-slate-900 text-white gap-2">
-                <Plus className="h-4 w-4" /> Criar primeira regra
-              </Button>
+              {perms.pode_configurar_alertas && (
+                <Button onClick={handleNew} className="mt-4 bg-slate-900 text-white gap-2">
+                  <Plus className="h-4 w-4" /> Criar primeira regra
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}

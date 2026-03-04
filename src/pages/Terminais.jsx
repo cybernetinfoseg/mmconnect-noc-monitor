@@ -77,6 +77,9 @@ export default function Terminais() {
     queryFn: () => base44.entities.Cliente.list(),
   });
 
+  const logAudit = (acao, entidade_id, descricao) =>
+    base44.functions.invoke('auditLog', { acao, entidade: 'Terminal', entidade_id, descricao }).catch(() => {});
+
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       const cliente = clientes.find(c => c.id === data.cliente_id);
@@ -86,19 +89,28 @@ export default function Terminais() {
       }
       return base44.entities.Terminal.create(dataWithCliente);
     },
-    onSuccess: () => {
+    onSuccess: (result, data) => {
+      const isEdit = !!editingTerminal;
+      const nome = data.nome || editingTerminal?.nome || '';
+      logAudit(
+        isEdit ? 'terminal_editado' : 'terminal_criado',
+        editingTerminal?.id || result?.id || '',
+        isEdit ? `Terminal "${nome}" editado` : `Terminal "${nome}" criado`
+      );
       queryClient.invalidateQueries(['terminals-manage']);
       setDialogOpen(false);
       setEditingTerminal(null);
       setFormData({});
-      toast.success(editingTerminal ? 'Terminal atualizado' : 'Terminal criado');
+      toast.success(isEdit ? 'Terminal atualizado' : 'Terminal criado');
     },
     onError: (error) => toast.error(`Erro: ${error.message}`),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Terminal.delete(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      const terminal = terminals.find(t => t.id === id);
+      logAudit('terminal_excluido', id, `Terminal "${terminal?.nome || id}" excluído`);
       queryClient.invalidateQueries(['terminals-manage']);
       toast.success('Terminal excluído');
     },

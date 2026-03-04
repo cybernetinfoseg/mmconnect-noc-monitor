@@ -74,11 +74,15 @@ export default function Administracao() {
     onError: () => toast.error('Erro ao atualizar permissões'),
   });
 
+  const logAudit = (acao, entidade_id, descricao) =>
+    base44.functions.invoke('auditLog', { acao, entidade: 'User', entidade_id, descricao }).catch(() => {});
+
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role }) => {
       return base44.users.inviteUser(email, role === 'admin' ? 'admin' : 'user');
     },
-    onSuccess: () => {
+    onSuccess: (_, { email, role }) => {
+      logAudit('usuario_convidado', '', `Usuário ${email} convidado com role "${role}"`);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Convite enviado!');
       handleCancel();

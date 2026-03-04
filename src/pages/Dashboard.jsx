@@ -32,6 +32,13 @@ import AlertRulesWidget from '../components/dashboard/AlertRulesWidget';
 import RecentAuditWidget from '../components/dashboard/RecentAuditWidget';
 import ApiKeyStatsWidget from '../components/dashboard/ApiKeyStatsWidget';
 
+const DEFAULT_WIDGETS = {
+  terminalStatus: true,
+  alertRules: true,
+  recentAudit: true,
+  apiKeyStats: true,
+};
+
 export default function Dashboard() {
   const [localFilter, setLocalFilter] = useState(null);
   const [clienteFilter, setClienteFilter] = useState(null);
@@ -39,6 +46,28 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState('status');
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [isMonitoring, setIsMonitoring] = useState(false);
+  const [showWidgetConfig, setShowWidgetConfig] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [widgets, setWidgets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dashboard-widgets');
+      return saved ? { ...DEFAULT_WIDGETS, ...JSON.parse(saved) } : DEFAULT_WIDGETS;
+    } catch { return DEFAULT_WIDGETS; }
+  });
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  const toggleWidget = (key) => {
+    setWidgets(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('dashboard-widgets', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const isAdmin = currentUser?.role === 'admin';
 
   // Fetch terminals with auto-refresh every 5 seconds
   const { data: terminals = [], isLoading, refetch } = useQuery({

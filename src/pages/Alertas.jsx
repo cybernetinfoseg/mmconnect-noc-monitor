@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
 import AlertRuleModal from '../components/alerts/AlertRuleModal';
+import BrowserNotificationToggle from '../components/alerts/BrowserNotificationToggle';
 
 const GATILHO_LABELS = {
   terminal_offline: 'Terminal fica offline',

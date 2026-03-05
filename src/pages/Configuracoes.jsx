@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { resolvePermissions } from '../components/auth/usePermissions';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
@@ -50,12 +51,27 @@ import { cn } from '@/lib/utils';
 export default function Configuracoes() {
   const [formData, setFormData] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: configs = [] } = useQuery({
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  const perms = resolvePermissions(currentUser);
+
+  const { data: allConfigs = [] } = useQuery({
     queryKey: ['monitor-configs'],
     queryFn: () => base44.entities.MonitorConfig.list(),
+    enabled: !!currentUser,
   });
+
+  // Each user sees only their own config; admin sees all
+  const configs = useMemo(() => {
+    if (!currentUser) return [];
+    if (perms.isAdmin) return allConfigs;
+    return allConfigs.filter(c => c.created_by === currentUser.email);
+  }, [allConfigs, currentUser, perms.isAdmin]);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {

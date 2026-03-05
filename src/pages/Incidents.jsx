@@ -25,15 +25,42 @@ import moment from 'moment';
 export default function Incidents() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [tipoFilter, setTipoFilter] = useState('all');
-  
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  const perms = resolvePermissions(currentUser);
+  const canSeeAll = perms.isAdmin || perms.isEditor;
+
   const queryClient = useQueryClient();
 
+  // Fetch terminals to know which ones belong to this user
+  const { data: allTerminals = [] } = useQuery({
+    queryKey: ['terminals-incidents-user'],
+    queryFn: () => base44.entities.Terminal.list(),
+    enabled: !!currentUser,
+  });
+
+  const myTerminalIds = useMemo(() => {
+    if (!currentUser || canSeeAll) return null;
+    return new Set(allTerminals.filter(t => t.created_by === currentUser.email).map(t => t.id));
+  }, [allTerminals, currentUser, canSeeAll]);
+
   // Fetch incidents
-  const { data: incidents = [], isLoading, refetch } = useQuery({
+  const { data: allIncidents = [], isLoading, refetch } = useQuery({
     queryKey: ['incidents'],
     queryFn: () => base44.entities.AlertIncident.list('-created_date', 200),
     refetchInterval: 30000,
+    enabled: !!currentUser,
   });
+
+  const incidents = useMemo(() => {
+    if (!currentUser) return [];
+    if (canSeeAll) return allIncidents;
+    return allIncidents.filter(i => myTerminalIds?.has(i.terminal_id));
+  }, [allIncidents, currentUser, canSeeAll, myTerminalIds]);
 
   // Resolve incident mutation
   const resolveMutation = useMutation({

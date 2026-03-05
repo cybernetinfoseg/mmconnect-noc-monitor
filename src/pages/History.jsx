@@ -19,18 +19,34 @@ import moment from 'moment';
 
 export default function History() {
   const [period, setPeriod] = useState('24h');
-  
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  const perms = resolvePermissions(currentUser);
+  const canSeeAll = perms.isAdmin || perms.isEditor;
+
   // Fetch status history
   const { data: history = [], isLoading: historyLoading } = useQuery({
     queryKey: ['status-history', period],
     queryFn: () => base44.entities.StatusHistory.list('-created_date', 1000),
+    enabled: !!currentUser,
   });
 
   // Fetch terminals
-  const { data: terminals = [] } = useQuery({
+  const { data: allTerminals = [] } = useQuery({
     queryKey: ['terminals-history'],
     queryFn: () => base44.entities.Terminal.list(),
+    enabled: !!currentUser,
   });
+
+  const terminals = useMemo(() => {
+    if (!currentUser) return [];
+    if (canSeeAll) return allTerminals;
+    return allTerminals.filter(t => t.created_by === currentUser.email);
+  }, [allTerminals, currentUser, canSeeAll]);
 
   // Calculate uptime per terminal based on period
   const uptimeData = useMemo(() => {

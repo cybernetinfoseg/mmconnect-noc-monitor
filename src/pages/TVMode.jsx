@@ -34,6 +34,15 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function TVMode() {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  const perms = resolvePermissions(currentUser);
+  const canSeeAll = perms.isAdmin || perms.isEditor;
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTerminal, setSelectedTerminal] = useState(null);
   const [showSettings, setShowSettings] = useState(false);

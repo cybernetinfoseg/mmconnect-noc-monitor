@@ -116,6 +116,18 @@ export default function Administracao() {
     }
   };
 
+  const handleGenerateMyApiKey = async () => {
+    setGeneratingMyKey(true);
+    const res = await base44.functions.invoke('generateUserApiKey', {});
+    setGeneratingMyKey(false);
+    if (res.data?.api_key) {
+      setMyApiKey(res.data.api_key);
+      toast.success('Sua API Key foi gerada!');
+    } else {
+      toast.error('Erro ao gerar API Key');
+    }
+  };
+
   const applyRoleDefaults = (role) => {
     setForm(prev => ({
       ...prev,

@@ -71,8 +71,8 @@ export default function Dashboard() {
   };
 
   const perms = resolvePermissions(currentUser);
-  const isAdmin = currentUser?.role === 'admin';
   const canSeeAll = currentUser?.role === 'admin' || currentUser?.role === 'editor';
+  const isAdmin = perms.isAdmin;
 
   // Fetch terminals with auto-refresh every 5 seconds
   const { data: allTerminals = [], isLoading, refetch } = useQuery({

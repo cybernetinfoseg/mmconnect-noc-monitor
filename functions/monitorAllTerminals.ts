@@ -78,9 +78,10 @@ Deno.serve(async (req) => {
 
         return Response.json({
             success: true,
-            total: terminals.length,
+            total: allTerminals.length,
             monitored: successCount,
             failed: failCount,
+            agent_managed: agentTerminals.length,
             results
         });
 

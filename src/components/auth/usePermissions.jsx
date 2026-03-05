@@ -46,34 +46,63 @@ export const ROLE_COLORS = {
   viewer: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
+// Permissions for a brand-new user who hasn't been configured by admin yet
+const NEW_USER_DEFAULTS = {
+  paginas_permitidas: [],
+  pode_configurar_alertas: false,
+  pode_gerenciar_usuarios: false,
+  pode_editar_terminais: false,
+  pode_editar_clientes: false,
+  limite_terminais: 0,
+};
+
 /**
  * Returns resolved permissions for a user.
- * Individual fields override role defaults if explicitly set on the user record.
+ * - Admin users always get full access regardless of stored fields.
+ * - Non-admin users with no paginas_permitidas set start fully locked (new user default).
+ * - Individual fields stored on the user record override role defaults.
  */
 export function resolvePermissions(user) {
-  if (!user) return { ...ROLE_DEFAULTS.viewer, role: 'viewer', isAdmin: false, isEditor: false, isViewer: true, canEdit: false };
+  if (!user) return { ...NEW_USER_DEFAULTS, role: 'viewer', isAdmin: false, isEditor: false, isViewer: true, canEdit: false };
 
-  const role = user.role || 'viewer';
-  const defaults = ROLE_DEFAULTS[role] || ROLE_DEFAULTS.viewer;
+  const role = user.role || 'user';
+
+  // Admins always have full access
+  if (role === 'admin') {
+    return {
+      role: 'admin',
+      isAdmin: true,
+      isEditor: false,
+      isViewer: false,
+      canEdit: true,
+      ...ROLE_DEFAULTS.admin,
+    };
+  }
+
+  const isEditor = role === 'editor';
+
+  // New users (no paginas_permitidas set, non-admin) start fully locked
+  // Only apply role defaults if the admin has explicitly set paginas_permitidas
+  const hasBeenConfigured = Array.isArray(user.paginas_permitidas) && user.paginas_permitidas.length > 0;
 
   return {
     role,
-    isAdmin: role === 'admin',
-    isEditor: role === 'editor',
-    isViewer: role === 'viewer',
-    canEdit: role === 'admin' || role === 'editor',
-    paginas_permitidas: user.paginas_permitidas?.length
+    isAdmin: false,
+    isEditor,
+    isViewer: !isEditor,
+    canEdit: isEditor,
+    paginas_permitidas: hasBeenConfigured
       ? user.paginas_permitidas
-      : defaults.paginas_permitidas,
+      : NEW_USER_DEFAULTS.paginas_permitidas,
     pode_configurar_alertas:
-      user.pode_configurar_alertas != null ? user.pode_configurar_alertas : defaults.pode_configurar_alertas,
+      user.pode_configurar_alertas != null ? user.pode_configurar_alertas : false,
     pode_gerenciar_usuarios:
-      user.pode_gerenciar_usuarios != null ? user.pode_gerenciar_usuarios : defaults.pode_gerenciar_usuarios,
+      user.pode_gerenciar_usuarios != null ? user.pode_gerenciar_usuarios : false,
     pode_editar_terminais:
-      user.pode_editar_terminais != null ? user.pode_editar_terminais : defaults.pode_editar_terminais,
+      user.pode_editar_terminais != null ? user.pode_editar_terminais : false,
     pode_editar_clientes:
-      user.pode_editar_clientes != null ? user.pode_editar_clientes : defaults.pode_editar_clientes,
+      user.pode_editar_clientes != null ? user.pode_editar_clientes : false,
     limite_terminais:
-      user.limite_terminais != null ? user.limite_terminais : defaults.limite_terminais,
+      user.limite_terminais != null ? user.limite_terminais : 0,
   };
 }

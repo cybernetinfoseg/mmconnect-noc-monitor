@@ -108,7 +108,7 @@ export default function Layout({ children, currentPageName }) {
             <Monitor className="h-6 w-6 text-emerald-400 dark:text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-slate-900 dark:text-white">Monitor</h1>
+            <h1 className="font-bold text-slate-900 dark:text-white">NOC Monitor</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">Terminais Biométricos</p>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function Layout({ children, currentPageName }) {
               <div className="p-1.5 bg-slate-900 dark:bg-emerald-600 rounded-lg">
                 <Monitor className="h-4 w-4 text-emerald-400 dark:text-white" />
               </div>
-              <h1 className="font-bold text-slate-900 dark:text-white text-sm">Monitor</h1>
+              <h1 className="font-bold text-slate-900 dark:text-white text-sm">NOC Monitor</h1>
             </div>
           </div>
 

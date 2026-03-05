@@ -101,11 +101,19 @@ export default function Dashboard() {
   };
 
   // Fetch alerts
-  const { data: alerts = [] } = useQuery({
+  const { data: allAlerts = [] } = useQuery({
     queryKey: ['alerts'],
     queryFn: () => base44.entities.AlertIncident.list('-created_date', 50),
     refetchInterval: 5000,
   });
+
+  const alerts = useMemo(() => {
+    if (!currentUser) return [];
+    if (canSeeAll) return allAlerts;
+    // Viewers see only alerts from their own terminals
+    const myTerminalIds = new Set(terminals.map(t => t.id));
+    return allAlerts.filter(a => myTerminalIds.has(a.terminal_id));
+  }, [allAlerts, currentUser, canSeeAll, terminals]);
 
   // Get unique values for filters
   const locais = useMemo(() => 

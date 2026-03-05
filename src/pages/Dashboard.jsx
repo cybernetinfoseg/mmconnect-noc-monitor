@@ -68,8 +68,6 @@ export default function Dashboard() {
     });
   };
 
-  const isAdmin = currentUser?.role === 'admin';
-
   const perms = resolvePermissions(currentUser);
   const isAdmin = currentUser?.role === 'admin';
   const canSeeAll = currentUser?.role === 'admin' || currentUser?.role === 'editor';

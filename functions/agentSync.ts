@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 Deno.serve(async (req) => {
     try {
-        // Validate API key from header (agent sends as 'api_key' header)
+        // Validate API key from header
         const apiKey = req.headers.get('api_key') || req.headers.get('x-agent-api-key');
 
         if (!apiKey) {
@@ -11,30 +11,30 @@ Deno.serve(async (req) => {
 
         const base44 = createClientFromRequest(req);
 
-        // Validate API key against users
-        const users = await base44.asServiceRole.entities.User.filter({ api_key: apiKey });
+        // Validate API key — fetch all users and find matching api_key
+        // (filter by nested field may not work reliably, so we search manually)
+        const allUsers = await base44.asServiceRole.entities.User.list('-created_date', 500);
+        const agentUser = allUsers.find(u => u.api_key === apiKey);
 
-        if (!users || users.length === 0) {
+        if (!agentUser) {
             return Response.json({ error: 'API Key inválida ou revogada' }, { status: 401 });
         }
 
-        const agentUser = users[0];
         const method = req.method.toUpperCase();
 
-        // GET /agentSync — listar terminais do usuário (ip_local e p2s apenas)
+        // GET — listar terminais do usuário (ip_local e p2s apenas)
         if (method === 'GET') {
             const terminais = await base44.asServiceRole.entities.Terminal.filter({
                 created_by: agentUser.email,
                 ativo: true
             });
-            // Return only local/p2s terminals (agent managed)
             const agentTerminais = terminais.filter(t =>
                 t.tipo_conexao === 'ip_local' || t.tipo_conexao === 'p2s'
             );
             return Response.json(agentTerminais);
         }
 
-        // PUT /agentSync — atualizar status de um terminal
+        // PUT — atualizar status de um terminal
         if (method === 'PUT') {
             const body = await req.json();
             const { terminal_id, status, latencia_ms, ultimo_check, ultimo_ping } = body;
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
 
             await base44.asServiceRole.entities.Terminal.update(terminal_id, updateData);
 
-            // Update status cache and create incidents
+            // Update status cache and create incidents on transition
             const cacheResults = await base44.asServiceRole.entities.StatusCache.filter({ terminal_id });
             const cache = cacheResults.length > 0 ? cacheResults[0] : null;
             const previousStatus = cache?.ultimo_status;

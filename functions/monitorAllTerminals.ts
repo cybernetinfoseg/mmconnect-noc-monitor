@@ -1,19 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
-// Esta função pode ser chamada tanto pelo scheduler (sem user) quanto por admins logados
+// Tempo máximo (em segundos) sem receber ping do agente antes de marcar Offline
+const AGENT_TIMEOUT_SECONDS = 180; // 3 minutos
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
 
-        // Se há usuário logado, verificar se é admin
+        // Se há utilizador autenticado, tem de ser admin
         const isAuthenticated = await base44.auth.isAuthenticated();
         if (isAuthenticated) {
             const user = await base44.auth.me();
             if (user?.role !== 'admin') {
-                return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+                return Response.json({ error: 'Forbidden: acesso apenas para administradores' }, { status: 403 });
             }
         }
-        // Se não há usuário (chamada do scheduler), continua com service role
+        // Se não há utilizador (chamada do scheduler), continua com service role
 
         // Buscar todos os terminais ativos
         const terminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });

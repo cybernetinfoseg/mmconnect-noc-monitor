@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { targetUserId, customKey } = await req.json();
+        const { targetUserId } = await req.json();
 
         if (targetUserId && targetUserId !== user.id && user.role !== 'admin') {
             return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -20,15 +20,10 @@ Deno.serve(async (req) => {
         // Fetch target user info for audit
         const targetUser = await base44.asServiceRole.entities.User.get(userId);
 
-        // Use custom key if provided, otherwise generate a secure random API key
-        let apiKey;
-        if (customKey && customKey.trim()) {
-            apiKey = customKey.trim();
-        } else {
-            const array = new Uint8Array(32);
-            crypto.getRandomValues(array);
-            apiKey = 'noc_' + Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
+        // Generate a secure random API key
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        const apiKey = 'noc_' + Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
 
         await base44.asServiceRole.entities.User.update(userId, { api_key: apiKey });
 

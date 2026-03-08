@@ -22,29 +22,15 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
         }
 
-        let status = terminal.status || 'offline';
-        let latencia = terminal.latencia_ms || null;
+        let status = 'offline';
+        let latencia = null;
         let errorMsg = null;
         const startTime = Date.now();
 
-        // Terminais IP Local não podem ser verificados pelo cloud - são geridos pelo Agente Local
-        if (terminal.tipo_conexao === 'ip_local' || terminal.tipo_conexao === 'p2s') {
-            return Response.json({
-                success: true,
-                terminal: terminal.nome,
-                status: terminal.status || 'offline',
-                latencia: terminal.latencia_ms || null,
-                ultimo_ping: terminal.ultimo_ping,
-                managed_by_agent: true,
-                message: `Terminal IP Local gerido pelo Agente Local. Último ping: ${terminal.ultimo_ping || 'nunca'}`
-            });
-        }
-
-        // Determinar host e porta baseado no tipo de conexão (fora do try para evitar ReferenceError)
-        let host = '';
-        let port = terminal.porta || 5005;
-
         try {
+            // Determinar host e porta baseado no tipo de conexão
+            let host = '';
+            let port = terminal.porta || 5005;
             
             switch (terminal.tipo_conexao) {
                 case 'ip_local':

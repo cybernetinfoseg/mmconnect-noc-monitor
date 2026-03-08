@@ -18,9 +18,7 @@ import {
   Download,
   Terminal,
   Copy,
-  Info,
-  Eye,
-  EyeOff
+  Info
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -54,7 +52,6 @@ export default function Configuracoes() {
   const [formData, setFormData] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [showApiKey, setShowApiKey] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -400,25 +397,13 @@ export default function Configuracoes() {
                 </p>
                 <div className="grid grid-cols-1 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">API KEY (gerada em Administração → coluna API Key)</Label>
+                    <Label className="text-xs text-slate-500">API KEY (configure em Configurações → Secrets como <code className="bg-slate-100 px-1 rounded">BASE44_API_KEY</code>)</Label>
                     <div className="flex gap-2">
                       <Input 
                         readOnly 
-                        type={showApiKey ? 'text' : 'password'}
-                        value={currentUser?.api_key || ''}
-                        placeholder={currentUser?.api_key ? undefined : 'Nenhuma API Key gerada — vá a Administração'}
-                        className="bg-slate-50 text-sm font-mono"
+                        value="Seu API_KEY configurado nos Secrets do app" 
+                        className="bg-slate-50 text-sm font-mono text-slate-500 cursor-not-allowed"
                       />
-                      {currentUser?.api_key && (
-                        <>
-                          <Button variant="outline" size="sm" onClick={() => setShowApiKey(v => !v)}>
-                            {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(currentUser.api_key); toast.success('API Key copiada!'); }}>
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -432,7 +417,7 @@ export default function Configuracoes() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => { navigator.clipboard.writeText('697aa46c9998c30665e2e19a'); toast.success('Copiado!'); }}
+                        onClick={() => { navigator.clipboard.writeText('697aa46c9998c30665e2e19a'); }}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>

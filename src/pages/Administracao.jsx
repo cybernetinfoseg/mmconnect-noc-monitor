@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, UserPlus, Pencil, X, Check, RefreshCw, Copy, Key, Eye, EyeOff } from 'lucide-react';
+import { Shield, UserPlus, Pencil, X, Check, RefreshCw, Copy, Key } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,14 +50,11 @@ export default function Administracao() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [generatingKeyFor, setGeneratingKeyFor] = useState(null);
   const [revealedKeys, setRevealedKeys] = useState({});
-  const [visibleKeys, setVisibleKeys] = useState({});
-  const [customKeyUser, setCustomKeyUser] = useState(null); // user for whom we're entering a custom key
-  const [customKeyValue, setCustomKeyValue] = useState('');
   const queryClient = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list('-created_date', 200),
+    queryFn: () => base44.entities.User.list(),
   });
 
   // Count terminals per user
@@ -101,44 +98,15 @@ export default function Administracao() {
 
   const handleGenerateApiKey = async (user) => {
     setGeneratingKeyFor(user.id);
-    try {
-      const res = await base44.functions.invoke('generateUserApiKey', { targetUserId: user.id });
-      if (res.data?.api_key) {
-        const key = res.data.api_key;
-        setRevealedKeys(prev => ({ ...prev, [user.id]: key }));
-        setVisibleKeys(prev => ({ ...prev, [user.id]: true }));
-        await queryClient.refetchQueries({ queryKey: ['users'] });
-        toast.success('API Key gerada!');
-      } else {
-        toast.error('Erro ao gerar API Key');
-      }
-    } catch {
-      toast.error('Erro ao gerar API Key');
-    } finally {
-      setGeneratingKeyFor(null);
-    }
-  };
-
-  const handleSetCustomKey = async (user) => {
-    const key = customKeyValue.trim();
-    if (!key) return;
-    setGeneratingKeyFor(user.id);
-    try {
-      const res = await base44.functions.invoke('generateUserApiKey', { targetUserId: user.id, customKey: key });
-      if (res.data?.api_key) {
-        setRevealedKeys(prev => ({ ...prev, [user.id]: res.data.api_key }));
-        setVisibleKeys(prev => ({ ...prev, [user.id]: true }));
-        await queryClient.refetchQueries({ queryKey: ['users'] });
-        toast.success('API Key definida!');
-      } else {
-        toast.error('Erro ao definir API Key');
-      }
-    } catch {
-      toast.error('Erro ao definir API Key');
-    }
+    const res = await base44.functions.invoke('generateUserApiKey', { targetUserId: user.id });
     setGeneratingKeyFor(null);
-    setCustomKeyUser(null);
-    setCustomKeyValue('');
+    if (res.data?.api_key) {
+      setRevealedKeys(prev => ({ ...prev, [user.id]: res.data.api_key }));
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('API Key gerada!');
+    } else {
+      toast.error('Erro ao gerar API Key');
+    }
   };
 
   const applyRoleDefaults = (role) => {
@@ -366,7 +334,7 @@ export default function Administracao() {
                   ) : users.map(user => {
                     const count = terminalCountByUser[user.email] || 0;
                     const limit = user.limite_terminais ?? 0;
-                    const apiKey = revealedKeys[user.id] || user.api_key || null;
+                    const apiKey = revealedKeys[user.id] || user.api_key;
                     return (
                       <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-slate-900 max-w-[160px] truncate">{user.email}</td>
@@ -407,58 +375,37 @@ export default function Administracao() {
                          </div>
                         </td>
                         <td className="px-4 py-3">
-                           {customKeyUser === user.id ? (
-                             <div className="flex items-center gap-1">
-                               <Input
-                                 autoFocus
-                                 value={customKeyValue}
-                                 onChange={e => setCustomKeyValue(e.target.value)}
-                                 onKeyDown={e => { if (e.key === 'Enter') handleSetCustomKey(user); if (e.key === 'Escape') { setCustomKeyUser(null); setCustomKeyValue(''); } }}
-                                 placeholder="Cole ou digite a API Key"
-                                 className="h-7 text-xs font-mono w-44"
-                               />
-                               <Button size="icon" className="h-6 w-6 bg-emerald-600 hover:bg-emerald-700" onClick={() => handleSetCustomKey(user)} disabled={!customKeyValue.trim() || generatingKeyFor === user.id}>
-                                 <Check className="h-3 w-3" />
-                               </Button>
-                               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setCustomKeyUser(null); setCustomKeyValue(''); }}>
-                                 <X className="h-3 w-3" />
-                               </Button>
-                             </div>
-                           ) : (
-                             <div className="flex items-center gap-1">
-                               {revealedKeys[user.id] ? (
-                                 // Key was generated/revealed this session — show it
-                                 <>
-                                   <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-600 max-w-[100px] truncate block">
-                                     {visibleKeys[user.id] ? revealedKeys[user.id] : '••••••••••••'}
-                                   </code>
-                                   <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-slate-700" onClick={() => setVisibleKeys(prev => ({ ...prev, [user.id]: !prev[user.id] }))}>
-                                     {visibleKeys[user.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                                   </Button>
-                                   <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-slate-700" onClick={() => { navigator.clipboard.writeText(revealedKeys[user.id]); toast.success('Copiado!'); }}>
-                                     <Copy className="h-3 w-3" />
-                                   </Button>
-                                 </>
-                               ) : user.api_key ? (
-                                 // Key exists in DB but is hidden for security — show indicator
-                                 <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                                   <Key className="h-3 w-3" />
-                                   Gerada ✓
-                                 </span>
-                               ) : (
-                                 <span className="text-slate-400 text-xs">Não gerada</span>
-                               )}
-                               {/* Manual key entry */}
-                               <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-blue-600" title="Definir API Key manualmente" onClick={() => { setCustomKeyUser(user.id); setCustomKeyValue(''); }}>
-                                 <Pencil className="h-3 w-3" />
-                               </Button>
-                               {/* Auto-generate */}
-                               <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-amber-600" title="Gerar nova API Key automaticamente" disabled={generatingKeyFor === user.id} onClick={() => handleGenerateApiKey(user)}>
-                                 {generatingKeyFor === user.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Key className="h-3 w-3" />}
-                               </Button>
-                             </div>
-                           )}
-                         </td>
+                          <div className="flex items-center gap-1">
+                            {apiKey ? (
+                              <>
+                                <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-600 max-w-[120px] truncate block">
+                                  {apiKey}
+                                </code>
+                                <Button
+                                  variant="ghost" size="icon"
+                                  className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                                  onClick={() => { navigator.clipboard.writeText(apiKey); toast.success('Copiado!'); }}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </>
+                            ) : (
+                              <span className="text-slate-400 text-xs">Não gerada</span>
+                            )}
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-6 w-6 text-slate-400 hover:text-amber-600"
+                              title="Gerar nova API Key"
+                              disabled={generatingKeyFor === user.id}
+                              onClick={() => handleGenerateApiKey(user)}
+                            >
+                              {generatingKeyFor === user.id
+                                ? <RefreshCw className="h-3 w-3 animate-spin" />
+                                : <Key className="h-3 w-3" />
+                              }
+                            </Button>
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-center">
                           <Button
                             variant="ghost"

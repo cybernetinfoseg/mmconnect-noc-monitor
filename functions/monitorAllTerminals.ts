@@ -23,28 +23,79 @@ Deno.serve(async (req) => {
         const results = [];
 
         // Monitorar cada terminal em paralelo (máx 10 simultâneos)
+        const agora = new Date();
+
         const chunkSize = 10;
         for (let i = 0; i < terminals.length; i += chunkSize) {
             const chunk = terminals.slice(i, i + chunkSize);
             const chunkResults = await Promise.all(chunk.map(async (terminal) => {
                 try {
-                    const monitorResult = await base44.asServiceRole.functions.invoke('monitorTerminal', {
-                        terminalId: terminal.id
-                    });
-                    const status = monitorResult.data?.status;
+                    let status = terminal.status || 'offline';
 
-                    // If terminal went offline, trigger push notification
-                    if (status === 'offline') {
-                        await base44.asServiceRole.functions.invoke('pushNotify', {
-                            action: 'notify_offline',
-                            terminal_id: terminal.id,
-                            terminal_nome: terminal.nome,
-                            local: terminal.local || '',
-                            cliente: terminal.cliente_nome || terminal.cliente || '',
-                            owner_email: terminal.created_by || '',
-                        }).catch(() => {});
-                    } else if (status === 'online') {
-                        // Mark any open escalation alerts as resolved
+                    // Para terminais que usam API externa, fazer verificação activa
+                    if (terminal.tipo_conexao === 'api' && terminal.api_endpoint) {
+                        const monitorResult = await base44.asServiceRole.functions.invoke('monitorTerminal', {
+                            terminalId: terminal.id
+                        });
+                        status = monitorResult.data?.status || 'offline';
+                    } else {
+                        // Para todos os outros tipos (ip_local, ip_publico, dns, p2s):
+                        // O status depende EXCLUSIVAMENTE do agente local.
+                        // Se o agente não reportou há mais de AGENT_TIMEOUT_SECONDS → Offline.
+                        if (terminal.ultimo_ping) {
+                            const segundosSemPing = Math.floor((agora - new Date(terminal.ultimo_ping)) / 1000);
+                            if (segundosSemPing > AGENT_TIMEOUT_SECONDS) {
+                                status = 'offline';
+                                // Atualizar o terminal com o tempo real sem ping
+                                await base44.asServiceRole.entities.Terminal.update(terminal.id, {
+                                    status: 'offline',
+                                    segundos_sem_ping: segundosSemPing,
+                                    ultimo_check: agora.toISOString(),
+                                });
+
+                                // Verificar mudança de status no cache
+                                const cacheResults = await base44.asServiceRole.entities.StatusCache.filter({ terminal_id: terminal.id });
+                                const cache = cacheResults.length > 0 ? cacheResults[0] : null;
+                                if (cache && cache.ultimo_status === 'online') {
+                                    await base44.asServiceRole.entities.AlertIncident.create({
+                                        terminal_id: terminal.id,
+                                        terminal_nome: terminal.nome,
+                                        local: terminal.local,
+                                        cliente: terminal.cliente_nome,
+                                        tipo: 'offline',
+                                        timestamp: agora.toISOString(),
+                                        resolvido: false,
+                                        notificado: false,
+                                    });
+                                    await base44.asServiceRole.functions.invoke('pushNotify', {
+                                        action: 'notify_offline',
+                                        terminal_id: terminal.id,
+                                        terminal_nome: terminal.nome,
+                                        local: terminal.local || '',
+                                        cliente: terminal.cliente_nome || '',
+                                        owner_email: terminal.created_by || '',
+                                    }).catch(() => {});
+                                    await base44.asServiceRole.entities.StatusCache.update(cache.id, {
+                                        ultimo_status: 'offline',
+                                        atualizado_em: agora.toISOString(),
+                                    });
+                                }
+                            } else {
+                                // Agente está ativo, manter status conforme último reporte
+                                status = terminal.status || 'online';
+                            }
+                        } else {
+                            // Nunca recebeu ping → offline
+                            status = 'offline';
+                            await base44.asServiceRole.entities.Terminal.update(terminal.id, {
+                                status: 'offline',
+                                ultimo_check: agora.toISOString(),
+                            });
+                        }
+                    }
+
+                    // Resolver escalações se online
+                    if (status === 'online') {
                         const openAlerts = await base44.asServiceRole.entities.EscalationAlert.filter({
                             terminal_id: terminal.id,
                             resolvido: false,

@@ -106,7 +106,7 @@ export default function Terminais() {
       setDialogOpen(false);
       setEditingTerminal(null);
       setFormData({});
-      toast.success(isEdit ? 'Terminal atualizado' : 'Terminal criado');
+      toast.success(isEdit ? 'Terminal actualizado' : 'Terminal criado');
     },
     onError: (error) => toast.error(`Erro: ${error.message}`),
   });

@@ -95,19 +95,6 @@ export default function Administracao() {
     onError: () => toast.error('Erro ao enviar convite'),
   });
 
-  const handleGenerateApiKey = async (user) => {
-    setGeneratingKeyFor(user.id);
-    const res = await base44.functions.invoke('generateUserApiKey', { targetUserId: user.id });
-    setGeneratingKeyFor(null);
-    if (res.data?.api_key) {
-      setRevealedKeys(prev => ({ ...prev, [user.id]: res.data.api_key }));
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('API Key gerada!');
-    } else {
-      toast.error('Erro ao gerar API Key');
-    }
-  };
-
   const applyRoleDefaults = (role) => {
     setForm(prev => ({
       ...prev,

@@ -50,8 +50,8 @@ export default function Configuracoes() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-3 sm:p-6">
+      <div className="max-w-4xl mx-auto space-y-6 overflow-hidden">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-slate-900 rounded-xl">
             <Settings className="h-6 w-6 text-white" />

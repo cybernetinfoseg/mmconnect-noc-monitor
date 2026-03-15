@@ -123,16 +123,16 @@ Deno.serve(async (req) => {
             }
         }
 
-        // 7. Atualizar cache
+        // 7. Atualizar cache (usar statusEfetivo: warning → online para não perder histórico de transição)
         if (cache) {
             await base44.asServiceRole.entities.StatusCache.update(cache.id, {
-                ultimo_status: statusValido,
+                ultimo_status: statusEfetivo,
                 atualizado_em: agora,
             });
         } else {
             await base44.asServiceRole.entities.StatusCache.create({
                 terminal_id,
-                ultimo_status: statusValido,
+                ultimo_status: statusEfetivo,
                 atualizado_em: agora,
             });
         }

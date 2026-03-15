@@ -32,7 +32,7 @@ export default function KPICard({ title, value, icon: Icon, color, trend, trendV
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'relative overflow-hidden rounded-2xl border bg-gradient-to-br p-6',
+        'relative overflow-hidden rounded-2xl border bg-gradient-to-br p-3 sm:p-6',
         'backdrop-blur-sm transition-all duration-300 hover:shadow-lg',
         colorClasses[color] || colorClasses.blue
       )}

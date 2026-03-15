@@ -61,12 +61,33 @@ export default function Administracao() {
   const approvedUsers = users.filter(u => u.role === 'admin' || u.aprovado);
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.User.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const u = users.find(u => u.id === id);
+      
+      // Atualiza usuário
+      await base44.entities.User.update(id, data);
+      
+      // Envia email de aprovação
+      if (u?.email && u?.nome) {
+        try {
+          await base44.functions.invoke('notifyUserApproved', {
+            email: u.email,
+            nome: u.nome,
+            role: data.role
+          });
+        } catch (error) {
+          console.error('Erro ao enviar email de aprovação:', error);
+          // Continua mesmo se email falhar
+        }
+      }
+      
+      return { id, data };
+    },
     onSuccess: (_, { id, data }) => {
       const u = users.find(u => u.id === id);
       logAudit('permissao_atualizada', id, `Utilizador ${u?.email || id} aprovado com role "${data.role}"`);
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Utilizador aprovado!');
+      toast.success('Utilizador aprovado e email enviado!');
     },
     onError: () => toast.error('Erro ao aprovar utilizador'),
   });

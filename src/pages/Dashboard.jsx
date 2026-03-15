@@ -407,7 +407,7 @@ export default function Dashboard() {
                   <span>Terminais</span>
                   <span className="text-xs font-normal text-emerald-600 flex items-center gap-1">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                    Tempo Real ({(refreshInterval / 1000).toFixed(0)}s)
+                    Tempo Real ({refreshInterval >= 60000 ? (refreshInterval / 60000).toFixed(0) + 'm' : (refreshInterval / 1000).toFixed(0) + 's'})
                   </span>
                 </CardTitle>
               </CardHeader>

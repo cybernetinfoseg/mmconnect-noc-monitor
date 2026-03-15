@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
         const cacheResults = await base44.asServiceRole.entities.StatusCache.filter({ terminal_id });
         const cache = cacheResults.length > 0 ? cacheResults[0] : null;
 
-        if (!emManutencao && cache && cache.ultimo_status === 'online' && statusValido === 'offline') {
+        if (!emManutencao && cache && cache.ultimo_status === 'online' && statusEfetivo === 'offline') {
             await base44.asServiceRole.entities.AlertIncident.create({
                 terminal_id,
                 terminal_nome: terminal.nome,

@@ -308,7 +308,6 @@ export default function Administracao() {
                     <th className="text-left px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Páginas</th>
                     <th className="text-center px-4 py-3 font-semibold text-slate-600">Terminais</th>
                     <th className="text-left px-4 py-3 font-semibold text-slate-600 hidden sm:table-cell">Permissões</th>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">API Key</th>
                     <th className="text-center px-4 py-3 font-semibold text-slate-600">Ações</th>
                   </tr>
                 </thead>

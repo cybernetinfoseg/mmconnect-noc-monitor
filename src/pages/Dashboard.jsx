@@ -115,7 +115,7 @@ export default function Dashboard() {
   const { data: allAlerts = [] } = useQuery({
     queryKey: ['alerts'],
     queryFn: () => base44.entities.AlertIncident.list('-created_date', 50),
-    refetchInterval: 5000,
+    refetchInterval: refreshInterval,
   });
 
   const alerts = useMemo(() => {

@@ -82,7 +82,7 @@ export default function Incidents() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['incidents']);
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
     }
   });
 

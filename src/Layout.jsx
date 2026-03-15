@@ -70,6 +70,18 @@ export default function Layout({ children, currentPageName }) {
     return children;
   }
 
+  // Show spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Not logged in → redirectToLogin already called, show nothing
+  if (!authUser) return null;
+
   // Admins are always approved; non-admins must have aprovado === true
   const isPending = currentUser && currentUser.role !== 'admin' && !currentUser.aprovado;
   if (isPending) {

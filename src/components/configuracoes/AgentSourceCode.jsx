@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const AGENT_CODE = `# core_agent.py — Agente Local NOC Monitor
-# Instalacao: C:\Program Files\Base44Agent\core_agent.py
-# Config:     C:\ProgramData\Base44Agent\config.json
-# Logs:       C:\ProgramData\Base44Agent\agent.log
+# Instalacao: C:\\Program Files\\Base44Agent\\core_agent.py
+# Config:     C:\\ProgramData\\Base44Agent\\config.json
+# Logs:       C:\\ProgramData\\Base44Agent\\agent.log
 # Comunicacao protegida por X-Api-Key + X-App-Id obrigatorios em todos os pedidos.
 import os, sys, json, time, socket, logging
 from logging.handlers import RotatingFileHandler

@@ -154,64 +154,67 @@ export default function TVMode() {
     <div className="min-h-screen bg-slate-900 text-white overflow-hidden">
       {/* Header */}
       <div className={cn(
-        "px-4 sm:px-8 py-3 sm:py-4 transition-colors duration-500",
+        "px-3 sm:px-8 py-2 sm:py-4 transition-colors duration-500",
         hasActiveAlerts ? "bg-red-900/50" : "bg-slate-800/50"
       )}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className={cn(
-                "p-3 rounded-xl",
-                hasActiveAlerts ? "bg-red-500/20" : "bg-emerald-500/20"
-              )}>
-                <Activity className={cn(
-                  "h-8 w-8",
-                  hasActiveAlerts ? "text-red-400" : "text-emerald-400"
-                )} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">NOC Monitor</h1>
-                <p className="text-sm text-slate-400">
-                  Terminais Biométricos • Modo TV
-                  {(localFilter || clienteFilter) && (
-                    <span className="ml-2 text-emerald-400">
-                      {[localFilter, clienteFilter].filter(Boolean).join(' • ')}
-                    </span>
-                  )}
-                </p>
-              </div>
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className={cn(
+              "p-2 sm:p-3 rounded-lg sm:rounded-xl flex-shrink-0",
+              hasActiveAlerts ? "bg-red-500/20" : "bg-emerald-500/20"
+            )}>
+              <Activity className={cn(
+                "h-5 w-5 sm:h-8 sm:w-8",
+                hasActiveAlerts ? "text-red-400" : "text-emerald-400"
+              )} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">NOC Monitor</h1>
+              <p className="text-xs sm:text-sm text-slate-400 truncate">
+                Terminais{(localFilter || clienteFilter) && (
+                  <span className="hidden sm:inline ml-2">
+                    {[localFilter, clienteFilter].filter(Boolean).join(' • ')}
+                  </span>
+                )}
+              </p>
             </div>
             
-            {/* Live indicator - pulse only, no text */}
-            <div className="flex items-center px-2">
-              <span className="relative flex h-2.5 w-2.5">
+            {/* Live indicator */}
+            <div className="flex items-center px-1 flex-shrink-0">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm"
             >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
-              Atualizar
+              <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4", isRefreshing && "animate-spin")} />
+              <span className="hidden sm:inline ml-1">Atualizar</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowSettings(true)}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0"
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
-            <LiveClock />
+            <div className="hidden sm:block">
+              <LiveClock />
+            </div>
           </div>
+        </div>
+        {/* Mobile clock */}
+        <div className="sm:hidden mt-2 text-right">
+          <LiveClock />
         </div>
       </div>
 

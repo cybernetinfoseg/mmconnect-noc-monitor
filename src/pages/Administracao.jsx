@@ -319,7 +319,6 @@ export default function Administracao() {
                   ) : users.map(user => {
                     const count = terminalCountByUser[user.email] || 0;
                     const limit = user.limite_terminais ?? 0;
-                    const apiKey = revealedKeys[user.id] || user.api_key;
                     return (
                       <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-slate-900 max-w-[160px] truncate">{user.email}</td>

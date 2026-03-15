@@ -9,10 +9,10 @@ import ContactAdminForm from './ContactAdminForm';
 
 export default function PendingApproval({ user }) {
   const [activeTab, setActiveTab] = useState('profile');
-  const [editMode, setEditMode] = useState(false);
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   const handleProfileSuccess = () => {
-    setEditMode(false);
+    setFormSubmitted(true);
   };
 
   return (
@@ -58,72 +58,92 @@ export default function PendingApproval({ user }) {
         </div>
 
         {/* Tabs - Profile & Contact */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <Tabs value={activeTab} onValueChange={(tab) => {
+          if (tab === 'contact' && !formSubmitted) return; // Bloqueia acesso a Contact sem preencher
+          setActiveTab(tab);
+        }} className="mb-6">
           <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
-            <TabsTrigger value="contact">Contato com Admin</TabsTrigger>
+            <TabsTrigger value="profile">Preencher Solicitação</TabsTrigger>
+            <TabsTrigger value="contact" disabled={!formSubmitted}>Contato com Admin</TabsTrigger>
           </TabsList>
 
-          {/* Profile Tab */}
+          {/* Profile Tab - Always shows form */}
           <TabsContent value="profile" className="space-y-4">
-            {!editMode ? (
-              // View Mode
+            {!formSubmitted ? (
+              // Form Mode
               <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-base">Minhas Informações</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditMode(true)}
-                  >
-                    ✏️ Editar
-                  </Button>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                    Complete suas Informações
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 mt-1">Preencha todos os campos para solicitar acesso ao sistema</p>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 text-sm">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium">Primeiro Nome</p>
-                        <p className="text-slate-900 font-medium">{user?.nome || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium">Sobrenome</p>
-                        <p className="text-slate-900 font-medium">{user?.sobrenome || '—'}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 font-medium">Email</p>
-                      <p className="text-slate-900 font-medium">{user?.email || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 font-medium">Telefone</p>
-                      <p className="text-slate-900 font-medium">
-                        {user?.pais_telefone && user?.telefone 
-                          ? `${user.pais_telefone} ${user.telefone}`
-                          : '—'
-                        }
-                      </p>
-                    </div>
-                    {user?.motivo_acesso && (
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium">Motivo do Acesso</p>
-                        <p className="text-slate-900 text-sm">{user.motivo_acesso}</p>
-                      </div>
-                    )}
-                  </div>
+                  <UserProfileForm user={user} onSuccess={handleProfileSuccess} isEditMode={false} />
                 </CardContent>
               </Card>
             ) : (
-              // Edit Mode
-              <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-                <CardHeader>
-                  <CardTitle className="text-base">✏️ Editar Perfil</CardTitle>
-                  <p className="text-xs text-slate-500 mt-1">Altere suas informações e salve as mudanças</p>
-                </CardHeader>
-                <CardContent>
-                  <UserProfileForm user={user} onSuccess={handleProfileSuccess} isEditMode={true} />
-                </CardContent>
-              </Card>
+              // View Mode - After submission
+              <div className="space-y-4">
+                <Card className="bg-emerald-50 border-emerald-200">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-emerald-900">Solicitação Enviada!</p>
+                        <p className="text-xs text-emerald-700">Seu perfil foi preenchido com sucesso</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-base">Suas Informações</CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFormSubmitted(false)}
+                    >
+                      ✏️ Editar
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 text-sm">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-slate-500 font-medium">Primeiro Nome</p>
+                          <p className="text-slate-900 font-medium">{user?.nome || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 font-medium">Sobrenome</p>
+                          <p className="text-slate-900 font-medium">{user?.sobrenome || '—'}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 font-medium">Email</p>
+                        <p className="text-slate-900 font-medium">{user?.email || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 font-medium">Telefone</p>
+                        <p className="text-slate-900 font-medium">
+                          {user?.pais_telefone && user?.telefone 
+                            ? `${user.pais_telefone} ${user.telefone}`
+                            : '—'
+                          }
+                        </p>
+                      </div>
+                      {user?.motivo_acesso && (
+                        <div>
+                          <p className="text-xs text-slate-500 font-medium">Motivo do Acesso</p>
+                          <p className="text-slate-900 text-sm">{user.motivo_acesso}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </TabsContent>
 

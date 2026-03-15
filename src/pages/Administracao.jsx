@@ -94,6 +94,17 @@ export default function Administracao() {
     onError: () => toast.error('Erro ao atualizar permissões'),
   });
 
+  // Fetch system config
+  const { data: monitorConfig = [] } = useQuery({
+    queryKey: ['monitor-config-admin'],
+    queryFn: () => base44.entities.MonitorConfig.list(),
+  });
+
+  const { data: alertRules = [] } = useQuery({
+    queryKey: ['alert-rules-admin'],
+    queryFn: () => base44.entities.AlertRule.list(),
+  });
+
   const logAudit = (acao, entidade_id, descricao) =>
     base44.functions.invoke('auditLog', { acao, entidade: 'User', entidade_id, descricao }).catch(() => {});
 

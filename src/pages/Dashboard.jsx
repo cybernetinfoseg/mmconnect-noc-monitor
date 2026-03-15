@@ -251,7 +251,7 @@ export default function Dashboard() {
               { key: 'terminalStatus', label: 'Status de Terminais' },
               { key: 'alertRules', label: 'Regras de Alerta' },
               { key: 'recentAudit', label: 'Auditoria Recente' },
-              ...(isAdmin ? [{ key: 'apiKeyStats', label: 'API Keys' }] : []),
+
             ].map(({ key, label }) => (
               <label key={key} className="flex items-center gap-2 cursor-pointer">
                 <Switch

@@ -105,6 +105,49 @@ export default function Configuracoes() {
           </div>
         </div>
 
+        {/* Monitor Sync Configuration */}
+        {perms.isAdmin && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-blue-600" />
+                  Intervalo de Sincronização
+                </CardTitle>
+                <CardDescription>
+                  Configure a frequência de atualização dos dados em Dashboard, Terminais e Modo TV.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sync-interval" className="text-sm text-slate-700">Intervalo (minutos)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="sync-interval"
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={refreshInterval}
+                      onChange={(e) => setRefreshInterval(e.target.value)}
+                      className="max-w-xs"
+                    />
+                    <span className="flex items-center text-sm text-slate-500">minuto(s)</span>
+                  </div>
+                  <p className="text-xs text-slate-500">Padrão: 5 minutos. Quanto menor, mais frequente a atualização (maior uso de banda).</p>
+                </div>
+                <Button
+                  onClick={handleSaveInterval}
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Salvando...' : 'Salvar Configuração'}
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Local Agent Setup */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">

@@ -38,10 +38,52 @@ const APP_ID = '697aa46c9998c30665e2e19a';
 export default function Configuracoes() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [monitorConfig, setMonitorConfig] = useState(null);
+  const [refreshInterval, setRefreshInterval] = useState('5');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    base44.entities.MonitorConfig.list()
+      .then((configs) => {
+        if (configs.length > 0) {
+          setMonitorConfig(configs[0]);
+          setRefreshInterval(String(configs[0].intervalo_sync_minutos || 5));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveInterval = async () => {
+    try {
+      setSaving(true);
+      const interval = Math.max(1, parseInt(refreshInterval) || 5);
+      
+      if (monitorConfig?.id) {
+        await base44.entities.MonitorConfig.update(monitorConfig.id, {
+          intervalo_sync_minutos: interval
+        });
+      } else {
+        await base44.entities.MonitorConfig.create({
+          tipo: 'api_externa',
+          intervalo_sync_minutos: interval,
+          ativo: true
+        });
+      }
+      
+      toast.success('Intervalo de sincronização atualizado!');
+      // Reload to refresh all pages
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      toast.error('Erro ao salvar configuração');
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const perms = resolvePermissions(currentUser);
 

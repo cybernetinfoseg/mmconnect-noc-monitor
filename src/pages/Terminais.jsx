@@ -433,28 +433,56 @@ export default function Terminais() {
               </div>
             </div>
 
-            {(formData.tipo_conexao === 'ip_local' || formData.tipo_conexao === 'p2s') && (
+            {formData.tipo_conexao === 'ip_local' && (
               <div className="space-y-2">
-                <Label>IP Local</Label>
+                <Label>IP Local <span className="text-red-500">*</span></Label>
                 <Input value={formData.ip_local || ''} onChange={(e) => setFormData({...formData, ip_local: e.target.value})} placeholder="192.168.1.100" />
+                <p className="text-xs text-slate-500">Endereço IP do terminal na rede local (ex: 192.168.1.100)</p>
               </div>
             )}
             {formData.tipo_conexao === 'ip_publico' && (
               <div className="space-y-2">
-                <Label>IP Público</Label>
+                <Label>IP Público <span className="text-red-500">*</span></Label>
                 <Input value={formData.ip_publico || ''} onChange={(e) => setFormData({...formData, ip_publico: e.target.value})} placeholder="203.0.113.1" />
+                <p className="text-xs text-slate-500">Endereço IP público/externo do terminal ou do router com redirecionamento de porta</p>
               </div>
             )}
             {formData.tipo_conexao === 'dns' && (
               <div className="space-y-2">
-                <Label>DNS/Hostname</Label>
+                <Label>DNS / Hostname <span className="text-red-500">*</span></Label>
                 <Input value={formData.dns || ''} onChange={(e) => setFormData({...formData, dns: e.target.value})} placeholder="meuhost.no-ip.org" />
+                <p className="text-xs text-slate-500">Nome de domínio dinâmico (ex: No-IP, DynDNS) que aponta para o terminal</p>
+              </div>
+            )}
+            {formData.tipo_conexao === 'p2s' && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>IP Local (rede VPN) <span className="text-red-500">*</span></Label>
+                  <Input value={formData.ip_local || ''} onChange={(e) => setFormData({...formData, ip_local: e.target.value})} placeholder="10.8.0.10" />
+                  <p className="text-xs text-slate-500">IP do terminal dentro do túnel VPN P2S (ex: 10.8.0.x atribuído pelo servidor VPN)</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Configuração P2S (JSON)</Label>
+                  <Textarea
+                    value={formData.p2s_config || ''}
+                    onChange={(e) => setFormData({...formData, p2s_config: e.target.value})}
+                    rows={4}
+                    placeholder={`{\n  "server": "vpn.empresa.com",\n  "port": 1194,\n  "protocol": "udp"\n}`}
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-xs text-slate-500">Opcional. Informações de referência da ligação VPN em formato JSON (não é usada para autenticação — apenas documentação)</p>
+                </div>
               </div>
             )}
             {formData.tipo_conexao === 'api' && (
               <div className="space-y-2">
-                <Label>API Endpoint</Label>
-                <Input value={formData.api_endpoint || ''} onChange={(e) => setFormData({...formData, api_endpoint: e.target.value})} placeholder="https://api.exemplo.com/terminal/status" />
+                <Label>Endpoint da API <span className="text-red-500">*</span></Label>
+                <Input
+                  value={formData.api_endpoint || ''}
+                  onChange={(e) => setFormData({...formData, api_endpoint: e.target.value})}
+                  placeholder="https://api.exemplo.com/terminal/ping"
+                />
+                <p className="text-xs text-slate-500">URL HTTP/HTTPS que o Agente Local irá chamar (GET) para verificar se o terminal está online. Deve retornar HTTP 200 quando operacional.</p>
               </div>
             )}
 

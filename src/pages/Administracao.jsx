@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, UserPlus, Pencil, X, Check, Clock, UserCheck, Settings, Activity, AlertCircle } from 'lucide-react';
+import { Shield, UserPlus, Pencil, X, Check, Clock, UserCheck, Settings, Activity, AlertCircle, Mail, Trash2, Ban } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,6 +90,49 @@ export default function Administracao() {
       toast.success('Utilizador aprovado e email enviado!');
     },
     onError: () => toast.error('Erro ao aprovar utilizador'),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (id) => {
+      const u = users.find(u => u.id === id);
+      
+      // Envia email de recusa
+      if (u?.email && u?.nome) {
+        try {
+          await base44.functions.invoke('sendContactMessage', {
+            from_email: 'noreply@nocmonitor.com',
+            from_name: 'NOC Monitor',
+            to_email: u.email,
+            subject: 'Solicitação de Acesso Recusada',
+            body: `Olá ${u.nome},\n\nSua solicitação de acesso ao NOC Monitor foi recusada.\n\nSe tiver dúvidas, entre em contato com o administrador.`,
+          }).catch(() => {});
+        } catch (error) {
+          console.error('Erro ao enviar email de recusa:', error);
+        }
+      }
+      
+      // Deleta usuário
+      await base44.entities.User.delete(id);
+      return id;
+    },
+    onSuccess: (id) => {
+      const u = users.find(u => u.id === id);
+      logAudit('usuario_recusado', id, `Solicitação de ${u?.email || id} recusada e usuário excluído`);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Solicitação recusada e usuário removido');
+    },
+    onError: () => toast.error('Erro ao recusar solicitação'),
+  });
+
+  const deletePendingMutation = useMutation({
+    mutationFn: (id) => base44.entities.User.delete(id),
+    onSuccess: (_, id) => {
+      const u = users.find(u => u.id === id);
+      logAudit('usuario_excluido', id, `Usuário pendente ${u?.email || id} excluído`);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Usuário removido');
+    },
+    onError: () => toast.error('Erro ao remover usuário'),
   });
 
   // Count terminals per user
@@ -282,12 +325,12 @@ export default function Administracao() {
             </CardHeader>
             <CardContent className="space-y-2">
               {pendingUsers.map(user => (
-                <div key={user.id} className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-amber-100">
-                  <div>
+                <div key={user.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white rounded-lg px-4 py-3 border border-amber-100 gap-3">
+                  <div className="flex-1">
                     <p className="font-medium text-slate-900 text-sm">{user.email}</p>
                     <p className="text-xs text-slate-400">Aguardando aprovação</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
                     <Select
                       defaultValue="viewer"
                       onValueChange={(role) => approveMutation.mutate({
@@ -295,7 +338,7 @@ export default function Administracao() {
                         data: { aprovado: true, role, paginas_permitidas: [] }
                       })}
                     >
-                      <SelectTrigger className="w-[150px] h-8 text-xs">
+                      <SelectTrigger className="w-full sm:w-[120px] h-8 text-xs">
                         <SelectValue placeholder="Aprovar como..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -315,6 +358,27 @@ export default function Administracao() {
                     >
                       <UserCheck className="h-3.5 w-3.5" />
                       Aprovar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 h-8 text-red-600 hover:bg-red-50 border-red-200"
+                      onClick={() => rejectMutation.mutate(user.id)}
+                      disabled={rejectMutation.isPending}
+                      title="Recusar e enviar email"
+                    >
+                      <Ban className="h-3.5 w-3.5" />
+                      Recusar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 h-8 text-slate-500 hover:text-slate-700"
+                      onClick={() => deletePendingMutation.mutate(user.id)}
+                      disabled={deletePendingMutation.isPending}
+                      title="Remover sem enviar email"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>

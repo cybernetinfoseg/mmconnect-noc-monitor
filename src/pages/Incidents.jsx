@@ -102,8 +102,20 @@ export default function Incidents() {
     return { active, resolved, today };
   }, [incidents]);
 
-  const handleResolve = (incident) => {
-    resolveMutation.mutate(incident);
+  const handleResolve = async (incident) => {
+    setCheckingId(incident.id);
+    setCheckError(null);
+    try {
+      const terminal = await base44.entities.Terminal.get(incident.terminal_id);
+      if (!terminal || terminal.status !== 'online') {
+        setCheckError(incident.id);
+        setTimeout(() => setCheckError(null), 4000);
+        return;
+      }
+      resolveMutation.mutate(incident);
+    } finally {
+      setCheckingId(null);
+    }
   };
 
   return (

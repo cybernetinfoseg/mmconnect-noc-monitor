@@ -56,6 +56,11 @@ export default function Incidents() {
     enabled: !!currentUser,
   });
 
+  const handleRefresh = () => {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ['terminals-incidents-user'] });
+  };
+
   const incidents = useMemo(() => {
     if (!currentUser) return [];
     if (canSeeAll) return allIncidents;

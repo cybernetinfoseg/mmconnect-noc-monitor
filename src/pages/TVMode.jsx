@@ -3,16 +3,16 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { resolvePermissions } from '../components/auth/usePermissions';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Monitor, 
-  Wifi, 
-  WifiOff, 
+import {
+  Monitor,
+  Wifi,
+  WifiOff,
   Activity,
   AlertTriangle,
   CheckCircle,
   RefreshCw,
-  Settings
-} from 'lucide-react';
+  Settings } from
+'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatusBadge from '../components/dashboard/StatusBadge';
 import LiveClock from '../components/dashboard/LiveClock';
@@ -29,7 +29,7 @@ const DEFAULT_SETTINGS = {
   showLastPing: true,
   showLatencia: false,
   showKPIs: true,
-  showAlertBanner: true,
+  showAlertBanner: true
 };
 
 export default function TVMode() {
@@ -48,7 +48,7 @@ export default function TVMode() {
     try {
       const saved = localStorage.getItem('tv-settings');
       return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-    } catch (e) { return DEFAULT_SETTINGS; }
+    } catch (e) {return DEFAULT_SETTINGS;}
   });
 
   const handleSettingsChange = (newSettings) => {
@@ -61,7 +61,7 @@ export default function TVMode() {
     try {
       const saved = localStorage.getItem('dashboard-filters');
       return saved ? JSON.parse(saved) : {};
-    } catch (e) { return {}; }
+    } catch (e) {return {};}
   });
 
   useEffect(() => {
@@ -85,13 +85,13 @@ export default function TVMode() {
     queryKey: ['terminals-tv'],
     queryFn: () => base44.entities.Terminal.filter({ ativo: true }),
     refetchInterval: 5000,
-    enabled: !!currentUser,
+    enabled: !!currentUser
   });
 
   const allTerminals = useMemo(() => {
     if (!currentUser) return [];
     if (canSeeAll) return allTerminalsRaw;
-    return allTerminalsRaw.filter(t => t.created_by === currentUser.email);
+    return allTerminalsRaw.filter((t) => t.created_by === currentUser.email);
   }, [allTerminalsRaw, currentUser, canSeeAll]);
 
   // Manual refresh
@@ -109,12 +109,12 @@ export default function TVMode() {
       '-created_date',
       10
     ),
-    refetchInterval: 10000,
+    refetchInterval: 10000
   });
 
   // Apply filters
   const terminals = useMemo(() => {
-    return allTerminals.filter(t => {
+    return allTerminals.filter((t) => {
       if (localFilter && t.local !== localFilter) return false;
       if (clienteFilter && t.cliente_nome !== clienteFilter && t.cliente !== clienteFilter) return false;
       if (statusFilterMirror && t.status !== statusFilterMirror) return false;
@@ -135,8 +135,8 @@ export default function TVMode() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const online = terminals.filter(t => t.status === 'online').length;
-    const offline = terminals.filter(t => t.status === 'offline').length;
+    const online = terminals.filter((t) => t.status === 'online').length;
+    const offline = terminals.filter((t) => t.status === 'offline').length;
     return { total: terminals.length, online, offline };
   }, [terminals]);
 
@@ -144,11 +144,11 @@ export default function TVMode() {
     if (!seconds || seconds < 0) return '—';
     if (seconds < 60) return `${Math.floor(seconds)}s`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
-    return `${Math.floor(seconds / 86400)}d ${Math.floor((seconds % 86400) / 3600)}h`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ${Math.floor(seconds % 3600 / 60)}m`;
+    return `${Math.floor(seconds / 86400)}d ${Math.floor(seconds % 86400 / 3600)}h`;
   };
 
-  const hasActiveAlerts = alerts.filter(a => !a.resolvido).length > 0;
+  const hasActiveAlerts = alerts.filter((a) => !a.resolvido).length > 0;
 
   return (
     <div className="min-h-screen bg-slate-900 text-white overflow-hidden">
@@ -171,19 +171,19 @@ export default function TVMode() {
             <div className="min-w-0">
               <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">NOC Monitor</h1>
               <p className="text-xs sm:text-sm text-slate-400 truncate">
-                Terminais{(localFilter || clienteFilter) && (
-                  <span className="hidden sm:inline ml-2">
+                Terminais{(localFilter || clienteFilter) &&
+                <span className="hidden sm:inline ml-2">
                     {[localFilter, clienteFilter].filter(Boolean).join(' • ')}
                   </span>
-                )}
+                }
               </p>
             </div>
             
             {/* Live indicator */}
             <div className="flex items-center px-1 flex-shrink-0">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                
+                
               </span>
             </div>
           </div>
@@ -194,8 +194,8 @@ export default function TVMode() {
               size="sm"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm"
-            >
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm">
+
               <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4", isRefreshing && "animate-spin")} />
               <span className="hidden sm:inline ml-1">Atualizar</span>
             </Button>
@@ -203,8 +203,8 @@ export default function TVMode() {
               variant="outline"
               size="sm"
               onClick={() => setShowSettings(true)}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0"
-            >
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0">
+
               <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
             <div className="hidden sm:block">
@@ -219,8 +219,8 @@ export default function TVMode() {
       </div>
 
       {/* KPI Strip */}
-      {tvSettings.showKPIs && (
-        <div className="px-4 sm:px-8 py-4 bg-slate-800/30 border-y border-slate-700/50">
+      {tvSettings.showKPIs &&
+      <div className="px-4 sm:px-8 py-4 bg-slate-800/30 border-y border-slate-700/50">
           <div className="flex items-center justify-center gap-6 sm:gap-16 flex-wrap">
             <motion.div className="flex items-center gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Monitor className="h-8 w-8 text-blue-400" />
@@ -244,78 +244,78 @@ export default function TVMode() {
               </div>
             </motion.div>
             <motion.div className="flex items-center gap-4 pl-8 border-l border-slate-700" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              {stats.offline === 0 ? (
-                <><CheckCircle className="h-8 w-8 text-emerald-400" /><div><p className="text-xs text-slate-400 uppercase tracking-wider">Status</p><p className="text-lg font-bold text-emerald-400">OPERACIONAL</p></div></>
-              ) : (
-                <><AlertTriangle className="h-8 w-8 text-red-400 animate-pulse" /><div><p className="text-xs text-slate-400 uppercase tracking-wider">Status</p><p className="text-lg font-bold text-red-400">ALERTA</p></div></>
-              )}
+              {stats.offline === 0 ?
+            <><CheckCircle className="h-8 w-8 text-emerald-400" /><div><p className="text-xs text-slate-400 uppercase tracking-wider">Status</p><p className="text-lg font-bold text-emerald-400">OPERACIONAL</p></div></> :
+
+            <><AlertTriangle className="h-8 w-8 text-red-400 animate-pulse" /><div><p className="text-xs text-slate-400 uppercase tracking-wider">Status</p><p className="text-lg font-bold text-red-400">ALERTA</p></div></>
+            }
             </motion.div>
           </div>
         </div>
-      )}
+      }
 
       {/* Main Content */}
       <div className="p-4 sm:p-8">
         {/* Alert Banner */}
-        {tvSettings.showAlertBanner && (
-          <AnimatePresence>
-            {hasActiveAlerts && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mb-6"
-              >
+        {tvSettings.showAlertBanner &&
+        <AnimatePresence>
+            {hasActiveAlerts &&
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-6">
+
                 <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4">
                   <div className="flex items-center gap-4">
                     <AlertTriangle className="h-6 w-6 text-red-400 animate-pulse" />
                     <div className="flex-1">
                       <p className="text-red-400 font-semibold">Incidentes Ativos</p>
                       <p className="text-sm text-red-400/70">
-                        {alerts.filter(a => !a.resolvido).length} terminal(is) offline requerem atenção
+                        {alerts.filter((a) => !a.resolvido).length} terminal(is) offline requerem atenção
                       </p>
                     </div>
                   </div>
                 </div>
               </motion.div>
-            )}
+          }
           </AnimatePresence>
-        )}
+        }
 
         {/* Terminals Grid */}
         {(() => {
           const cols = tvSettings.gridCols;
-          const gridClass = cols === 'auto'
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
-            : `grid-cols-${cols}`;
+          const gridClass = cols === 'auto' ?
+          'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' :
+          `grid-cols-${cols}`;
           const cardPad = tvSettings.cardSize === 'sm' ? 'p-3' : tvSettings.cardSize === 'lg' ? 'p-7' : 'p-5';
           const titleSize = tvSettings.cardSize === 'sm' ? 'text-base' : tvSettings.cardSize === 'lg' ? 'text-2xl' : 'text-lg';
 
           return (
             <div className={cn('grid gap-3 sm:gap-4', gridClass)}>
               <AnimatePresence mode="popLayout">
-                {sortedTerminals.map((terminal, index) => (
+                {sortedTerminals.map((terminal, index) =>
+                <motion.div
+                  key={terminal.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: index * 0.02 }}
+                  className={cn(
+                    "relative overflow-hidden rounded-2xl transition-all duration-300",
+                    cardPad,
+                    terminal.status === 'offline' ?
+                    "bg-red-500/10 border border-red-500/30" :
+                    "bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50"
+                  )}>
+
+                    {terminal.status === 'offline' &&
                   <motion.div
-                    key={terminal.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.02 }}
-                     className={cn(
-                      "relative overflow-hidden rounded-2xl transition-all duration-300",
-                      cardPad,
-                      terminal.status === 'offline'
-                        ? "bg-red-500/10 border border-red-500/30"
-                        : "bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50"
-                    )}
-                  >
-                    {terminal.status === 'offline' && (
-                      <motion.div
-                        className="absolute inset-0 bg-red-500/5"
-                        animate={{ opacity: [0.5, 0, 0.5] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
-                    )}
+                    className="absolute inset-0 bg-red-500/5"
+                    animate={{ opacity: [0.5, 0, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }} />
+
+                  }
                     <div className="relative">
                       <div className="flex items-start justify-between mb-3">
                         <h3 className={cn("font-bold text-white truncate flex-1 mr-2", titleSize)}>
@@ -324,39 +324,39 @@ export default function TVMode() {
                         <StatusBadge status={terminal.status} />
                       </div>
                       <div className="space-y-1.5 text-sm">
-                        {tvSettings.showLocal !== false && (
-                          <p className="text-slate-400 truncate">
+                        {tvSettings.showLocal !== false &&
+                      <p className="text-slate-400 truncate">
                             <span className="text-slate-500">Local:</span> {terminal.local}
                           </p>
-                        )}
-                        {tvSettings.showCliente !== false && (
-                          <p className="text-slate-400 truncate">
+                      }
+                        {tvSettings.showCliente !== false &&
+                      <p className="text-slate-400 truncate">
                             <span className="text-slate-500">Cliente:</span> {terminal.cliente_nome || terminal.cliente}
                           </p>
-                        )}
-                        {tvSettings.showLatencia && terminal.latencia_ms && (
-                          <p className="text-slate-400 truncate">
+                      }
+                        {tvSettings.showLatencia && terminal.latencia_ms &&
+                      <p className="text-slate-400 truncate">
                             <span className="text-slate-500">Latência:</span> {terminal.latencia_ms}ms
                           </p>
-                        )}
+                      }
                       </div>
-                      {tvSettings.showLastPing !== false && (
-                        <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-between">
+                      {tvSettings.showLastPing !== false &&
+                    <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-between">
                           <span className="text-xs text-slate-500">Último ping</span>
                           <span className={cn(
-                            "text-sm font-mono",
-                            terminal.status === 'offline' ? "text-red-400 font-semibold" : "text-slate-400"
-                          )}>
+                        "text-sm font-mono",
+                        terminal.status === 'offline' ? "text-red-400 font-semibold" : "text-slate-400"
+                      )}>
                             {formatTimeSince(terminal.segundos_sem_ping)}
                           </span>
                         </div>
-                      )}
+                    }
                     </div>
                   </motion.div>
-                ))}
+                )}
               </AnimatePresence>
-            </div>
-          );
+            </div>);
+
         })()}
 
         {/* Footer */}
@@ -366,13 +366,13 @@ export default function TVMode() {
       </div>
 
       {/* TV Settings Panel */}
-      {showSettings && (
-        <TVSettingsPanel
-          settings={tvSettings}
-          onChange={handleSettingsChange}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
-    </div>
-  );
+      {showSettings &&
+      <TVSettingsPanel
+        settings={tvSettings}
+        onChange={handleSettingsChange}
+        onClose={() => setShowSettings(false)} />
+
+      }
+    </div>);
+
 }

@@ -93,11 +93,11 @@ export default function TVMode() {
   const clienteFilter = urlParams.get('cliente') || mirrorFilters.cliente || null;
   const statusFilterMirror = mirrorFilters.status || null;
 
-  // Fetch terminals with auto-refresh every 5 seconds
+  // Fetch terminals with auto-refresh based on config
   const { data: allTerminalsRaw = [], refetch } = useQuery({
     queryKey: ['terminals-tv'],
     queryFn: () => base44.entities.Terminal.filter({ ativo: true }),
-    refetchInterval: 5000,
+    refetchInterval: refreshInterval,
     enabled: !!currentUser
   });
 

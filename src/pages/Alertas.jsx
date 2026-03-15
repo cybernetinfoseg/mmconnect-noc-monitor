@@ -78,17 +78,17 @@ export default function Alertas() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Bell className="h-6 w-6 text-orange-600" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-orange-100 rounded-xl shrink-0">
+              <Bell className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Alertas</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Alertas</h1>
               <p className="text-sm text-slate-500">{activeRules} regra(s) ativa(s)</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <BrowserNotificationToggle />
             {perms.pode_configurar_alertas && (
               <Button onClick={handleNew} className="bg-slate-900 hover:bg-slate-800 text-white gap-2">

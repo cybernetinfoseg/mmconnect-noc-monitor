@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
                 cliente: terminal.cliente_nome || '',
                 owner_email: terminal.created_by || '',
             }).catch(() => {});
-        } else if (cache && cache.ultimo_status === 'offline' && statusValido === 'online') {
+        } else if (!emManutencao && cache && cache.ultimo_status === 'offline' && statusValido === 'online') {
             await base44.asServiceRole.entities.AlertIncident.create({
                 terminal_id,
                 terminal_nome: terminal.nome,

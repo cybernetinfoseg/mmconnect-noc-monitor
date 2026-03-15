@@ -9,10 +9,19 @@ Deno.serve(async (req) => {
     }
 
     const rules = await base44.asServiceRole.entities.AlertRule.filter({ ativo: true });
-    const terminals = await base44.asServiceRole.entities.Terminal.list();
+    const allTerminals = await base44.asServiceRole.entities.Terminal.list();
+
+    // Filtrar terminais em manutenção
+    const agora = new Date().toISOString();
+    const janelasAtivas = await base44.asServiceRole.entities.MaintenanceWindow.filter({ ativo: true });
+    const terminaisEmManutencao = new Set(
+        janelasAtivas.filter(j => j.inicio <= agora && j.fim >= agora).map(j => j.terminal_id)
+    );
+    const terminals = allTerminals.filter(t => !terminaisEmManutencao.has(t.id));
 
     const now = new Date();
     const results = [];
+    // now is used below; agora (ISO string) was computed above for maintenance filter
 
     for (const rule of rules) {
       // Check cooldown

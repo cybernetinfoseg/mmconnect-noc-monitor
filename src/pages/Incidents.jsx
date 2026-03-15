@@ -62,6 +62,9 @@ export default function Incidents() {
     return allIncidents.filter(i => myTerminalIds?.has(i.terminal_id));
   }, [allIncidents, currentUser, canSeeAll, myTerminalIds]);
 
+  const [checkingId, setCheckingId] = useState(null);
+  const [checkError, setCheckError] = useState(null);
+
   // Resolve incident mutation
   const resolveMutation = useMutation({
     mutationFn: async (incident) => {

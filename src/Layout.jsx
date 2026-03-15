@@ -35,6 +35,7 @@ const ALL_NAV_ITEMS = [
   { name: 'Histórico', page: 'History', icon: History },
   { name: 'Incidentes', page: 'Incidents', icon: AlertTriangle },
   { name: 'Alertas', page: 'Alertas', icon: Bell },
+  { name: 'Manutenção', page: 'Manutencao', icon: Wrench },
   { name: 'Auditoria', page: 'Auditoria', icon: ClipboardList },
   { name: 'Configurações', page: 'Configuracoes', icon: Settings },
   { name: 'Administração', page: 'Administracao', icon: Shield },

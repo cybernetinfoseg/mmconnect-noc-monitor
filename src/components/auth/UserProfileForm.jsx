@@ -114,7 +114,7 @@ export default function UserProfileForm({ user, onSuccess, isEditMode = false })
         });
       }
 
-      toast.success(isEditMode ? 'Perfil atualizado com sucesso!' : 'Perfil preenchido com sucesso! Aguarde a aprovação do admin.');
+      toast.success(isEditMode ? 'Perfil atualizado com sucesso!' : 'Solicitação enviada! Aguarde a aprovação do admin.');
       onSuccess();
     } catch (error) {
       console.error('Erro:', error);
@@ -217,10 +217,10 @@ export default function UserProfileForm({ user, onSuccess, isEditMode = false })
         {loading ? (
           <>
             <Loader className="h-4 w-4 animate-spin" />
-            Salvando...
+            Enviando...
           </>
         ) : (
-          isEditMode ? 'Salvar Alterações' : 'Preencher Perfil e Solicitar Acesso'
+          isEditMode ? 'Salvar Alterações' : 'Enviar Solicitação'
         )}
       </Button>
     </form>

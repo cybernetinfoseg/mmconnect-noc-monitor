@@ -72,8 +72,17 @@ export default function PendingApproval({ user }) {
 
             <TabsContent value="profile">
               <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base">Informações do Perfil</CardTitle>
+                  {!profileComplete && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveTab('profile')}
+                    >
+                      Editar
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 text-sm">
@@ -102,6 +111,14 @@ export default function PendingApproval({ user }) {
                       </div>
                     )}
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab('profile')}
+                    className="mt-4 w-full gap-2"
+                  >
+                    Editar Perfil
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -120,18 +137,27 @@ export default function PendingApproval({ user }) {
           </Tabs>
         )}
 
-        {/* Profile Form (if not complete) */}
-        {!profileComplete && (
+        {/* Profile Form (edit mode) */}
+        {(activeTab === 'profile' && (!profileComplete || activeTab === 'profile')) && (
           <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50 mb-6">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                Preencha Seu Perfil
+                {profileComplete ? '✏️ Editar Perfil' : (
+                  <>
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                    Preencha Seu Perfil
+                  </>
+                )}
               </CardTitle>
-              <p className="text-xs text-slate-500 mt-1">Complete as informações abaixo para solicitar acesso ao sistema</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {profileComplete 
+                  ? 'Altere suas informações e salve as mudanças'
+                  : 'Complete as informações abaixo para solicitar acesso ao sistema'
+                }
+              </p>
             </CardHeader>
             <CardContent>
-              <UserProfileForm user={user} onSuccess={handleProfileSuccess} />
+              <UserProfileForm user={user} onSuccess={handleProfileSuccess} isEditMode={profileComplete} />
             </CardContent>
           </Card>
         )}

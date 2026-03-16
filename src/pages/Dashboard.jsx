@@ -348,7 +348,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <KPICard
             title="Total de Terminais"
             value={stats.total}
@@ -372,7 +372,7 @@ export default function Dashboard() {
         </div>
 
         {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6">
           {/* Chart */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

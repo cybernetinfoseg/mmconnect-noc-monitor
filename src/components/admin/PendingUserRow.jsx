@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserCheck, Ban, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function PendingUserRow({ user, approveMutation, rejectMutation, deletePendingMutation }) {

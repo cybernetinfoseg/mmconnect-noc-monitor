@@ -25,62 +25,63 @@ export default function TerminalsTable({ terminals, maxRows = 15, compact = fals
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200/50 bg-white/80 backdrop-blur-sm">
-      <div className="overflow-x-auto">
+      {/* Mobile cards */}
+      <div className="sm:hidden divide-y divide-slate-100">
+        <AnimatePresence mode="popLayout">
+          {displayTerminals.map((terminal, index) => (
+            <motion.div
+              key={terminal.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ delay: index * 0.02 }}
+              className={cn(
+                "px-4 py-3 transition-colors",
+                terminal.status === 'offline' && "bg-red-50/40"
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium text-slate-900 text-sm truncate">{terminal.nome}</p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusBadge status={terminal.status} />
+                  <span className={cn(
+                    "font-mono text-xs font-semibold",
+                    terminal.status === 'offline' ? 'text-red-600' : 'text-slate-400'
+                  )}>
+                    {formatTimeSince(terminal.segundos_sem_ping)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                {terminal.local && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{terminal.local}</span>}
+                {terminal.cliente && <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{terminal.cliente}</span>}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/50">
-              <th className={cn(
-                "text-left font-semibold text-slate-600 uppercase tracking-wider",
-                compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs"
-              )}>
-                <div className="flex items-center gap-2">
-                  <Monitor className="h-4 w-4" />
-                  Terminal
-                </div>
+              <th className={cn("text-left font-semibold text-slate-600 uppercase tracking-wider", compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs")}>
+                <div className="flex items-center gap-2"><Monitor className="h-4 w-4" />Terminal</div>
               </th>
-              <th className={cn(
-                "text-left font-semibold text-slate-600 uppercase tracking-wider",
-                compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs"
-              )}>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Local
-                </div>
+              <th className={cn("text-left font-semibold text-slate-600 uppercase tracking-wider", compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs")}>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4" />Local</div>
               </th>
-              <th className={cn(
-                "text-left font-semibold text-slate-600 uppercase tracking-wider",
-                compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs"
-              )}>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Cliente
-                </div>
+              <th className={cn("text-left font-semibold text-slate-600 uppercase tracking-wider", compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs")}>
+                <div className="flex items-center gap-2"><Building2 className="h-4 w-4" />Cliente</div>
               </th>
-              <th className={cn(
-                "text-center font-semibold text-slate-600 uppercase tracking-wider",
-                compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs"
-              )}>
-                Status
+              <th className={cn("text-center font-semibold text-slate-600 uppercase tracking-wider", compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs")}>Status</th>
+              <th className={cn("text-left font-semibold text-slate-600 uppercase tracking-wider", compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs")}>
+                <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Último Ping</div>
               </th>
-              <th className={cn(
-                "text-left font-semibold text-slate-600 uppercase tracking-wider",
-                compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs"
-              )}>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Último Ping
-                </div>
+              <th className={cn("text-right font-semibold text-slate-600 uppercase tracking-wider", compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs")}>
+                <div className="flex items-center gap-2 justify-end"><AlertTriangle className="h-4 w-4" />Sem Ping</div>
               </th>
-              <th className={cn(
-                "text-right font-semibold text-slate-600 uppercase tracking-wider",
-                compact ? "px-4 py-3 text-xs" : "px-6 py-4 text-xs"
-              )}>
-                <div className="flex items-center gap-2 justify-end">
-                  <AlertTriangle className="h-4 w-4" />
-                  Sem Ping
-                </div>
-              </th>
-
             </tr>
           </thead>
           <tbody>
@@ -92,53 +93,19 @@ export default function TerminalsTable({ terminals, maxRows = 15, compact = fals
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ delay: index * 0.02 }}
-                  className={cn(
-                    "border-b border-slate-50 transition-colors",
-                    terminal.status === 'offline' && "bg-red-50/30",
-                    "hover:bg-slate-50/50"
-                  )}
+                  className={cn("border-b border-slate-50 transition-colors", terminal.status === 'offline' && "bg-red-50/30", "hover:bg-slate-50/50")}
                 >
-                  <td className={cn(
-                    "font-medium text-slate-900",
-                    compact ? "px-4 py-3 text-sm" : "px-6 py-4"
-                  )}>
-                    {terminal.nome}
+                  <td className={cn("font-medium text-slate-900", compact ? "px-4 py-3 text-sm" : "px-6 py-4")}>{terminal.nome}</td>
+                  <td className={cn("text-slate-600", compact ? "px-4 py-3 text-sm" : "px-6 py-4")}>{terminal.local}</td>
+                  <td className={cn("text-slate-600", compact ? "px-4 py-3 text-sm" : "px-6 py-4")}>{terminal.cliente}</td>
+                  <td className={cn("text-center", compact ? "px-4 py-3" : "px-6 py-4")}><StatusBadge status={terminal.status} /></td>
+                  <td className={cn("text-slate-500", compact ? "px-4 py-3 text-sm" : "px-6 py-4")}>
+                    {terminal.ultimo_ping ? moment(terminal.ultimo_ping).format('DD/MM HH:mm:ss') : '—'}
                   </td>
-                  <td className={cn(
-                    "text-slate-600",
-                    compact ? "px-4 py-3 text-sm" : "px-6 py-4"
-                  )}>
-                    {terminal.local}
+                  <td className={cn("text-right font-mono", compact ? "px-4 py-3 text-sm" : "px-6 py-4", terminal.status === 'offline' ? 'text-red-600 font-semibold' : 'text-slate-500')}>
+                    {formatTimeSince(terminal.segundos_sem_ping)}
                   </td>
-                  <td className={cn(
-                    "text-slate-600",
-                    compact ? "px-4 py-3 text-sm" : "px-6 py-4"
-                  )}>
-                    {terminal.cliente}
-                  </td>
-                  <td className={cn(
-                    "text-center",
-                    compact ? "px-4 py-3" : "px-6 py-4"
-                  )}>
-                    <StatusBadge status={terminal.status} />
-                  </td>
-                  <td className={cn(
-                    "text-slate-500",
-                    compact ? "px-4 py-3 text-sm" : "px-6 py-4"
-                  )}>
-                    {terminal.ultimo_ping 
-                      ? moment(terminal.ultimo_ping).format('DD/MM HH:mm:ss')
-                      : '—'
-                    }
-                  </td>
-                  <td className={cn(
-                   "text-right font-mono",
-                   compact ? "px-4 py-3 text-sm" : "px-6 py-4",
-                   terminal.status === 'offline' ? 'text-red-600 font-semibold' : 'text-slate-500'
-                  )}>
-                   {formatTimeSince(terminal.segundos_sem_ping)}
-                  </td>
-                  </motion.tr>
+                </motion.tr>
               ))}
             </AnimatePresence>
           </tbody>
@@ -146,7 +113,7 @@ export default function TerminalsTable({ terminals, maxRows = 15, compact = fals
       </div>
       
       {terminals.length > maxRows && (
-        <div className="px-6 py-3 text-center text-sm text-slate-500 bg-slate-50/50 border-t border-slate-100">
+        <div className="px-4 py-3 text-center text-sm text-slate-500 bg-slate-50/50 border-t border-slate-100">
           Exibindo {maxRows} de {terminals.length} terminais
         </div>
       )}

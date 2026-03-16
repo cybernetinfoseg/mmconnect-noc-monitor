@@ -538,14 +538,30 @@ export default function Administracao() {
                          </div>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(user)}
-                            className="h-8 w-8 text-slate-400 hover:text-blue-600"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(user)}
+                              className="h-8 w-8 text-slate-400 hover:text-blue-600"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {user.email !== currentUser?.email && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (confirm(`Excluir o usuário ${user.email}?`)) {
+                                    deleteUserMutation.mutate(user.id);
+                                  }
+                                }}
+                                className="h-8 w-8 text-slate-400 hover:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

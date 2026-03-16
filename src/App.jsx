@@ -10,6 +10,7 @@ import Mensagens from './pages/Mensagens';
 import CompletarPerfil from './pages/CompletarPerfil';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { ThemeProvider } from '@/components/ThemeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 const { Pages, Layout, mainPage } = pagesConfig;

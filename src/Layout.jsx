@@ -20,8 +20,11 @@ import {
   LogOut,
   User,
   Wrench,
-  FileBarChart2
+  FileBarChart2,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '@/components/ThemeContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';

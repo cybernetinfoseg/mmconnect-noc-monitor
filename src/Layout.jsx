@@ -196,36 +196,36 @@ export default function Layout({ children, currentPageName }) {
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-2">
-            {!isRoot && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.history.back()}
-                className="select-none"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            )}
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-slate-900 dark:bg-emerald-600 rounded-lg">
-                <Monitor className="h-4 w-4 text-emerald-400 dark:text-white" />
-              </div>
-              <h1 className="font-bold text-slate-900 dark:text-white text-sm">NOC Monitor</h1>
-            </div>
-          </div>
+           <div className="flex items-center gap-2">
+             {!isRoot && (
+               <Button
+                 variant="ghost"
+                 size="icon"
+                 onClick={() => window.history.back()}
+                 className="select-none h-12 w-12"
+               >
+                 <ChevronLeft className="h-5 w-5" />
+               </Button>
+             )}
+             <div className="flex items-center gap-2">
+               <div className="p-1.5 bg-slate-900 dark:bg-emerald-600 rounded-lg">
+                 <Monitor className="h-4 w-4 text-emerald-400 dark:text-white" />
+               </div>
+               <h1 className="font-bold text-slate-900 dark:text-white text-sm">NOC Monitor</h1>
+             </div>
+           </div>
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="select-none">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0 border-r border-slate-200 dark:border-slate-700">
-              <Sidebar />
-            </SheetContent>
-          </Sheet>
-        </div>
+           <Sheet>
+             <SheetTrigger asChild>
+               <Button variant="ghost" size="icon" className="select-none h-12 w-12">
+                 <Menu className="h-6 w-6" />
+               </Button>
+             </SheetTrigger>
+             <SheetContent side="left" className="w-64 p-0 border-r border-slate-200 dark:border-slate-700">
+               <Sidebar />
+             </SheetContent>
+           </Sheet>
+         </div>
       </header>
 
       {/* Main Content */}

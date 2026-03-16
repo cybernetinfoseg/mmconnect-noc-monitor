@@ -339,15 +339,14 @@ export default function Administracao() {
                     <Label>Role</Label>
                     <Select
                       value={form.role}
-                      onValueChange={v => applyRoleDefaults(v)}
+                      onValueChange={v => setForm(prev => ({ ...prev, role: v }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">⊙ Administrador — acesso total</SelectItem>
-                        <SelectItem value="editor">✏️ Editor — pode editar</SelectItem>
-                        <SelectItem value="viewer">👁 Visualizador — somente leitura</SelectItem>
+                        <SelectItem value="user">👤 Utilizador — acesso aos próprios dados</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

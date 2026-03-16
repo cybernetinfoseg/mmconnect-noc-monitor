@@ -46,29 +46,12 @@ export default function NovoClienteModal({ open, onClose, onCreated }) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nome *</Label>
-              <Input
-                autoFocus
-                value={formData.nome || ''}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Razão Social</Label>
-              <Input
-                value={formData.razao_social || ''}
-                onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })}
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <Label>CNPJ</Label>
+            <Label>Nome *</Label>
             <Input
-              value={formData.cnpj || ''}
-              onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+              autoFocus
+              value={formData.nome || ''}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
             />
           </div>
 

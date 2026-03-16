@@ -271,47 +271,49 @@ export default function Incidents() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-6">
       <div className="max-w-[1920px] mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             <div className={cn(
-              "p-3 rounded-xl",
+              "p-3 rounded-xl shrink-0",
               stats.active > 0 ? "bg-red-100" : "bg-emerald-100"
             )}>
               {stats.active > 0 ? (
-                <Bell className="h-6 w-6 text-red-600 animate-pulse" />
+                <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 animate-pulse" />
               ) : (
-                <BellOff className="h-6 w-6 text-emerald-600" />
+                <BellOff className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
               )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Incidentes</h1>
-              <p className="text-sm text-slate-500">Gerenciamento de alertas e incidentes</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Incidentes</h1>
+              <p className="text-xs sm:text-sm text-slate-500">Gerenciamento de alertas e incidentes</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={handleExportPDF}
               disabled={filteredIncidents.length === 0}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
             >
               <FileDown className="h-4 w-4" />
-              Exportar PDF
+              <span className="hidden sm:inline">Exportar PDF</span>
             </Button>
             <Button
               variant="outline"
+              size="sm"
               onClick={handleRefresh}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
             >
               <RefreshCw className="h-4 w-4" />
-              Atualizar
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -320,21 +322,21 @@ export default function Incidents() {
               "bg-white/80 backdrop-blur-sm border-slate-200/50",
               stats.active > 0 && "border-red-200 bg-red-50/50"
             )}>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                   <div className={cn(
-                    "p-3 rounded-xl",
+                    "p-2 sm:p-3 rounded-xl w-fit",
                     stats.active > 0 ? "bg-red-100" : "bg-slate-100"
                   )}>
                     <AlertTriangle className={cn(
-                      "h-6 w-6",
+                      "h-4 w-4 sm:h-6 sm:w-6",
                       stats.active > 0 ? "text-red-600 animate-pulse" : "text-slate-400"
                     )} />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Incidentes Ativos</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider">Ativos</p>
                     <p className={cn(
-                      "text-3xl font-bold",
+                      "text-2xl sm:text-3xl font-bold",
                       stats.active > 0 ? "text-red-600" : "text-slate-400"
                     )}>
                       {stats.active}
@@ -351,14 +353,14 @@ export default function Incidents() {
             transition={{ delay: 0.1 }}
           >
             <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-emerald-100 rounded-xl">
-                    <CheckCircle className="h-6 w-6 text-emerald-600" />
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-emerald-100 rounded-xl w-fit">
+                    <CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Resolvidos</p>
-                    <p className="text-3xl font-bold text-emerald-600">
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider">Resolvidos</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
                       {stats.resolved}
                     </p>
                   </div>
@@ -373,14 +375,14 @@ export default function Incidents() {
             transition={{ delay: 0.2 }}
           >
             <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 rounded-xl">
-                    <Clock className="h-6 w-6 text-blue-600" />
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-blue-100 rounded-xl w-fit">
+                    <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Hoje</p>
-                    <p className="text-3xl font-bold text-blue-600">
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider">Hoje</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                       {stats.today}
                     </p>
                   </div>

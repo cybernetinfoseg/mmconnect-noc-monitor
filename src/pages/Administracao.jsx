@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ROLE_DEFAULTS, ROLE_LABELS, ROLE_COLORS } from '../components/auth/usePermissions';
+import { ROLE_LABELS, ROLE_COLORS } from '../components/auth/usePermissions';
 import ContactMessagesPanel from '../components/admin/ContactMessagesPanel';
 
 const ALL_PAGES = ['Dashboard', 'Terminais', 'Clientes', 'History', 'Incidents', 'Alertas', 'Configuracoes', 'Administracao', 'Auditoria'];

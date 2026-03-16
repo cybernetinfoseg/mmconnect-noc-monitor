@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { resolvePermissions } from '../components/auth/usePermissions.js';
+import { resolvePermissions } from '../components/auth/usePermissions.jsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 

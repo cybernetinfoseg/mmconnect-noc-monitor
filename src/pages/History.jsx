@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { resolvePermissions } from '../components/auth/usePermissions.js';
+import { resolvePermissions } from '../components/auth/usePermissions.jsx';
 import { motion } from 'framer-motion';
 import { 
   Clock, 

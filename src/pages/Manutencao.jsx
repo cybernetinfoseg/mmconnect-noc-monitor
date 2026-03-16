@@ -8,7 +8,7 @@ import { Plus, Wrench, Calendar, Clock, Trash2, Pencil, AlertTriangle } from 'lu
 import { format, isAfter, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import MaintenanceModal from '@/components/manutencao/MaintenanceModal';
-import { resolvePermissions } from '../components/auth/usePermissions.js';
+import { resolvePermissions } from '../components/auth/usePermissions.jsx';
 
 function getStatus(item) {
     const now = new Date();

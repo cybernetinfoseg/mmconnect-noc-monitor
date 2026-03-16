@@ -130,13 +130,13 @@ export default function Layout({ children, currentPageName }) {
           "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 select-none",
           "text-sm font-medium",
           isActive
-            ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-emerald-600"
-            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+            ? "bg-accent text-accent-foreground shadow-lg shadow-accent/30"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
         )}
       >
         <Icon className={cn(
           "h-5 w-5",
-          isActive ? "text-emerald-400 dark:text-white" : "text-slate-400"
+          isActive ? "text-accent-foreground" : "text-muted-foreground"
         )} />
         {item.name}
       </Link>

@@ -60,8 +60,14 @@ export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const prevPageRef = useRef(currentPageName);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const isPublicPage = currentPageName === 'TVMode';
   const isProfilePage = currentPageName === 'CompletarPerfil';
+
+  // Apply dark mode on mount
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // Enforce login for all pages except TVMode and CompletarPerfil
   const { user: authUser, loading: authLoading } = useRequireAuth({ skip: isPublicPage || isProfilePage });
@@ -144,56 +150,56 @@ export default function Layout({ children, currentPageName }) {
   });
 
   const Sidebar = ({ onClose }) => (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+    <div className="flex flex-col h-full bg-card text-card-foreground">
+      <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-900 dark:bg-emerald-600 rounded-xl">
-            <Monitor className="h-6 w-6 text-emerald-400 dark:text-white" />
+          <div className="p-2 bg-accent rounded-xl">
+            <Monitor className="h-6 w-6 text-accent-foreground" />
           </div>
           <div>
-            <h1 className="font-bold text-slate-900 dark:text-white">NOC Monitor</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Terminais Biométricos</p>
+            <h1 className="font-bold text-foreground">NOC Monitor</h1>
+            <p className="text-xs text-muted-foreground">Terminais Biométricos</p>
           </div>
         </div>
       </div>
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-accent/50 scrollbar-track-card">
         {navItems.map((item) => (
           <NavLink key={item.page} item={item} onClick={onClose} />
         ))}
       </nav>
-      <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+      <div className="p-4 border-t border-border space-y-2">
         <PushNotificationManager />
         {currentUser && (
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800">
-            <User className="h-4 w-4 text-slate-400 shrink-0" />
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-secondary">
+            <User className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{currentUser.full_name || currentUser.email}</p>
-              <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
+              <p className="text-xs font-medium text-foreground truncate">{currentUser.full_name || currentUser.email}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{currentUser.email}</p>
             </div>
           </div>
         )}
         <button
           onClick={() => base44.auth.logout()}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-secondary transition-colors"
         >
           <LogOut className="h-4 w-4" />
           Sair
         </button>
-        <p className="text-xs text-slate-400 text-center">Enterprise NOC v1.0</p>
+        <p className="text-xs text-muted-foreground text-center">Enterprise NOC v1.0</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-64 lg:bg-white lg:border-r lg:border-slate-200 dark:lg:bg-slate-900 dark:lg:border-slate-700">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-64 lg:bg-card lg:border-r lg:border-border">
         <Sidebar />
       </aside>
 
       {/* Mobile Header */}
       <header
-        className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4"
+        className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border px-4"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="flex items-center justify-between h-14">
@@ -209,10 +215,10 @@ export default function Layout({ children, currentPageName }) {
               </Button>
             )}
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-slate-900 dark:bg-emerald-600 rounded-lg">
-                <Monitor className="h-4 w-4 text-emerald-400 dark:text-white" />
+              <div className="p-1.5 bg-accent rounded-lg">
+                <Monitor className="h-4 w-4 text-accent-foreground" />
               </div>
-              <h1 className="font-bold text-slate-900 dark:text-white text-sm">NOC Monitor</h1>
+              <h1 className="font-bold text-foreground text-sm">NOC Monitor</h1>
             </div>
           </div>
 
@@ -222,7 +228,7 @@ export default function Layout({ children, currentPageName }) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0 border-r border-slate-200 dark:border-slate-700">
+            <SheetContent side="left" className="w-64 p-0 border-r border-border bg-card">
               <Sidebar />
             </SheetContent>
           </Sheet>
@@ -254,7 +260,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Mobile Bottom Navigation */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-stretch">
@@ -268,8 +274,8 @@ export default function Layout({ children, currentPageName }) {
                     className={cn(
                       "flex-1 flex flex-col items-center justify-center py-2 gap-1 select-none transition-colors",
                       isActive
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                        ? "text-accent"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     <Icon className="h-5 w-5" />

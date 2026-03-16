@@ -363,52 +363,6 @@ export default function Administracao() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Páginas Permitidas</Label>
-                  <div className="flex flex-wrap gap-3">
-                    {ALL_PAGES.map(page => (
-                      <label key={page} className="flex items-center gap-1.5 cursor-pointer select-none text-sm">
-                        <Checkbox
-                          checked={form.paginas_permitidas.includes(page)}
-                          onCheckedChange={() => togglePage(page)}
-                        />
-                        {PAGE_LABELS[page]}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-                    <Checkbox
-                      checked={form.pode_configurar_alertas}
-                      onCheckedChange={v => setForm(prev => ({ ...prev, pode_configurar_alertas: !!v }))}
-                    />
-                    Pode Configurar Alertas
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-                    <Checkbox
-                      checked={form.pode_gerenciar_usuarios}
-                      onCheckedChange={v => setForm(prev => ({ ...prev, pode_gerenciar_usuarios: !!v }))}
-                    />
-                    Pode Gerenciar Usuários
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-                    <Checkbox
-                      checked={form.pode_editar_terminais}
-                      onCheckedChange={v => setForm(prev => ({ ...prev, pode_editar_terminais: !!v }))}
-                    />
-                    Pode Editar Terminais
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-                    <Checkbox
-                      checked={form.pode_editar_clientes}
-                      onCheckedChange={v => setForm(prev => ({ ...prev, pode_editar_clientes: !!v }))}
-                    />
-                    Pode Editar Clientes
-                  </label>
-                </div>
-
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" onClick={handleCancel} className="gap-1">
                     <X className="h-4 w-4" /> Cancelar

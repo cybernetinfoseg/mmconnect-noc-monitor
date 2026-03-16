@@ -109,7 +109,11 @@ export default function Mensagens() {
     pending: messages.filter(m => !m.respondido).length,
   };
 
-  if (currentUser?.role !== 'admin') {
+  if (!currentUser) {
+    return <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin" /></div>;
+  }
+
+  if (currentUser.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <Card className="border-red-200 bg-red-50">

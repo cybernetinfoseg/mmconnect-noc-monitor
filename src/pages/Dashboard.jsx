@@ -182,31 +182,31 @@ export default function Dashboard() {
 
   return (
     <PullToRefresh onRefresh={handlePullRefresh}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-slate-900 text-white px-4 sm:px-6 py-4">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-4">
         <div className="max-w-[1920px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/20 rounded-lg shrink-0">
-              <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400" />
+            <div className="p-2 bg-accent/20 rounded-lg shrink-0">
+              <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight">NOC Monitor</h1>
-              <p className="text-xs text-slate-400">Terminais Biométricos</p>
-              <p className="text-xs text-emerald-400/70 font-mono mt-0.5 hidden sm:block">App ID: 697aa46c9998c30665e2e19a</p>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">NOC Monitor</h1>
+              <p className="text-xs text-muted-foreground">Terminais Biométricos</p>
+              <p className="text-xs text-accent/70 font-mono mt-0.5 hidden sm:block">App ID: 697aa46c9998c30665e2e19a</p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             {currentUser && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-300">
-                <User className="h-4 w-4 text-slate-400" />
+              <div className="hidden sm:flex items-center gap-2 text-sm text-foreground">
+                <User className="h-4 w-4 text-muted-foreground" />
                 <span>{currentUser.full_name || currentUser.email}</span>
               </div>
             )}
             <div className="text-right hidden sm:block">
-              <p className="text-xs text-slate-400">Última atualização</p>
-              <p className="text-sm font-mono text-slate-200">
+              <p className="text-xs text-muted-foreground">Última atualização</p>
+              <p className="text-sm font-mono text-foreground">
                 {lastRefresh.toLocaleTimeString('pt-BR')}
               </p>
             </div>
@@ -216,7 +216,7 @@ export default function Dashboard() {
               size="sm"
               onClick={() => refetch()}
               disabled={isMonitoring}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5"
+              className="gap-1.5"
             >
               <RefreshCw className={cn("h-4 w-4", isMonitoring && "animate-spin")} />
               <span className="hidden sm:inline">Atualizar</span>
@@ -225,7 +225,7 @@ export default function Dashboard() {
               size="sm"
               onClick={handleMonitorAll}
               disabled={isMonitoring}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+              className="bg-accent hover:bg-accent/90 text-accent-foreground gap-1.5"
             >
               <Activity className={cn("h-4 w-4", isMonitoring && "animate-pulse")} />
               <span className="hidden sm:inline">Verificar Agora</span>
@@ -234,7 +234,7 @@ export default function Dashboard() {
               variant="outline"
               size="sm"
               onClick={() => setShowWidgetConfig(v => !v)}
-              className={cn("hidden sm:flex bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5", showWidgetConfig && "bg-white/20")}
+              className={cn("hidden sm:flex gap-1.5", showWidgetConfig && "bg-secondary")}
             >
               <Settings2 className="h-4 w-4" />
               Widgets
@@ -243,7 +243,7 @@ export default function Dashboard() {
               size="sm"
               variant="ghost"
               onClick={() => base44.auth.logout()}
-              className="hidden sm:flex text-slate-300 hover:text-white hover:bg-white/10 gap-1"
+              className="hidden sm:flex gap-1"
               title="Sair"
             >
               <LogOut className="h-4 w-4" />
@@ -255,9 +255,9 @@ export default function Dashboard() {
 
       {/* Widget Config Panel */}
       {showWidgetConfig && (
-        <div className="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-3">
+        <div className="bg-card border-b border-border px-4 sm:px-6 py-3">
           <div className="max-w-[1920px] mx-auto flex flex-wrap items-center gap-4 sm:gap-6">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <LayoutDashboard className="h-3.5 w-3.5" /> Widgets visíveis
             </span>
             {[
@@ -270,9 +270,9 @@ export default function Dashboard() {
                 <Switch
                   checked={widgets[key]}
                   onCheckedChange={() => toggleWidget(key)}
-                  className="data-[state=checked]:bg-emerald-500"
+                  className="data-[state=checked]:bg-accent"
                 />
-                <span className="text-sm text-slate-300">{label}</span>
+                <span className="text-sm text-foreground">{label}</span>
               </label>
             ))}
           </div>
@@ -312,14 +312,14 @@ export default function Dashboard() {
             placeholder="Todos os status"
           />
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              Ordenar por
-            </label>
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <ArrowUpDown className="h-3.5 w-3.5" />
+          Ordenar por
+          </label>
+          <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+          className="h-9 px-3 rounded-md border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             >
               <option value="status">Status (offline primeiro)</option>
               <option value="nome">Nome (A-Z)</option>
@@ -327,20 +327,19 @@ export default function Dashboard() {
             </select>
           </div>
           {(localFilter || clienteFilter || statusFilter) && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => { setLocalFilter(null); setClienteFilter(null); setStatusFilter(null); }}
-                className="text-slate-500 hover:text-slate-700"
-              >
-                Limpar filtros
-              </Button>
-            )}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => { setLocalFilter(null); setClienteFilter(null); setStatusFilter(null); }}
+            >
+              Limpar filtros
+            </Button>
+          )}
             <Link
               to={`/TVMode${localFilter || clienteFilter ? `?${new URLSearchParams([...(localFilter ? [['local', localFilter]] : []), ...(clienteFilter ? [['cliente', clienteFilter]] : [])]).toString()}` : ''}`}
               className="col-span-2 sm:ml-auto sm:col-span-1"
             >
-              <Button variant="outline" size="sm" className="gap-1.5 text-slate-600 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="gap-1.5 w-full sm:w-auto">
                 <Tv className="h-4 w-4" />
                 Modo TV
               </Button>
@@ -379,9 +378,9 @@ export default function Dashboard() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
+            <Card className="h-full bg-card border-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   Distribuição de Status
                 </CardTitle>
               </CardHeader>
@@ -401,12 +400,12 @@ export default function Dashboard() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
+            <Card className="h-full bg-card border-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                   <span>Terminais</span>
-                  <span className="text-xs font-normal text-emerald-600 flex items-center gap-1">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-normal text-accent flex items-center gap-1">
+                    <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
                     Tempo Real ({refreshInterval >= 60000 ? (refreshInterval / 60000).toFixed(0) + 'm' : (refreshInterval / 1000).toFixed(0) + 's'})
                   </span>
                 </CardTitle>
@@ -427,10 +426,10 @@ export default function Dashboard() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
+            <Card className="h-full bg-card border-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
                   Incidentes Recentes
                 </CardTitle>
               </CardHeader>

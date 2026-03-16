@@ -101,14 +101,25 @@ export default function Terminais() {
       if (isAdmin) {
         return await base44.entities.Cliente.list();
       }
-      // Non-admins only see clients from their terminals
+      // Non-admins see: clients they created + clients linked to their terminals
+      const userCreatedClientes = await base44.entities.Cliente.filter({ created_by: currentUser?.email });
       const userTerminals = await base44.entities.Terminal.filter(
         { created_by: currentUser?.email },
         '-created_date'
       );
-      const clienteIds = new Set(userTerminals.map(t => t.cliente_id).filter(Boolean));
-      const allClientes = await base44.entities.Cliente.list();
-      return allClientes.filter(c => clienteIds.has(c.id));
+      const linkedClienteIds = new Set(userTerminals.map(t => t.cliente_id).filter(Boolean));
+      const merged = [...userCreatedClientes];
+      const userCreatedIds = new Set(userCreatedClientes.map(c => c.id));
+      
+      if (linkedClienteIds.size > 0) {
+        const allClientes = await base44.entities.Cliente.list();
+        allClientes.forEach(c => {
+          if (linkedClienteIds.has(c.id) && !userCreatedIds.has(c.id)) {
+            merged.push(c);
+          }
+        });
+      }
+      return merged;
     },
     enabled: !!currentUser,
   });

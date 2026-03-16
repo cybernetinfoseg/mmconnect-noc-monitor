@@ -5,9 +5,25 @@
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
+const APP_ID = Deno.env.get('BASE44_APP_ID');
+const API_KEY = Deno.env.get('API_KEY');
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
+
+        // Aceita: agente local (X-Api-Key + X-App-Id) OU utilizador autenticado
+        const apiKey = req.headers.get('X-Api-Key');
+        const appId = req.headers.get('X-App-Id');
+        const isAgent = apiKey && appId && apiKey === API_KEY && appId === APP_ID;
+
+        if (!isAgent) {
+            const isAuthenticated = await base44.auth.isAuthenticated();
+            if (!isAuthenticated) {
+                return Response.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+        }
+
         const body = await req.json().catch(() => ({}));
         const { terminal_id } = body;
 

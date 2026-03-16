@@ -50,7 +50,7 @@ export default function CompletarPerfil() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 flex items-center justify-center p-4 z-[9999] overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 flex items-center justify-center p-4">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
       </div>
     );
@@ -58,7 +58,7 @@ export default function CompletarPerfil() {
 
   if (submitted) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 flex items-center justify-center p-4 z-[9999] overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="flex justify-center">
             <div className="p-5 bg-emerald-100 rounded-full animate-pulse">
@@ -75,8 +75,8 @@ export default function CompletarPerfil() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 flex items-center justify-center p-4 z-[9999] overflow-y-auto">
-      <div className="max-w-2xl w-full my-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-4">
+      <div className="max-w-2xl w-full mx-auto py-8">
         
         {/* Header */}
         <div className="text-center mb-8">

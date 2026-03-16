@@ -85,18 +85,15 @@ export default function Clientes() {
   }, [allClientes, canSeeAll, myClientes]);
 
   const { data: allTerminals = [] } = useQuery({
-    queryKey: ['terminals-all'],
-    queryFn: () => base44.entities.Terminal.list(),
+    queryKey: ['terminals-all', canSeeAll, currentUser?.email],
+    queryFn: () => canSeeAll
+      ? base44.entities.Terminal.list()
+      : base44.entities.Terminal.filter({ created_by: currentUser.email }),
     refetchInterval: 30000,
     enabled: !!currentUser,
   });
 
-  // Non-admins only see terminals they own
-  const visibleTerminals = useMemo(() => {
-    if (!currentUser) return [];
-    if (canSeeAll) return allTerminals;
-    return allTerminals.filter(t => t.created_by === currentUser.email);
-  }, [allTerminals, currentUser, canSeeAll]);
+  const visibleTerminals = allTerminals;
 
   // Map: cliente nome -> { total, online, offline }
   const terminalCountsByCliente = useMemo(() => {

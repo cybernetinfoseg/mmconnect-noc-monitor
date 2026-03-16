@@ -37,7 +37,6 @@ const ALL_NAV_ITEMS = [
   { name: 'Histórico', page: 'History', icon: History },
   { name: 'Incidentes', page: 'Incidents', icon: AlertTriangle },
   { name: 'Alertas', page: 'Alertas', icon: Bell },
-  { name: 'Mensagens', page: 'Mensagens', icon: Bell },
   { name: 'Manutenção', page: 'Manutencao', icon: Wrench },
   { name: 'Relatórios', page: 'Relatorios', icon: FileBarChart2 },
   { name: 'Auditoria', page: 'Auditoria', icon: ClipboardList },

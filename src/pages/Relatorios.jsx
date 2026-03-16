@@ -41,7 +41,7 @@ export default function Relatorios() {
         enabled: !!currentUser,
     });
 
-    const { data: incidents = [] } = useQuery({
+    const { data: allIncidents = [] } = useQuery({
         queryKey: ['rel-incidents', period],
         queryFn: () => base44.entities.AlertIncident.list('-timestamp', 1000),
         enabled: !!currentUser,
@@ -52,6 +52,13 @@ export default function Relatorios() {
         if (canSeeAll) return allTerminals;
         return allTerminals.filter(t => t.created_by === currentUser.email);
     }, [allTerminals, currentUser, canSeeAll]);
+
+    const incidents = useMemo(() => {
+        if (!currentUser) return [];
+        if (canSeeAll) return allIncidents;
+        const myIds = new Set(terminals.map(t => t.id));
+        return allIncidents.filter(i => myIds.has(i.terminal_id));
+    }, [allIncidents, currentUser, canSeeAll, terminals]);
 
     // Define buckets based on period
     const { buckets, bucketFormat, cutoff } = useMemo(() => {

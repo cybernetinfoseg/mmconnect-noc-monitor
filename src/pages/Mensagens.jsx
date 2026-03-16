@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Mail, CheckCircle, Clock, Search, Filter } from 'lucide-react';
+import { Mail, CheckCircle, Clock, Search, Send, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,9 @@ export default function Mensagens() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
@@ -53,6 +57,21 @@ export default function Mensagens() {
       id: message.id,
       data: { respondido: !message.respondido, lido: true },
     });
+  };
+
+  const handleSendReply = async (msg) => {
+    if (!replyText.trim()) return;
+    setSendingReply(true);
+    await base44.integrations.Core.SendEmail({
+      to: msg.from_email,
+      subject: `Re: Sua mensagem - NOC Monitor`,
+      body: replyText,
+    });
+    markAsReadMutation.mutate({ id: msg.id, data: { respondido: true, lido: true } });
+    toast.success('Resposta enviada com sucesso!');
+    setReplyingTo(null);
+    setReplyText('');
+    setSendingReply(false);
   };
 
   // Filter messages
@@ -261,21 +280,55 @@ export default function Mensagens() {
                             {msg.respondido ? '✓ Respondida' : 'Marcar como Respondida'}
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              window.location.href = `mailto:${msg.from_email}`;
-                            }}
-                            className="gap-2 text-xs text-blue-600 hover:bg-blue-50"
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => {
+                             setReplyingTo(replyingTo === msg.id ? null : msg.id);
+                             setReplyText('');
+                           }}
+                           className="gap-2 text-xs text-blue-600 hover:bg-blue-50"
                           >
-                            <Mail className="h-3 w-3" />
-                            Responder
+                           <Mail className="h-3 w-3" />
+                           Responder
                           </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                          </div>
+                          </div>
+
+                          {/* Inline Reply */}
+                          {replyingTo === msg.id && (
+                          <div className="pt-3 border-t border-slate-200 space-y-2">
+                          <p className="text-xs font-medium text-slate-600">Responder para: <span className="text-blue-600">{msg.from_email}</span></p>
+                          <Textarea
+                            placeholder="Escreva sua resposta..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            rows={3}
+                            className="text-sm"
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => { setReplyingTo(null); setReplyText(''); }}
+                              className="gap-1 text-xs"
+                            >
+                              <X className="h-3 w-3" /> Cancelar
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleSendReply(msg)}
+                              disabled={sendingReply || !replyText.trim()}
+                              className="gap-1 text-xs bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Send className="h-3 w-3" />
+                              {sendingReply ? 'Enviando...' : 'Enviar'}
+                            </Button>
+                          </div>
+                          </div>
+                          )}
+                          </div>
+                          </CardContent>
+                          </Card>
               </motion.div>
             ))
           )}

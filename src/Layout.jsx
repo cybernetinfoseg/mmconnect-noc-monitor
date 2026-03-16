@@ -149,11 +149,11 @@ export default function Layout({ children, currentPageName }) {
   const { isDark, toggleTheme } = useTheme();
 
   const Sidebar = ({ onClose }) => (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+    <div className="flex flex-col h-full bg-white dark:bg-[#111827]">
+      <div className="p-6 border-b border-slate-200 dark:border-[#1f2d3d]">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-900 dark:bg-emerald-600 rounded-xl">
-            <Monitor className="h-6 w-6 text-emerald-400 dark:text-white" />
+          <div className="p-2 bg-slate-900 dark:bg-emerald-600/20 dark:border dark:border-emerald-500/30 rounded-xl">
+            <Monitor className="h-6 w-6 text-emerald-400" />
           </div>
           <div>
             <h1 className="font-bold text-slate-900 dark:text-white">NOC Monitor</h1>

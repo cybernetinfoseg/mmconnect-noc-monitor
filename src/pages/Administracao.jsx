@@ -142,6 +142,17 @@ export default function Administracao() {
     onError: () => toast.error('Erro ao remover usuário'),
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: (id) => base44.entities.User.delete(id),
+    onSuccess: (_, id) => {
+      const u = users.find(u => u.id === id);
+      logAudit('usuario_excluido', id, `Usuário ${u?.email || id} excluído pelo admin`);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Usuário excluído');
+    },
+    onError: () => toast.error('Erro ao excluir usuário'),
+  });
+
   // Count terminals per user
   const { data: terminals = [] } = useQuery({
     queryKey: ['terminals-admin'],

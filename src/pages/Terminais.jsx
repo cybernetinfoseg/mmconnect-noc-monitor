@@ -216,18 +216,18 @@ export default function Terminais() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-3 sm:p-6">
+    <div className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-[1920px] mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 rounded-xl shrink-0">
-              <Monitor className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-accent/20 rounded-xl shrink-0">
+              <Monitor className="h-6 w-6 text-accent" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
-              <p className="text-xs sm:text-sm text-emerald-600 flex items-center gap-1">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0 inline-block"></span>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestão de Terminais</h1>
+              <p className="text-xs sm:text-sm text-accent flex items-center gap-1">
+                <span className="w-2 h-2 bg-accent rounded-full animate-pulse shrink-0 inline-block"></span>
                 Auto-refresh {refreshInterval >= 60000 ? (refreshInterval / 60000).toFixed(0) + 'm' : (refreshInterval / 1000).toFixed(0) + 's'}
                 {!isAdmin && (
                   <span className={cn("ml-2 font-semibold", atLimit ? "text-red-600" : "text-slate-500")}>
@@ -244,7 +244,7 @@ export default function Terminais() {
               disabled={verificandoTodos || terminals.length === 0}
               variant="outline"
               size="sm"
-              className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+              className="border-accent text-accent"
             >
               <RefreshCw className={cn("h-4 w-4 sm:mr-2", verificandoTodos && "animate-spin")} />
               <span className="hidden sm:inline">{verificandoTodos ? 'A verificar...' : 'Verificar Todos'}</span>
@@ -252,7 +252,7 @@ export default function Terminais() {
             <Button
               onClick={handleNew}
               size="sm"
-              className={cn("bg-blue-600 hover:bg-blue-700", atLimit && "opacity-50 cursor-not-allowed")}
+              className={cn("bg-accent hover:bg-accent/90 text-accent-foreground", atLimit && "opacity-50 cursor-not-allowed")}
             >
               <Plus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Novo Terminal</span>
@@ -262,7 +262,7 @@ export default function Terminais() {
 
         {/* Limit warning */}
         {atLimit && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             Atingiu o limite de {limiteTerminais} terminais. Contacte o administrador para aumentar o seu limite.
           </div>
@@ -278,7 +278,7 @@ export default function Terminais() {
                   placeholder="Pesquisar por nome, local ou cliente..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-card text-foreground border-border"
                 />
               </div>
               <Select value={tipoFilter} onValueChange={setTipoFilter}>
@@ -311,37 +311,37 @@ export default function Terminais() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.02 }}
                 >
-                  <Card className={cn("bg-white/80 backdrop-blur-sm border-slate-200/50 hover:shadow-lg transition-all", !terminal.ativo && "opacity-60")}>
+                  <Card className={cn("bg-card border-border hover:shadow-lg transition-all", !terminal.ativo && "opacity-60")}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <CardTitle className="text-lg flex items-center gap-2">
+                          <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                             {terminal.nome}
                             {!terminal.ativo && <Badge variant="outline" className="text-xs">Inativo</Badge>}
                           </CardTitle>
-                          <p className="text-sm text-slate-500 mt-1">{terminal.local}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{terminal.local}</p>
                           {isAdmin && terminal.created_by && (
-                            <p className="text-xs text-slate-400 mt-0.5">{terminal.created_by}</p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">{terminal.created_by}</p>
                           )}
                         </div>
                         <StatusBadge status={terminal.status} pulse={false} />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <TipoIcon className="h-4 w-4 text-slate-400" />
-                        <span className="text-slate-600">{getTipoLabel(terminal.tipo_conexao)}</span>
-                        <span className="text-slate-400">•</span>
-                        <span className="text-slate-600 font-mono text-xs">:{terminal.porta || 5005}</span>
+                      <div className="flex items-center gap-2 text-sm text-foreground">
+                        <TipoIcon className="h-4 w-4 text-muted-foreground" />
+                        <span>{getTipoLabel(terminal.tipo_conexao)}</span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="font-mono text-xs">:{terminal.porta || 5005}</span>
                       </div>
                       {terminal.cliente_nome && (
-                        <div className="text-sm text-slate-600">
-                          <span className="text-slate-500">Cliente:</span> {terminal.cliente_nome}
+                        <div className="text-sm text-foreground">
+                          <span className="text-muted-foreground">Cliente:</span> {terminal.cliente_nome}
                         </div>
                       )}
                       {terminal.latencia_ms && (
-                        <div className="text-sm text-slate-600">
-                          <span className="text-slate-500">Latência:</span> {terminal.latencia_ms}ms
+                        <div className="text-sm text-foreground">
+                          <span className="text-muted-foreground">Latência:</span> {terminal.latencia_ms}ms
                         </div>
                       )}
                       <div className="flex gap-2 pt-2 border-t border-slate-100">
@@ -355,7 +355,7 @@ export default function Terminais() {
                         <Button size="sm" variant="outline" onClick={() => handleEdit(terminal)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDelete(terminal.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Button size="sm" variant="outline" onClick={() => handleDelete(terminal.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -368,8 +368,8 @@ export default function Terminais() {
         </div>
 
         {filteredTerminals.length === 0 && (
-          <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-            <CardContent className="py-12 text-center text-slate-400">
+          <Card className="bg-card border-border">
+            <CardContent className="py-12 text-center text-muted-foreground">
               <Monitor className="h-12 w-12 mx-auto mb-3" />
               <p>Nenhum terminal encontrado</p>
             </CardContent>
@@ -508,7 +508,7 @@ export default function Terminais() {
 
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">Cancelar</Button>
-              <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending} className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending} className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground">
                 {saveMutation.isPending ? 'A guardar...' : 'Guardar'}
               </Button>
             </div>

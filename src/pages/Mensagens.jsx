@@ -67,7 +67,16 @@ export default function Mensagens() {
       subject: `Re: Sua mensagem - NOC Monitor`,
       body: replyText,
     });
-    markAsReadMutation.mutate({ id: msg.id, data: { respondido: true, lido: true } });
+    markAsReadMutation.mutate({
+      id: msg.id,
+      data: {
+        respondido: true,
+        lido: true,
+        resposta_texto: replyText,
+        respondido_em: new Date().toISOString(),
+        respondido_por: currentUser?.email,
+      },
+    });
     toast.success('Resposta enviada com sucesso!');
     setReplyingTo(null);
     setReplyText('');

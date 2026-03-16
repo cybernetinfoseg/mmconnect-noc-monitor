@@ -21,29 +21,10 @@ import { cn } from '@/lib/utils';
 import { ROLE_LABELS, ROLE_COLORS } from '../components/auth/usePermissions';
 import ContactMessagesPanel from '../components/admin/ContactMessagesPanel';
 
-const ALL_PAGES = ['Dashboard', 'Terminais', 'Clientes', 'History', 'Incidents', 'Alertas', 'Configuracoes', 'Administracao', 'Auditoria'];
-
-const PAGE_LABELS = {
-  Dashboard: 'Dashboard',
-  Terminais: 'Terminais',
-  Clientes: 'Clientes',
-  History: 'Histórico',
-  Incidents: 'Incidentes',
-  Alertas: 'Alertas',
-  Configuracoes: 'Configurações',
-  Administracao: 'Administração',
-  Auditoria: 'Auditoria',
-};
-
 const EMPTY_FORM = {
   email: '',
-  role: 'viewer',
-  paginas_permitidas: [], // new users start fully locked - admin must grant access
-  pode_configurar_alertas: false,
-  pode_gerenciar_usuarios: false,
-  pode_editar_terminais: false,
-  pode_editar_clientes: false,
-  limite_terminais: 0,
+  role: 'user',
+  limite_terminais: 50,
 };
 
 export default function Administracao() {

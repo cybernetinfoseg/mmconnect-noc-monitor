@@ -39,7 +39,7 @@ export default function KPICard({ title, value, icon: Icon, color, trend, trendV
     >
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1 sm:space-y-2 min-w-0">
-          <p className="text-[10px] sm:text-sm font-medium text-slate-500 uppercase tracking-wider leading-tight">
+          <p className="text-[10px] sm:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-tight">
             {title}
           </p>
           <motion.p

@@ -7,11 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UserProfileForm from './UserProfileForm';
 import ContactAdminForm from './ContactAdminForm';
 
-export default function PendingApproval({ user }) {
+export default function PendingApproval({ user: initialUser }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [user, setUser] = useState(initialUser);
 
-  const handleProfileSuccess = () => {
+  const handleProfileSuccess = async () => {
+    // Recarrega dados atualizados do servidor
+    try {
+      const updated = await base44.auth.me();
+      setUser(updated);
+    } catch (e) {
+      // fallback silencioso
+    }
     setFormSubmitted(true);
   };
 

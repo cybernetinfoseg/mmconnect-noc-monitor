@@ -387,9 +387,46 @@ export default function Administracao() {
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 h-8 text-slate-400 hover:text-slate-700"
+                      onClick={() => setExpanded(!expanded)}
+                      title="Ver informações"
+                    >
+                      {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </Button>
                   </div>
                 </div>
-              ))}
+
+                  {/* Expanded Info */}
+                  {expanded && (
+                    <div className="px-4 pb-4 pt-1 border-t border-amber-100 bg-amber-50/50 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-slate-500 font-medium">Primeiro Nome</p>
+                        <p className="text-slate-800">{user.nome || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 font-medium">Sobrenome</p>
+                        <p className="text-slate-800">{user.sobrenome || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 font-medium">Telefone</p>
+                        <p className="text-slate-800">
+                          {user.pais_telefone && user.telefone ? `${user.pais_telefone} ${user.telefone}` : '—'}
+                        </p>
+                      </div>
+                      {user.motivo_acesso && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-slate-500 font-medium">Motivo do Acesso</p>
+                          <p className="text-slate-800">{user.motivo_acesso}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+          );
+        })}
             </CardContent>
           </Card>
         )}

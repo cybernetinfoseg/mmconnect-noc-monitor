@@ -19,6 +19,7 @@ import { format, subHours } from 'date-fns';
 
 export default function History() {
   const [period, setPeriod] = useState('24h');
+  const [terminalFilter, setTerminalFilter] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {

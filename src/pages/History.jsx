@@ -140,6 +140,17 @@ export default function History() {
             </div>
           </div>
           
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <Select value={terminalFilter} onValueChange={setTerminalFilter}>
+            <SelectTrigger className="w-[180px] bg-white shadow-sm">
+              <Monitor className="h-3.5 w-3.5 mr-1.5 text-slate-400 shrink-0" />
+              <SelectValue placeholder="Terminal" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os terminais</SelectItem>
+              {terminals.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Tabs value={period} onValueChange={setPeriod}>
             <TabsList className="bg-white shadow-sm">
               <TabsTrigger value="24h" className="flex items-center gap-1.5">

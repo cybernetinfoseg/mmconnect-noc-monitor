@@ -20,12 +20,14 @@ Deno.serve(async (req) => {
 
         const base44 = createClientFromRequest(req);
 
-        // 3. Encontrar utilizador dono da API Key (comparação exacta, case-sensitive)
+        // 3. Encontrar utilizador dono da API Key via filtro directo (mais rápido e seguro)
         if (apiKey.length < 10) {
             return Response.json({ error: 'API Key inválida' }, { status: 401 });
         }
-        const users = await base44.asServiceRole.entities.User.list();
-        const owner = users.find(u => u.api_key && u.api_key === apiKey);
+        const ownerList = await base44.asServiceRole.entities.User.filter({ api_key: apiKey });
+        const owner = ownerList.length > 0 ? ownerList[0] : null;
+        // Manter users para notificações Telegram abaixo (apenas se necessário)
+        let users = null;
 
         if (!owner) {
             return Response.json({ error: 'API Key inválida' }, { status: 401 });

@@ -201,7 +201,7 @@ export default function Dashboard() {
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-bold tracking-tight truncate">NOC Monitor</h1>
               <p className="text-xs text-slate-400 truncate">Terminais Biométricos</p>
-              <p className="text-xs text-emerald-400/70 font-mono mt-0.5 hidden sm:block">App ID: 697aa46c9998c30665e2e19a</p>
+              <p className="text-xs text-slate-400/70 mt-0.5 hidden sm:block">Sistema de Monitoramento</p>
             </div>
           </div>
 

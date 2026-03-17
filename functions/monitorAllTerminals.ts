@@ -3,11 +3,16 @@
  *
  * Lógica: O status de cada terminal depende EXCLUSIVAMENTE dos reports do Agente Local.
  * Se o agente não reportou há mais de AGENT_TIMEOUT_SECONDS → marca como Offline.
- * Chamado pelo scheduler a cada minuto.
+ * Chamado pelo scheduler a cada 5 minutos.
+ *
+ * THROTTLE do histórico: só grava StatusHistory quando:
+ *   - há mudança de status, OU
+ *   - passou mais de 1 hora desde o último registo
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
-const AGENT_TIMEOUT_SECONDS = 60;
+const AGENT_TIMEOUT_SECONDS = 150; // 2.5x o intervalo do agente (30s) — evita falsos alarmes
+const HISTORY_THROTTLE_SECONDS = 3600; // só grava histórico a cada 1h se status não mudou
 
 Deno.serve(async (req) => {
     try {
@@ -33,6 +38,12 @@ Deno.serve(async (req) => {
             const chunkResults = await Promise.all(chunk.map(async (terminal) => {
                 try {
                     let novoStatus = terminal.status || 'offline';
+                    let statusMudou = false;
+
+                    // Buscar cache de status actual
+                    const cacheResults = await base44.asServiceRole.entities.StatusCache.filter({ terminal_id: terminal.id });
+                    const cache = cacheResults[0] || null;
+                    const statusAnterior = cache?.ultimo_status || null;
 
                     if (terminal.ultimo_ping) {
                         const segundosSemPing = Math.floor((agora - new Date(terminal.ultimo_ping)) / 1000);
@@ -40,18 +51,17 @@ Deno.serve(async (req) => {
                         if (segundosSemPing > AGENT_TIMEOUT_SECONDS) {
                             // Agente silencioso → Offline
                             novoStatus = 'offline';
+                            statusMudou = statusAnterior !== 'offline';
+
                             await base44.asServiceRole.entities.Terminal.update(terminal.id, {
                                 status: 'offline',
                                 segundos_sem_ping: segundosSemPing,
                                 ultimo_check: agora.toISOString(),
                             });
 
-                            // Criar incidente se transitou de Online → Offline
-                            const cacheResults = await base44.asServiceRole.entities.StatusCache.filter({ terminal_id: terminal.id });
-                            const cache = cacheResults[0] || null;
-                            // Criar incidente se: transitou online→offline OU se nunca houve cache (primeira detecção de queda)
-                            const eraOnline = !cache || cache.ultimo_status === 'online';
-                            if (eraOnline) {
+                            // Criar incidente APENAS se transitou online → offline
+                            // (evitar duplicado com agentReport)
+                            if (statusMudou) {
                                 await base44.asServiceRole.entities.AlertIncident.create({
                                     terminal_id: terminal.id,
                                     terminal_nome: terminal.nome,
@@ -62,6 +72,7 @@ Deno.serve(async (req) => {
                                     resolvido: false,
                                     notificado: false,
                                 });
+
                                 await base44.asServiceRole.functions.invoke('pushNotify', {
                                     action: 'notify_offline',
                                     terminal_id: terminal.id,
@@ -80,7 +91,8 @@ Deno.serve(async (req) => {
                                             `📟 <b>${terminal.nome}</b>\n` +
                                             `📍 Local: ${terminal.local || '—'}\n` +
                                             `🏢 Cliente: ${terminal.cliente_nome || '—'}\n` +
-                                            `🕐 ${new Date().toLocaleString('pt-PT', { timeZone: 'UTC' })} UTC`;
+                                            `🕐 ${agora.toLocaleString('pt-PT', { timeZone: 'UTC' })} UTC\n` +
+                                            `⏱ Sem ping há ${Math.round(segundosSemPing / 60)} min`;
                                         await base44.asServiceRole.functions.invoke('telegramNotify', {
                                             bot_token: u.telegram_bot_token,
                                             chat_id: u.telegram_chat_id,
@@ -88,45 +100,26 @@ Deno.serve(async (req) => {
                                         }).catch(() => {});
                                     }
                                 }
-
-                                if (cache) {
-                                    await base44.asServiceRole.entities.StatusCache.update(cache.id, {
-                                        ultimo_status: 'offline',
-                                        atualizado_em: agora.toISOString(),
-                                    });
-                                } else {
-                                    await base44.asServiceRole.entities.StatusCache.create({
-                                        terminal_id: terminal.id,
-                                        ultimo_status: 'offline',
-                                        atualizado_em: agora.toISOString(),
-                                    });
-                                }
-
-                                // Reabrir incidentes resolvidos manualmente se o terminal continua offline
-                                // Condição: resolvido há mais de 5 minutos e menos de 24h
-                                const resolvedIncidents = await base44.asServiceRole.entities.AlertIncident.filter({
-                                    terminal_id: terminal.id,
-                                    resolvido: true,
-                                    tipo: 'offline',
-                                }).catch(() => []);
-                                if (resolvedIncidents.length > 0) {
-                                    const latest = resolvedIncidents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-                                    if (latest.resolvido_em) {
-                                        const resolvidoHaMinutos = (agora - new Date(latest.resolvido_em)) / 60000;
-                                        // Só reabre se: foi resolvido há mais de 5 min (terminal ainda offline) e menos de 24h (não histórico antigo)
-                                        if (resolvidoHaMinutos >= 5 && resolvidoHaMinutos < 1440) {
-                                            await base44.asServiceRole.entities.AlertIncident.update(latest.id, {
-                                                resolvido: false,
-                                                resolvido_em: null,
-                                                duracao_minutos: null,
-                                            }).catch(() => {});
-                                        }
-                                    }
-                                }
                             }
+
+                            // Actualizar cache
+                            if (cache) {
+                                await base44.asServiceRole.entities.StatusCache.update(cache.id, {
+                                    ultimo_status: 'offline',
+                                    atualizado_em: agora.toISOString(),
+                                });
+                            } else {
+                                await base44.asServiceRole.entities.StatusCache.create({
+                                    terminal_id: terminal.id,
+                                    ultimo_status: 'offline',
+                                    atualizado_em: agora.toISOString(),
+                                });
+                            }
+
                         } else {
-                            // Agente ativo → atualizar contador
+                            // Agente ativo
                             novoStatus = terminal.status || 'online';
+                            statusMudou = statusAnterior !== novoStatus;
                             await base44.asServiceRole.entities.Terminal.update(terminal.id, {
                                 segundos_sem_ping: segundosSemPing,
                                 ultimo_check: agora.toISOString(),
@@ -135,10 +128,18 @@ Deno.serve(async (req) => {
                     } else {
                         // Nunca recebeu ping do agente → Offline
                         novoStatus = 'offline';
+                        statusMudou = statusAnterior !== 'offline';
                         await base44.asServiceRole.entities.Terminal.update(terminal.id, {
                             status: 'offline',
                             ultimo_check: agora.toISOString(),
                         });
+                        if (!cache) {
+                            await base44.asServiceRole.entities.StatusCache.create({
+                                terminal_id: terminal.id,
+                                ultimo_status: 'offline',
+                                atualizado_em: agora.toISOString(),
+                            });
+                        }
                     }
 
                     // Resolver escalações abertas se terminal voltou Online
@@ -152,17 +153,24 @@ Deno.serve(async (req) => {
                         }
                     }
 
-                    // Gravar histórico de status (normalizar: warning → online, pois agente ainda responde)
-                    await base44.asServiceRole.entities.StatusHistory.create({
-                        terminal_id: terminal.id,
-                        terminal_nome: terminal.nome,
-                        status: novoStatus === 'warning' ? 'online' : (novoStatus || 'offline'),
-                        timestamp: agora.toISOString(),
-                        local: terminal.local || '',
-                        cliente: terminal.cliente_nome || '',
-                    }).catch(() => {});
+                    // THROTTLE: só grava histórico se status mudou OU passou >1h desde último registo
+                    const ultimoHistorico = terminal.ultimo_check ? new Date(terminal.ultimo_check) : null;
+                    const segundosDesdeUltimoCheck = ultimoHistorico
+                        ? Math.floor((agora - ultimoHistorico) / 1000)
+                        : HISTORY_THROTTLE_SECONDS + 1;
 
-                    return { terminal_id: terminal.id, terminal_nome: terminal.nome, success: true, status: novoStatus };
+                    if (statusMudou || segundosDesdeUltimoCheck >= HISTORY_THROTTLE_SECONDS) {
+                        await base44.asServiceRole.entities.StatusHistory.create({
+                            terminal_id: terminal.id,
+                            terminal_nome: terminal.nome,
+                            status: novoStatus === 'warning' ? 'online' : (novoStatus || 'offline'),
+                            timestamp: agora.toISOString(),
+                            local: terminal.local || '',
+                            cliente: terminal.cliente_nome || '',
+                        }).catch(() => {});
+                    }
+
+                    return { terminal_id: terminal.id, terminal_nome: terminal.nome, success: true, status: novoStatus, statusMudou };
                 } catch (error) {
                     return { terminal_id: terminal.id, terminal_nome: terminal.nome, success: false, error: error.message };
                 }
@@ -175,6 +183,7 @@ Deno.serve(async (req) => {
             total: terminals.length,
             monitored: results.filter(r => r.success).length,
             failed: results.filter(r => !r.success).length,
+            statusChanged: results.filter(r => r.statusMudou).length,
             results,
         });
 

@@ -27,15 +27,6 @@ Deno.serve(async (req) => {
             }
         }
 
-        // Segurança: bloquear chamadas de utilizadores não-admin
-        const isAuthenticated = await base44.auth.isAuthenticated();
-        if (isAuthenticated) {
-            const user = await base44.auth.me();
-            if (user?.role !== 'admin') {
-                return Response.json({ error: 'Forbidden: acesso apenas para administradores' }, { status: 403 });
-            }
-        }
-
         const terminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
         const agora = new Date();
         const results = [];

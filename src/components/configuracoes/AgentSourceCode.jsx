@@ -7,7 +7,7 @@ const AGENT_CODE = `# core_agent.py — Agente Local NOC Monitor
 # Instalacao: C:\\Program Files\\Base44Agent\\core_agent.py
 # Config:     C:\\ProgramData\\Base44Agent\\config.json
 # Logs:       C:\\ProgramData\\Base44Agent\\agent.log
-# Comunicacao protegida por X-Api-Key + X-App-Id obrigatorios em todos os pedidos.
+# Autenticacao: apenas X-Api-Key pessoal. Sem ela, todos os pedidos sao rejeitados.
 import os, sys, json, time, socket, logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone, timedelta
@@ -77,13 +77,12 @@ def load_config():
 
 
 # ──────────────────────────────────────────────────────────────────
-#  Autenticacao: TODOS os pedidos levam estes dois cabecalhos.
-#  O servidor rejeita (401/403) qualquer pedido sem eles.
+#  Autenticacao: APENAS X-Api-Key pessoal.
+#  O servidor rejeita (401) qualquer pedido sem ela ou com key invalida.
 # ──────────────────────────────────────────────────────────────────
-def _headers(api_key: str, app_id: str) -> dict:
+def _headers(api_key: str) -> dict:
     return {
         "X-Api-Key":     api_key,
-        "X-App-Id":      app_id,
         "Content-Type":  "application/json",
     }
 
@@ -91,7 +90,7 @@ def _headers(api_key: str, app_id: str) -> dict:
 def listar_terminais(session, app_id: str, api_key: str) -> list:
     """GET agentGetTerminals — lista terminais do utilizador."""
     url = f"https://app.base44.app/api/apps/{app_id}/functions/agentGetTerminals"
-    r = session.get(url, headers=_headers(api_key, app_id), timeout=10)
+    r = session.get(url, headers=_headers(api_key), timeout=10)
     r.raise_for_status()
     data = r.json()
     if not data.get("success"):
@@ -109,7 +108,7 @@ def reportar_terminal(session, app_id: str, api_key: str,
         "latencia_ms":      latencia_ms,
         "segundos_sem_ping": 0,
     }
-    r = session.post(url, headers=_headers(api_key, app_id), json=payload, timeout=10)
+    r = session.post(url, headers=_headers(api_key), json=payload, timeout=10)
     r.raise_for_status()
     return r.json()
 
@@ -174,7 +173,7 @@ def run_agent(intervalo=DEFAULT_INTERVAL, enable_update=True, once=False,
             except requests.HTTPError as e:
                 code = e.response.status_code if e.response is not None else "?"
                 if code in (401, 403):
-                    logger.error(f"Auth falhada ({code}): verifique API_KEY e APP_ID.")
+                    logger.error(f"Auth falhada ({code}): verifique a sua API_KEY pessoal.")
                 else:
                     logger.error(f"Falha ao listar terminais (HTTP {code}): {e}")
                 for _ in range(intervalo):
@@ -215,7 +214,7 @@ def run_agent(intervalo=DEFAULT_INTERVAL, enable_update=True, once=False,
                     )
                 except requests.HTTPError as e:
                     code = e.response.status_code if e.response is not None else "?"
-                    logger.error(f"Erro ao reportar terminal {t.get('id')} (HTTP {code}): verifique credenciais.")
+                    logger.error(f"Erro ao reportar terminal {t.get('id')} (HTTP {code}): verifique a sua API_KEY.")
                 except Exception as e:
                     logger.error(f"Erro terminal {t.get('id')}: {e}")
 
@@ -242,7 +241,7 @@ export default function AgentSourceCode() {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-          <Code2 className="h-4 w-4" /> Código fonte — core_agent.py (seguro)
+          <Code2 className="h-4 w-4" /> Código fonte — core_agent.py
         </p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setExpanded(v => !v)}>
@@ -255,10 +254,10 @@ export default function AgentSourceCode() {
         </div>
       </div>
 
-      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-        <strong>Segurança:</strong> Este agente usa <code className="bg-amber-100 px-1 rounded">X-Api-Key</code> e <code className="bg-amber-100 px-1 rounded">X-App-Id</code> em <strong>todos</strong> os pedidos.
-        Qualquer pedido sem estes dois cabeçalhos é rejeitado com <strong>401/403</strong>.
-        Os endpoints corretos são <code className="bg-amber-100 px-1 rounded">agentGetTerminals</code> (GET) e <code className="bg-amber-100 px-1 rounded">agentReport</code> (POST).
+      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
+        <strong>Segurança:</strong> Este agente autentica-se exclusivamente pela <code className="bg-emerald-100 px-1 rounded">X-Api-Key</code> pessoal.
+        Qualquer pedido sem ela ou com key inválida é rejeitado com <strong>401</strong>.
+        O servidor isola automaticamente os terminais de cada utilizador.
       </div>
 
       {expanded && (

@@ -48,7 +48,16 @@ export default function Configuracoes() {
   const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me().then(async (me) => {
+      if (!me) return;
+      // Ler o registo completo do User (incluindo api_key) via entidade
+      try {
+        const fullUser = await base44.entities.User.get(me.id);
+        setCurrentUser({ ...me, ...fullUser });
+      } catch {
+        setCurrentUser(me);
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {

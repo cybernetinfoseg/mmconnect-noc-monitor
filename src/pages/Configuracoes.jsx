@@ -46,6 +46,8 @@ export default function Configuracoes() {
   const [saving, setSaving] = useState(false);
   const [generatingKey, setGeneratingKey] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [testingConn, setTestingConn] = useState(false);
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(async (me) => {

@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
 
             // Telegram: notificar donos com bot configurado
             if (terminal.created_by) {
+                if (!users) users = await base44.asServiceRole.entities.User.list();
                 const admins = users.filter(u => u.role === 'admin' || u.email === terminal.created_by);
                 for (const u of admins) {
                     if (u.telegram_bot_token && u.telegram_chat_id) {

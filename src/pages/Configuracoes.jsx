@@ -274,16 +274,36 @@ export default function Configuracoes() {
                     ) : (
                       <p className="text-xs text-slate-500 italic">Nenhuma API Key gerada ainda. Clique em "Gerar" abaixo.</p>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleGenerateApiKey}
-                      disabled={generatingKey}
-                      className="gap-2 text-xs"
-                    >
-                      <RefreshCw className={`h-3 w-3 ${generatingKey ? 'animate-spin' : ''}`} />
-                      {currentUser?.api_key ? 'Regenerar API Key' : 'Gerar API Key'}
-                    </Button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateApiKey}
+                        disabled={generatingKey}
+                        className="gap-2 text-xs"
+                      >
+                        <RefreshCw className={`h-3 w-3 ${generatingKey ? 'animate-spin' : ''}`} />
+                        {currentUser?.api_key ? 'Regenerar API Key' : 'Gerar API Key'}
+                      </Button>
+                      {currentUser?.api_key && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleTestConnection}
+                          disabled={testingConn}
+                          className="gap-2 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        >
+                          <Plug className={`h-3 w-3 ${testingConn ? 'animate-pulse' : ''}`} />
+                          {testingConn ? 'A testar...' : 'Testar Ligação'}
+                        </Button>
+                      )}
+                    </div>
+                    {testResult && (
+                      <div className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg border ${testResult.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                        {testResult.ok ? <CheckCircle className="h-3.5 w-3.5 shrink-0" /> : <XCircle className="h-3.5 w-3.5 shrink-0" />}
+                        {testResult.msg}
+                      </div>
+                    )}
                     {currentUser?.api_key && (
                       <p className="text-xs text-orange-600 bg-orange-50 border border-orange-200 rounded px-2 py-1">
                         ⚠️ Ao regenerar, o agente atual deixa de funcionar até ser reconfigurado com a nova key.

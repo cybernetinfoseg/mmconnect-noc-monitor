@@ -294,7 +294,7 @@ export default function History() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {uptimeData.slice(0, 10).map((terminal, index) => (
+                  {filteredUptimeData.slice(0, 10).map((terminal, index) => (
                     <motion.div
                       key={terminal.id}
                       initial={{ opacity: 0, x: -20 }}

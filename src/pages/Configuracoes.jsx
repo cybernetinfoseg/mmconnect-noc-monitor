@@ -245,8 +245,26 @@ export default function Configuracoes() {
                 <p className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <Key className="h-4 w-4" /> Credenciais do Agente
                 </p>
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-                  <strong>Isolamento por utilizador:</strong> Cada utilizador possui a sua própria <strong>API Key pessoal</strong>. O agente configurado com a sua key só vê e reporta os seus terminais — sem interferência com outros utilizadores.
+
+                {/* Documentação de segurança */}
+                <div className="space-y-2">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 space-y-2">
+                    <p className="font-semibold flex items-center gap-1.5">🔐 Como funciona a autenticação</p>
+                    <ul className="space-y-1 list-disc list-inside leading-relaxed">
+                      <li>Cada utilizador tem uma <strong>API Key pessoal única</strong>, gerada aleatoriamente.</li>
+                      <li>A chave é enviada pelo agente no header <code className="bg-blue-100 px-1 rounded font-mono">X-Api-Key</code> em cada pedido.</li>
+                      <li>O servidor valida a chave e identifica o utilizador — o agente <strong>só acede aos seus próprios terminais</strong>.</li>
+                      <li>Não é possível ler ou reportar terminais de outros utilizadores com uma chave diferente.</li>
+                    </ul>
+                  </div>
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 space-y-1">
+                    <p className="font-semibold flex items-center gap-1.5">⚠️ Boas práticas de segurança</p>
+                    <ul className="space-y-1 list-disc list-inside leading-relaxed">
+                      <li>Guarde a API Key apenas no ficheiro <code className="bg-amber-100 px-1 rounded font-mono">config.json</code> local do agente — nunca em código fonte.</li>
+                      <li>Se suspeitar de comprometimento, use "Regenerar API Key" imediatamente (a anterior fica inválida).</li>
+                      <li>O servidor corre sobre HTTPS — a chave é sempre transmitida de forma encriptada.</li>
+                    </ul>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   {/* API Key pessoal */}

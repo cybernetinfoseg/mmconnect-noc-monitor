@@ -120,6 +120,11 @@ export default function History() {
   // Get worst performers
   const worstPerformers = uptimeData.filter(t => t.uptime < 99).slice(0, 5);
 
+  const filteredUptimeData = useMemo(() => {
+    if (terminalFilter === 'all') return uptimeData;
+    return uptimeData.filter(t => t.id === terminalFilter);
+  }, [uptimeData, terminalFilter]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-6">
       <div className="max-w-[1920px] mx-auto space-y-6">

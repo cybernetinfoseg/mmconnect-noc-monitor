@@ -10,17 +10,9 @@
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
-const APP_ID = Deno.env.get('BASE44_APP_ID');
-
 Deno.serve(async (req) => {
     try {
-        // 1. Validar APP ID
-        const appIdHeader = req.headers.get('X-App-Id');
-        if (!appIdHeader || appIdHeader !== APP_ID) {
-            return Response.json({ error: 'APP ID inválido ou ausente' }, { status: 403 });
-        }
-
-        // 2. Validar API Key pessoal
+        // 1. Validar API Key pessoal (único fator de autenticação)
         const apiKey = req.headers.get('X-Api-Key');
         if (!apiKey) {
             return Response.json({ error: 'API Key ausente' }, { status: 401 });

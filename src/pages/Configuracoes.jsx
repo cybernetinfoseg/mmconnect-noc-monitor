@@ -15,7 +15,10 @@ import {
   Info,
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
+  CheckCircle,
+  XCircle,
+  Plug
 } from 'lucide-react';
 import {
   AlertDialog,

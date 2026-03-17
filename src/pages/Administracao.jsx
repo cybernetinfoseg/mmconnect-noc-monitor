@@ -167,16 +167,16 @@ export default function Administracao() {
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role, limite_terminais }) => {
       const user = await base44.users.inviteUser(email, role === 'admin' ? 'admin' : 'user');
-      // Atualizar limite de terminais para 0 (novo usuário)
+      // Atualizar limite de terminais conforme definido pelo admin
       if (user?.id && !role?.includes('admin')) {
-        await base44.entities.User.update(user.id, { limite_terminais: 0 });
+        await base44.entities.User.update(user.id, { limite_terminais: Number(limite_terminais) || 10 });
       }
       return user;
     },
-    onSuccess: (_, { email, role }) => {
-      logAudit('usuario_convidado', '', `Usuário ${email} convidado com role "${role}" e limite 0/0`);
+    onSuccess: (_, { email, role, limite_terminais }) => {
+      logAudit('usuario_convidado', '', `Usuário ${email} convidado com role "${role}" e limite ${limite_terminais}`);
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Convite enviado! Novo usuário começa com limite 0/0.');
+      toast.success(`Convite enviado! Limite: ${role === 'admin' ? 'ilimitado' : limite_terminais} terminais.`);
       handleCancel();
     },
     onError: () => toast.error('Erro ao enviar convite'),

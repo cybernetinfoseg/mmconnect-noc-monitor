@@ -55,6 +55,9 @@ import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
 export default function Terminais() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [clienteFilter, setClienteFilter] = useState('all');
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTerminal, setEditingTerminal] = useState(null);
   const [formData, setFormData] = useState({});

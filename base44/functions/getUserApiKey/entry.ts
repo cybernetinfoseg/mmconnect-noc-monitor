@@ -10,16 +10,8 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Tentar obter via entidade completa para garantir acesso a todos os campos
-        let api_key = user?.api_key || user?.data?.api_key || null;
-
-        if (!api_key) {
-            try {
-                const fullUser = await base44.asServiceRole.entities.User.get(user.id);
-                api_key = fullUser?.api_key || fullUser?.data?.api_key || null;
-            } catch {}
-        }
-
+        // api_key pode estar em data.api_key (campo personalizado) ou no nível raiz
+        const api_key = user?.api_key || user?.data?.api_key || null;
         return Response.json({ api_key });
     } catch (error) {
         return Response.json({ error: error.message }, { status: 500 });

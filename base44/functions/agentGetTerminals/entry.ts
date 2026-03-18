@@ -14,8 +14,11 @@ Deno.serve(async (req) => {
 
         const base44 = createClientFromRequest(req);
 
-        // Procurar utilizador com esta api_key
-        const users = await base44.asServiceRole.entities.User.filter({ api_key: apiKey });
+        // Procurar utilizador com esta api_key (pode estar em data.api_key)
+        let users = await base44.asServiceRole.entities.User.filter({ api_key: apiKey });
+        if (!users || users.length === 0) {
+            users = await base44.asServiceRole.entities.User.filter({ 'data.api_key': apiKey });
+        }
         const owner = users.length > 0 ? users[0] : null;
 
         if (!owner) {

@@ -88,9 +88,9 @@ def _headers(api_key: str) -> dict:
 
 
 def listar_terminais(session, app_id: str, api_key: str) -> list:
-    """GET agentGetTerminals — lista terminais do utilizador."""
+    """POST agentGetTerminals — lista terminais do utilizador."""
     url = f"https://app.base44.app/api/apps/{app_id}/functions/agentGetTerminals"
-    r = session.get(url, headers=_headers(api_key), timeout=10)
+    r = session.post(url, headers=_headers(api_key), json={}, timeout=10)
     r.raise_for_status()
     data = r.json()
     if not data.get("success"):

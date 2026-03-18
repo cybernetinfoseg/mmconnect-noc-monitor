@@ -204,16 +204,29 @@ async function checkTerminalActive(terminal) {
 
         if (!host) return { online: false };
 
-        // Verificação TCP: se conseguir conectar ao porto, o terminal está online
-        // (independente do protocolo que serve — basta o porto responder)
+        // Tentar TCP primeiro
         try {
             const conn = await Promise.race([
                 Deno.connect({ hostname: host, port: Number(porta) }),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), CHECK_TIMEOUT_MS))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('tcp_timeout')), CHECK_TIMEOUT_MS))
             ]);
             conn.close();
+            console.log(`[TCP OK] ${host}:${porta} latencia=${Date.now() - inicio}ms`);
             return { online: true, latencia_ms: Date.now() - inicio };
-        } catch {
+        } catch (tcpErr) {
+            console.log(`[TCP FAIL] ${host}:${porta} → ${tcpErr.message}`);
+        }
+
+        // Fallback HTTP: qualquer resposta (mesmo erro HTTP) = servidor vivo
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
+            const res = await fetch(`http://${host}:${porta}`, { signal: controller.signal });
+            clearTimeout(timer);
+            console.log(`[HTTP OK] ${host}:${porta} → status ${res.status}`);
+            return { online: true, latencia_ms: Date.now() - inicio };
+        } catch (httpErr) {
+            console.log(`[HTTP FAIL] ${host}:${porta} → ${httpErr.message}`);
             return { online: false };
         }
     } catch {

@@ -138,13 +138,22 @@ async function checkTerminal(terminal) {
 
         if (!host) return { online: false };
 
-        // Verificação TCP: basta o porto responder para considerar online
+        // TCP primeiro
         try {
             const conn = await Promise.race([
                 Deno.connect({ hostname: host, port: Number(porta) }),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('tcp_timeout')), timeout))
             ]);
             conn.close();
+            return { online: true, latencia_ms: Date.now() - inicio };
+        } catch {}
+
+        // Fallback HTTP
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            await fetch(`http://${host}:${porta}`, { signal: controller.signal });
+            clearTimeout(timer);
             return { online: true, latencia_ms: Date.now() - inicio };
         } catch {
             return { online: false };

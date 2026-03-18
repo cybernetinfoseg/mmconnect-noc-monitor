@@ -204,15 +204,16 @@ async function checkTerminalActive(terminal) {
 
         if (!host) return { online: false };
 
-        const url = `http://${host}:${porta}`;
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
+        // Verificação TCP: se conseguir conectar ao porto, o terminal está online
+        // (independente do protocolo que serve — basta o porto responder)
         try {
-            await fetch(url, { signal: controller.signal });
-            clearTimeout(timer);
+            const conn = await Promise.race([
+                Deno.connect({ hostname: host, port: Number(porta) }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), CHECK_TIMEOUT_MS))
+            ]);
+            conn.close();
             return { online: true, latencia_ms: Date.now() - inicio };
         } catch {
-            clearTimeout(timer);
             return { online: false };
         }
     } catch {

@@ -47,7 +47,8 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
         }
 
-        if (terminal.created_by !== owner.email) {
+        const isAdmin = owner.role === 'admin';
+        if (!isAdmin && terminal.created_by !== owner.email) {
             return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
         }
 

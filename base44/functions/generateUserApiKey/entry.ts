@@ -25,6 +25,9 @@ Deno.serve(async (req) => {
         crypto.getRandomValues(array);
         const apiKey = 'noc_' + Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
 
+        // Guardar no campo raiz api_key (acessível via filter e auth.me)
+        await base44.auth.updateMe({ api_key: apiKey });
+        // Também via service role para garantir persistência
         await base44.asServiceRole.entities.User.update(userId, { api_key: apiKey });
 
         // Audit log

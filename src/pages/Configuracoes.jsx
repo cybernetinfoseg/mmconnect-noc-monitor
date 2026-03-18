@@ -53,17 +53,16 @@ export default function Configuracoes() {
   const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(async (me) => {
+    base44.auth.me().then((me) => {
       if (!me) return;
-      setCurrentUser(me);
-      // Obter api_key via função dedicada (service role garante campo completo)
-      try {
-        const res = await base44.functions.invoke('getUserApiKey', {});
-        const key = res.data?.api_key;
-        setCurrentUser(prev => ({ ...prev, api_key: key || '' }));
-      } catch {
-        // silenciar
-      }
+      // A chave gerada pelo sistema (prefixo noc_) está em me.data.api_key
+      // O campo raiz me.api_key pode ter um valor antigo — dar prioridade a data.api_key
+      const dataKey = me?.data?.api_key;
+      const rootKey = me?.api_key;
+      const api_key = (dataKey?.startsWith?.('noc_') ? dataKey : null)
+        || (rootKey?.startsWith?.('noc_') ? rootKey : null)
+        || dataKey || rootKey || '';
+      setCurrentUser({ ...me, api_key });
     }).catch(() => {});
   }, []);
 

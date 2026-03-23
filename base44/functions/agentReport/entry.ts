@@ -8,7 +8,7 @@
  *
  * Só aceita reportar terminais que pertencem ao dono da API Key.
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 Deno.serve(async (req) => {
     try {

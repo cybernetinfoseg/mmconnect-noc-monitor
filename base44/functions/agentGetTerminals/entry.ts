@@ -6,22 +6,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 Deno.serve(async (req) => {
     try {
-        // Aceitar key no header, body ou query string
-        let apiKey = req.headers.get('X-Api-Key') || req.headers.get('x-api-key');
+        // Aceitar key no header ou body — NUNCA em query string (segurança)
+        let apiKey = (req.headers.get('X-Api-Key') || req.headers.get('x-api-key') || '').trim();
 
         if (!apiKey && req.method === 'POST') {
             try {
                 const body = await req.json();
-                apiKey = body?.api_key || null;
+                apiKey = (body?.api_key || '').trim();
             } catch (_) {}
         }
 
-        if (!apiKey) {
-            const url = new URL(req.url);
-            apiKey = url.searchParams.get('api_key');
-        }
-
-        if (!apiKey || apiKey.length < 10) {
+        // Validar ANTES de qualquer operação — key vazia ou curta é rejeitada imediatamente
+        if (!apiKey || apiKey.length < 16) {
             return Response.json({ error: 'API Key ausente ou inválida' }, { status: 401 });
         }
 

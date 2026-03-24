@@ -64,13 +64,19 @@ class SingleInstance:
 def load_config():
     api_key = os.environ.get("BASE44_API_KEY", "").strip()
     app_id  = os.environ.get("BASE44_APP_ID",  "").strip()
-    if api_key and app_id:
+    if api_key and app_id and len(api_key) >= 16:
         return {"API_KEY": api_key, "APP_ID": app_id}
     if os.path.exists(CONFIG_FILE):
         try:
             cfg = json.loads(open(CONFIG_FILE, encoding="utf-8").read())
-            if cfg.get("API_KEY") and cfg.get("APP_ID"):
-                return cfg
+            key = (cfg.get("API_KEY") or "").strip()
+            aid = (cfg.get("APP_ID")  or "").strip()
+            if key and aid and len(key) >= 16:
+                return {"API_KEY": key, "APP_ID": aid}
+            if aid and not key:
+                logger.error("SEGURANCA: API_KEY esta vazia no config.json — agente bloqueado ate configuracao valida.")
+            elif key and len(key) < 16:
+                logger.error("SEGURANCA: API_KEY demasiado curta — agente bloqueado.")
         except Exception as e:
             logger.error(f"Falha ao ler config.json: {e}")
     return None

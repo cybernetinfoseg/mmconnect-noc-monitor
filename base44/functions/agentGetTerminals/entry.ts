@@ -9,22 +9,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 Deno.serve(async (req) => {
     try {
-        // 1. Extrair API Key — header tem prioridade; body como fallback para o agente
-        let apiKey = (req.headers.get('X-Api-Key') || req.headers.get('x-api-key') || '').trim();
-
-        if (!apiKey && req.method === 'POST') {
-            try {
-                const bodyText = await req.text();
-                const bodyJson = JSON.parse(bodyText);
-                apiKey = (bodyJson?.api_key || '').trim();
-                // Re-attach para que o SDK possa ler o body se necessário
-                req = new Request(req.url, {
-                    method: req.method,
-                    headers: req.headers,
-                    body: bodyText,
-                });
-            } catch (_) {}
-        }
+        // 1. Extrair API Key — EXCLUSIVAMENTE pelo header X-Api-Key
+        const apiKey = (req.headers.get('X-Api-Key') || req.headers.get('x-api-key') || '').trim();
 
         // 2. Rejeitar IMEDIATAMENTE — antes de qualquer inicialização de cliente ou query
         if (!apiKey || apiKey.length < 16) {

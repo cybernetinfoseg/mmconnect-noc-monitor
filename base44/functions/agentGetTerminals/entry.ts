@@ -1,12 +1,20 @@
 /**
  * agentGetTerminals — devolve os terminais ao Agente Local
- * Autenticação: X-Api-Key no header (lida da entidade ApiKey)
+ *
+ * SEGURANÇA: autenticação EXCLUSIVAMENTE por X-Api-Key pessoal.
+ * Não usa sessão da plataforma. Qualquer pedido sem key válida → 401.
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClient } from 'npm:@base44/sdk@0.8.21';
+
+// Client de serviço — sem contexto de utilizador/sessão
+const serviceClient = createClient({
+    appId: Deno.env.get('BASE44_APP_ID'),
+    serviceRoleKey: true,
+});
 
 Deno.serve(async (req) => {
     try {
-        // Aceitar key no header ou body — NUNCA em query string (segurança)
+        // Aceitar key no header ou body — NUNCA em query string
         let apiKey = (req.headers.get('X-Api-Key') || req.headers.get('x-api-key') || '').trim();
 
         if (!apiKey && req.method === 'POST') {
@@ -16,15 +24,13 @@ Deno.serve(async (req) => {
             } catch (_) {}
         }
 
-        // Validar ANTES de qualquer operação — key vazia ou curta é rejeitada imediatamente
+        // Rejeitar IMEDIATAMENTE antes de qualquer query
         if (!apiKey || apiKey.length < 16) {
             return Response.json({ error: 'API Key ausente ou inválida' }, { status: 401 });
         }
 
-        const base44 = createClientFromRequest(req);
-
         // Procurar chave activa na entidade ApiKey
-        const allKeys = await base44.asServiceRole.entities.ApiKey.filter({ ativo: true });
+        const allKeys = await serviceClient.entities.ApiKey.filter({ ativo: true });
         const match = allKeys.find(k => k.key === apiKey);
 
         if (!match) {
@@ -34,7 +40,7 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        const terminals = await base44.asServiceRole.entities.Terminal.filter({
+        const terminals = await serviceClient.entities.Terminal.filter({
             ativo: true,
             created_by: ownerEmail,
         });

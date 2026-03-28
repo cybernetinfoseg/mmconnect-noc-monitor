@@ -4,15 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Badge } from '@/components/ui/badge';
 import {
     FileBarChart2, Download, TrendingUp, AlertTriangle, Activity,
-    CheckCircle2, XCircle, Calendar, Printer, Loader2
+    CheckCircle2, XCircle, Calendar, Printer, Loader2, ChevronDown
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import { format, subDays, subWeeks, startOfDay, startOfWeek, startOfMonth, eachDayOfInterval, eachWeekOfInterval } from 'date-fns';
+import { format, subDays, subMonths, startOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, addDays, addWeeks, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import UptimeTrendChart from '@/components/relatorios/UptimeTrendChart';
 import IncidentsTrendChart from '@/components/relatorios/IncidentsTrendChart';
 import AvailabilityHeatmap from '@/components/relatorios/AvailabilityHeatmap';
@@ -69,38 +70,60 @@ export default function Relatorios() {
         return allIncidents.filter(i => myIds.has(i.terminal_id));
     }, [allIncidents, currentUser, canSeeAll, terminals]);
 
+    const PERIOD_OPTIONS = [
+        { value: '7d',   label: '7 dias' },
+        { value: '15d',  label: '15 dias' },
+        { value: '1m',   label: '1 mês' },
+        { value: '3m',   label: '3 meses' },
+        { value: '6m',   label: '6 meses' },
+        { value: '1y',   label: '1 ano' },
+    ];
+
     // Define buckets based on period
-    const { buckets, bucketFormat, cutoff } = useMemo(() => {
+    const { buckets, bucketSize, cutoff } = useMemo(() => {
         const now = new Date();
-        if (period === '7d') {
-            const cut = subDays(now, 7);
+        // Helper to build daily buckets
+        const dailyBuckets = (cut) => {
             const days = eachDayOfInterval({ start: cut, end: now });
-            return {
-                cutoff: cut,
-                bucketFormat: (d) => format(d, 'EEE dd/MM', { locale: ptBR }),
-                buckets: days.map(d => ({ date: d, label: format(d, 'EEE dd', { locale: ptBR }) })),
-            };
-        } else {
-            const cut = subDays(now, 30);
+            return days.map(d => ({ date: d, label: format(d, 'dd/MM', { locale: ptBR }) }));
+        };
+        // Helper to build weekly buckets
+        const weeklyBuckets = (cut) => {
             const weeks = eachWeekOfInterval({ start: cut, end: now });
-            return {
-                cutoff: cut,
-                bucketFormat: (d) => format(d, "'Sem' II", { locale: ptBR }),
-                buckets: weeks.map(d => ({ date: d, label: format(d, "dd/MM", { locale: ptBR }) })),
-            };
-        }
+            return weeks.map(d => ({ date: d, label: format(d, 'dd/MM', { locale: ptBR }) }));
+        };
+        // Helper to build monthly buckets
+        const monthlyBuckets = (cut) => {
+            const months = eachMonthOfInterval({ start: cut, end: now });
+            return months.map(d => ({ date: d, label: format(d, 'MMM yy', { locale: ptBR }) }));
+        };
+
+        if (period === '7d')  { const c = subDays(now, 7);    return { cutoff: c, bucketSize: 'day',   buckets: dailyBuckets(c) }; }
+        if (period === '15d') { const c = subDays(now, 15);   return { cutoff: c, bucketSize: 'day',   buckets: dailyBuckets(c) }; }
+        if (period === '1m')  { const c = subMonths(now, 1);  return { cutoff: c, bucketSize: 'week',  buckets: weeklyBuckets(c) }; }
+        if (period === '3m')  { const c = subMonths(now, 3);  return { cutoff: c, bucketSize: 'week',  buckets: weeklyBuckets(c) }; }
+        if (period === '6m')  { const c = subMonths(now, 6);  return { cutoff: c, bucketSize: 'month', buckets: monthlyBuckets(c) }; }
+        if (period === '1y')  { const c = subMonths(now, 12); return { cutoff: c, bucketSize: 'month', buckets: monthlyBuckets(c) }; }
+        const c = subDays(now, 7); return { cutoff: c, bucketSize: 'day', buckets: dailyBuckets(c) };
     }, [period]);
+
+    // Helper: get end of a bucket based on bucketSize
+    const getBucketEnd = (date) => {
+        if (bucketSize === 'day')   return addDays(date, 1);
+        if (bucketSize === 'week')  return addWeeks(date, 1);
+        if (bucketSize === 'month') return addMonths(date, 1);
+        return addDays(date, 1);
+    };
 
     // Uptime trend data per bucket per terminal
     const uptimeTrendData = useMemo(() => {
         return buckets.map(({ date, label }) => {
             const bucketStart = startOfDay(date);
-            const bucketEnd = new Date(bucketStart.getTime() + (period === '7d' ? 86400000 : 7 * 86400000));
+            const bucketEnd = getBucketEnd(bucketStart);
             const bucketHistory = history.filter(h => {
                 const t = new Date(h.timestamp);
                 return t >= bucketStart && t < bucketEnd;
             });
-
             const row = { label };
             terminals.forEach(t => {
                 const termRecords = bucketHistory.filter(h => h.terminal_id === t.id);
@@ -110,13 +133,13 @@ export default function Relatorios() {
             });
             return row;
         });
-    }, [buckets, history, terminals, period]);
+    }, [buckets, history, terminals, bucketSize]);
 
     // Incidents trend per bucket
     const incidentsTrendData = useMemo(() => {
         return buckets.map(({ date, label }) => {
             const bucketStart = startOfDay(date);
-            const bucketEnd = new Date(bucketStart.getTime() + (period === '7d' ? 86400000 : 7 * 86400000));
+            const bucketEnd = getBucketEnd(bucketStart);
             const bucketIncidents = incidents.filter(inc => {
                 const t = new Date(inc.timestamp);
                 return t >= bucketStart && t < bucketEnd;
@@ -127,7 +150,7 @@ export default function Relatorios() {
                 restored: bucketIncidents.filter(i => i.tipo === 'restored').length,
             };
         });
-    }, [buckets, incidents, period]);
+    }, [buckets, incidents, bucketSize]);
 
     // Summary KPIs
     const kpis = useMemo(() => {
@@ -205,7 +228,7 @@ export default function Relatorios() {
     const handleExportPDF = async () => {
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const now = format(new Date(), "dd/MM/yyyy HH:mm");
-        const periodLabel = period === '7d' ? 'Últimos 7 dias' : 'Últimos 30 dias';
+        const periodLabel = PERIOD_OPTIONS.find(o => o.value === period)?.label || period;
 
         // Header
         doc.setFillColor(15, 23, 42);
@@ -359,21 +382,22 @@ export default function Relatorios() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <Tabs value={period} onValueChange={setPeriod}>
-                        <TabsList className="bg-white shadow-sm border border-slate-200">
-                            <TabsTrigger value="7d" className="text-xs gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />7 dias
-                            </TabsTrigger>
-                            <TabsTrigger value="30d" className="text-xs gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />30 dias
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                    <Button onClick={handlePrint} variant="outline" size="sm" className="gap-2 print:hidden" disabled={printing}>
+                    <Select value={period} onValueChange={setPeriod}>
+                        <SelectTrigger className="w-36 bg-white border-slate-200 text-sm h-9">
+                            <Calendar className="h-3.5 w-3.5 text-slate-400 mr-1" />
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {PERIOD_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={handlePrint} variant="outline" size="sm" className="gap-2 print:hidden h-9" disabled={printing}>
                         {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
                         <span className="hidden sm:inline">{printing ? 'A preparar...' : 'Imprimir'}</span>
                     </Button>
-                    <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2 print:hidden">
+                    <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2 print:hidden h-9">
                         <Download className="h-4 w-4" />
                         <span className="hidden sm:inline">Exportar PDF</span>
                         <span className="sm:hidden">PDF</span>

@@ -247,13 +247,35 @@ export default function Incidents() {
     setCheckingId(incident.id);
     setCheckError(null);
     try {
-      const terminal = await base44.entities.Terminal.get(incident.terminal_id);
-      if (!terminal || terminal.status !== 'online') {
+      // Verificar se terminal existe e está online (se não existir, permite resolver mesmo assim)
+      let terminalOnline = false;
+      try {
+        const terminal = await base44.entities.Terminal.get(incident.terminal_id);
+        terminalOnline = terminal?.status === 'online';
+      } catch {
+        // Terminal não existe — permite resolver manualmente
+        terminalOnline = true;
+      }
+
+      if (!terminalOnline) {
         setCheckError(incident.id);
         setTimeout(() => setCheckError(null), 4000);
         return;
       }
-      resolveMutation.mutate(incident);
+
+      // Resolver TODOS os incidentes offline não resolvidos do mesmo terminal
+      const agora = new Date().toISOString();
+      const allUnresolved = incidents.filter(
+        i => i.terminal_id === incident.terminal_id && !i.resolvido && i.tipo === 'offline'
+      );
+      for (const inc of allUnresolved) {
+        await base44.entities.AlertIncident.update(inc.id, {
+          resolvido: true,
+          resolvido_em: agora,
+          duracao_minutos: Math.round((new Date(agora) - new Date(inc.timestamp)) / 60000),
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
     } finally {
       setCheckingId(null);
     }

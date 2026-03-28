@@ -8,8 +8,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
     FileBarChart2, Download, TrendingUp, AlertTriangle, Activity,
-    CheckCircle2, XCircle, Calendar, Printer
+    CheckCircle2, XCircle, Calendar, Printer, Loader2
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { format, subDays, subWeeks, startOfDay, startOfWeek, startOfMonth, eachDayOfInterval, eachWeekOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import UptimeTrendChart from '@/components/relatorios/UptimeTrendChart';
@@ -20,6 +21,7 @@ import { jsPDF } from 'jspdf';
 export default function Relatorios() {
     const [period, setPeriod] = useState('7d');
     const [currentUser, setCurrentUser] = useState(null);
+    const [printing, setPrinting] = useState(false);
     const printRef = useRef();
 
     useEffect(() => {
@@ -156,6 +158,48 @@ export default function Relatorios() {
             return { ...t, uptime, totalIncidents: termIncidents.length };
         }).sort((a, b) => (a.uptime ?? 101) - (b.uptime ?? 101));
     }, [terminals, history, incidents, cutoff]);
+
+    // Print via html2canvas (captures charts correctly)
+    const handlePrint = async () => {
+        setPrinting(true);
+        try {
+            const canvas = await html2canvas(printRef.current, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Relatório NOC Monitor</title>
+                    <style>
+                        body { margin: 0; padding: 0; }
+                        img { width: 100%; display: block; }
+                        @media print {
+                            @page { margin: 0; size: A4 portrait; }
+                            body { margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${imgData}" />
+                    <script>
+                        window.onload = function() {
+                            setTimeout(function() { window.print(); window.close(); }, 500);
+                        };
+                    </script>
+                </body>
+                </html>
+            `);
+            win.document.close();
+        } finally {
+            setPrinting(false);
+        }
+    };
 
     // PDF Export
     const handleExportPDF = async () => {
@@ -325,9 +369,9 @@ export default function Relatorios() {
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    <Button onClick={() => window.print()} variant="outline" size="sm" className="gap-2 print:hidden">
-                        <Printer className="h-4 w-4" />
-                        <span className="hidden sm:inline">Imprimir</span>
+                    <Button onClick={handlePrint} variant="outline" size="sm" className="gap-2 print:hidden" disabled={printing}>
+                        {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                        <span className="hidden sm:inline">{printing ? 'A preparar...' : 'Imprimir'}</span>
                     </Button>
                     <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2 print:hidden">
                         <Download className="h-4 w-4" />

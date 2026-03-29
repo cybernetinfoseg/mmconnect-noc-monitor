@@ -58,6 +58,7 @@ export default function Terminais() {
   const [tipoFilter, setTipoFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTerminal, setEditingTerminal] = useState(null);
@@ -220,6 +221,11 @@ export default function Terminais() {
     [terminals]
   );
 
+  const userOptions = useMemo(() =>
+    isAdmin ? [...new Set(terminals.map(t => t.created_by).filter(Boolean))].sort() : [],
+    [terminals, isAdmin]
+  );
+
   const filteredTerminals = useMemo(() => {
     return terminals.filter(t => {
       const matchSearch = !searchTerm || 
@@ -230,7 +236,8 @@ export default function Terminais() {
       const matchTipo = tipoFilter === 'all' || t.tipo_conexao === tipoFilter;
       const matchStatus = statusFilter === 'all' || t.status === statusFilter;
       const matchCliente = clienteFilter === 'all' || t.cliente_nome === clienteFilter;
-      return matchSearch && matchTipo && matchStatus && matchCliente;
+      const matchUser = userFilter === 'all' || t.created_by === userFilter;
+      return matchSearch && matchTipo && matchStatus && matchCliente && matchUser;
     });
   }, [terminals, searchTerm, tipoFilter, statusFilter, clienteFilter]);
 
@@ -364,6 +371,17 @@ export default function Terminais() {
                   <SelectContent>
                     <SelectItem value="all">Todos os clientes</SelectItem>
                     {clienteOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              {isAdmin && userOptions.length > 0 && (
+                <Select value={userFilter} onValueChange={setUserFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Utilizador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os utilizadores</SelectItem>
+                    {userOptions.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}

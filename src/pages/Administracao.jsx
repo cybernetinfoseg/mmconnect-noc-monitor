@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, UserPlus, Pencil, X, Check, Clock, UserCheck, Settings, Activity, AlertCircle, Mail, Trash2, Ban, Monitor, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, UserPlus, Pencil, X, Check, Clock, UserCheck, Settings, Activity, AlertCircle, Mail, Trash2, Ban } from 'lucide-react';
 import PendingUserRow from '../components/admin/PendingUserRow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,6 @@ export default function Administracao() {
   const [editingUser, setEditingUser] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [currentUser, setCurrentUser] = useState(null);
-  const [expandedUserEmail, setExpandedUserEmail] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -136,14 +135,6 @@ export default function Administracao() {
 
   const terminalCountByUser = terminals.reduce((acc, t) => {
     if (t.created_by) acc[t.created_by] = (acc[t.created_by] || 0) + 1;
-    return acc;
-  }, {});
-
-  const terminalsByUser = terminals.reduce((acc, t) => {
-    if (t.created_by) {
-      if (!acc[t.created_by]) acc[t.created_by] = [];
-      acc[t.created_by].push(t);
-    }
     return acc;
   }, {});
 
@@ -398,55 +389,29 @@ export default function Administracao() {
                   {approvedUsers.map(user => {
                     const count = terminalCountByUser[user.email] || 0;
                     const limit = user.limite_terminais ?? 0;
-                    const isExpanded = expandedUserEmail === user.email;
-                    const userTerminals = terminalsByUser[user.email] || [];
                     return (
-                      <div key={user.id} className="border border-slate-200 rounded-xl bg-white overflow-hidden">
-                        <div className="p-3 space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-medium text-slate-900 truncate">{user.email}</p>
-                            <Badge className={cn("text-xs shrink-0", ROLE_COLORS[user.role] || ROLE_COLORS.user)}>
-                              {ROLE_LABELS[user.role] || 'Utilizador'}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <button
-                              onClick={() => setExpandedUserEmail(isExpanded ? null : user.email)}
-                              className={cn("flex items-center gap-1 font-mono text-xs font-semibold rounded px-2 py-1 transition-colors",
-                                count > 0 ? "hover:bg-slate-100 cursor-pointer" : "cursor-default",
-                                limit > 0 && count >= limit ? "text-red-600" : "text-emerald-600"
-                              )}
-                            >
-                              <Monitor className="h-3 w-3" />
-                              {count}{limit > 0 ? `/${limit}` : ''} terminais
-                              {count > 0 && (isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
-                            </button>
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} className="h-7 w-7 text-slate-400 hover:text-blue-600">
-                                <Pencil className="h-3.5 w-3.5" />
+                      <div key={user.id} className="border border-slate-200 rounded-xl p-3 bg-white space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-slate-900 truncate">{user.email}</p>
+                          <Badge className={cn("text-xs shrink-0", ROLE_COLORS[user.role] || ROLE_COLORS.user)}>
+                            {ROLE_LABELS[user.role] || 'Utilizador'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className={cn("font-mono text-xs font-semibold", limit > 0 && count >= limit ? "text-red-600" : "text-emerald-600")}>
+                            {count}{limit > 0 ? `/${limit}` : ''} terminais
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} className="h-7 w-7 text-slate-400 hover:text-blue-600">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            {user.email !== currentUser?.email && (
+                              <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Excluir ${user.email}?`)) deleteUserMutation.mutate(user.id); }} className="h-7 w-7 text-slate-400 hover:text-red-600">
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
-                              {user.email !== currentUser?.email && (
-                                <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Excluir ${user.email}?`)) deleteUserMutation.mutate(user.id); }} className="h-7 w-7 text-slate-400 hover:text-red-600">
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </div>
-                        {isExpanded && userTerminals.length > 0 && (
-                          <div className="border-t border-slate-100 bg-slate-50 px-3 py-2 space-y-1.5">
-                            {userTerminals.map(t => (
-                              <div key={t.id} className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className={cn("w-2 h-2 rounded-full shrink-0", t.status === 'online' ? 'bg-emerald-500' : 'bg-red-400')} />
-                                  <span className="font-medium text-slate-800 truncate">{t.nome}</span>
-                                  {t.local && <span className="text-slate-400 truncate">• {t.local}</span>}
-                                </div>
-                                {t.cliente_nome && <span className="text-slate-400 shrink-0 ml-2">{t.cliente_nome}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -466,63 +431,33 @@ export default function Administracao() {
                       {approvedUsers.map(user => {
                         const count = terminalCountByUser[user.email] || 0;
                         const limit = user.limite_terminais ?? 0;
-                        const isExpanded = expandedUserEmail === user.email;
-                        const userTerminals = terminalsByUser[user.email] || [];
                         return (
-                          <React.Fragment key={user.id}>
-                            <tr className="hover:bg-slate-50 transition-colors">
-                              <td className="px-4 py-3 font-medium text-slate-900 max-w-[200px] truncate">{user.email}</td>
-                              <td className="px-4 py-3">
-                                <Badge className={cn("text-xs", ROLE_COLORS[user.role] || ROLE_COLORS.user)}>
-                                  {user.role === 'admin' ? '⊙ ' : '👤 '}
-                                  {ROLE_LABELS[user.role] || 'Utilizador'}
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <button
-                                  onClick={() => count > 0 && setExpandedUserEmail(isExpanded ? null : user.email)}
-                                  className={cn(
-                                    "inline-flex items-center gap-1 font-mono text-xs font-semibold rounded px-2 py-1 transition-colors",
-                                    count > 0 ? "hover:bg-slate-100 cursor-pointer" : "cursor-default",
-                                    limit > 0 && count >= limit ? "text-red-600" : "text-emerald-600"
-                                  )}
-                                >
-                                  <Monitor className="h-3 w-3" />
-                                  {count}{limit > 0 ? `/${limit}` : ''}
-                                  {count > 0 && (isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
-                                </button>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <div className="flex items-center justify-center gap-1">
-                                  <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} className="h-8 w-8 text-slate-400 hover:text-blue-600">
-                                    <Pencil className="h-4 w-4" />
+                          <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-3 font-medium text-slate-900 max-w-[200px] truncate">{user.email}</td>
+                            <td className="px-4 py-3">
+                              <Badge className={cn("text-xs", ROLE_COLORS[user.role] || ROLE_COLORS.user)}>
+                                {user.role === 'admin' ? '⊙ ' : '👤 '}
+                                {ROLE_LABELS[user.role] || 'Utilizador'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={cn("font-mono text-xs font-semibold", limit > 0 && count >= limit ? "text-red-600" : "text-emerald-600")}>
+                                {count}{limit > 0 ? `/${limit}` : ''}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} className="h-8 w-8 text-slate-400 hover:text-blue-600">
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                {user.email !== currentUser?.email && (
+                                  <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Excluir o usuário ${user.email}?`)) deleteUserMutation.mutate(user.id); }} className="h-8 w-8 text-slate-400 hover:text-red-600">
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
-                                  {user.email !== currentUser?.email && (
-                                    <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Excluir o usuário ${user.email}?`)) deleteUserMutation.mutate(user.id); }} className="h-8 w-8 text-slate-400 hover:text-red-600">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                            {isExpanded && (
-                              <tr className="bg-slate-50">
-                                <td colSpan={4} className="px-4 py-3">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                    {userTerminals.map(t => (
-                                      <div key={t.id} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs">
-                                        <span className={cn("w-2 h-2 rounded-full shrink-0", t.status === 'online' ? 'bg-emerald-500' : 'bg-red-400')} />
-                                        <div className="min-w-0">
-                                          <p className="font-semibold text-slate-800 truncate">{t.nome}</p>
-                                          <p className="text-slate-400 truncate">{[t.local, t.cliente_nome].filter(Boolean).join(' • ')}</p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         );
                       })}
                     </tbody>

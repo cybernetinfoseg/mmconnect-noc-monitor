@@ -13,8 +13,7 @@ import {
   Globe,
   Server,
   AlertTriangle,
-  Eye,
-  User
+  Eye
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -58,7 +57,6 @@ export default function Terminais() {
   const [tipoFilter, setTipoFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
-  const [userFilter, setUserFilter] = useState('all');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTerminal, setEditingTerminal] = useState(null);
@@ -221,23 +219,16 @@ export default function Terminais() {
     [terminals]
   );
 
-  const userOptions = useMemo(() =>
-    isAdmin ? [...new Set(terminals.map(t => t.created_by).filter(Boolean))].sort() : [],
-    [terminals, isAdmin]
-  );
-
   const filteredTerminals = useMemo(() => {
     return terminals.filter(t => {
       const matchSearch = !searchTerm || 
         t.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.local?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (isAdmin && t.created_by?.toLowerCase().includes(searchTerm.toLowerCase()));
+        t.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchTipo = tipoFilter === 'all' || t.tipo_conexao === tipoFilter;
       const matchStatus = statusFilter === 'all' || t.status === statusFilter;
       const matchCliente = clienteFilter === 'all' || t.cliente_nome === clienteFilter;
-      const matchUser = userFilter === 'all' || t.created_by === userFilter;
-      return matchSearch && matchTipo && matchStatus && matchCliente && matchUser;
+      return matchSearch && matchTipo && matchStatus && matchCliente;
     });
   }, [terminals, searchTerm, tipoFilter, statusFilter, clienteFilter]);
 
@@ -374,17 +365,6 @@ export default function Terminais() {
                   </SelectContent>
                 </Select>
               )}
-              {isAdmin && userOptions.length > 0 && (
-                <Select value={userFilter} onValueChange={setUserFilter}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Utilizador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os utilizadores</SelectItem>
-                    {userOptions.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -412,12 +392,7 @@ export default function Terminais() {
                           </CardTitle>
                           <p className="text-sm text-slate-500 mt-1">{terminal.local}</p>
                           {isAdmin && terminal.created_by && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <User className="h-3 w-3 text-slate-400 shrink-0" />
-                              <span className="text-xs text-slate-500 truncate" title={terminal.created_by}>
-                                {terminal.created_by}
-                              </span>
-                            </div>
+                            <p className="text-xs text-slate-400 mt-0.5">{terminal.created_by}</p>
                           )}
                         </div>
                         <StatusBadge status={terminal.status} pulse={false} />

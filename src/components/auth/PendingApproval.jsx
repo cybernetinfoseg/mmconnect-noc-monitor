@@ -22,6 +22,7 @@ export default function PendingApproval({ user: initialUser }) {
       // fallback silencioso
     }
     setFormSubmitted(true);
+    setActiveTab('contact');
   };
 
   return (

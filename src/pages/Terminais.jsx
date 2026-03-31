@@ -47,7 +47,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import StatusBadge from '../components/dashboard/StatusBadge';
-import NovoClienteModal from '../components/clientes/NovoClienteModal';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
@@ -56,7 +55,6 @@ export default function Terminais() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [clienteFilter, setClienteFilter] = useState('all');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTerminal, setEditingTerminal] = useState(null);
@@ -107,47 +105,16 @@ export default function Terminais() {
   const terminalCount = terminals.length;
   const atLimit = !isAdmin && (limiteTerminais === 0 || (limiteTerminais > 0 && terminalCount >= limiteTerminais));
 
-  // Fetch clientes with security filtering
-  const { data: clientes = [] } = useQuery({
-    queryKey: ['clientes', currentUser?.email, isAdmin],
-    queryFn: async () => {
-      if (isAdmin) {
-        return await base44.entities.Cliente.list();
-      }
-      // Non-admins see: clients they created + clients linked to their terminals
-      const userCreatedClientes = await base44.entities.Cliente.filter({ created_by: currentUser?.email });
-      const userTerminals = await base44.entities.Terminal.filter(
-        { created_by: currentUser?.email },
-        '-created_date'
-      );
-      const linkedClienteIds = new Set(userTerminals.map(t => t.cliente_id).filter(Boolean));
-      const merged = [...userCreatedClientes];
-      const userCreatedIds = new Set(userCreatedClientes.map(c => c.id));
-      
-      if (linkedClienteIds.size > 0) {
-        const allClientes = await base44.entities.Cliente.list();
-        allClientes.forEach(c => {
-          if (linkedClienteIds.has(c.id) && !userCreatedIds.has(c.id)) {
-            merged.push(c);
-          }
-        });
-      }
-      return merged;
-    },
-    enabled: !!currentUser,
-  });
 
   const logAudit = (acao, entidade_id, descricao) =>
     base44.functions.invoke('auditLog', { acao, entidade: 'Terminal', entidade_id, descricao }).catch(() => {});
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      const cliente = clientes.find(c => c.id === data.cliente_id);
-      const dataWithCliente = { ...data, cliente_nome: cliente?.nome || '' };
       if (editingTerminal) {
-        return base44.entities.Terminal.update(editingTerminal.id, dataWithCliente);
+        return base44.entities.Terminal.update(editingTerminal.id, data);
       }
-      return base44.entities.Terminal.create(dataWithCliente);
+      return base44.entities.Terminal.create(data);
     },
     onSuccess: (result, data) => {
       const isEdit = !!editingTerminal;
@@ -199,7 +166,6 @@ export default function Terminais() {
     onError: (error) => { setRefreshingTerminalId(null); toast.error(`Erro: ${error.message}`); },
   });
 
-  const [showNovoClienteModal, setShowNovoClienteModal] = useState(false);
   const [selectedTerminal, setSelectedTerminal] = useState(null);
 
   const [verificandoTodos, setVerificandoTodos] = useState(false);
@@ -214,11 +180,6 @@ export default function Terminais() {
     toast.success('Verificação concluída!');
   };
 
-  const clienteOptions = useMemo(() =>
-    [...new Set(terminals.map(t => t.cliente_nome).filter(Boolean))].sort(),
-    [terminals]
-  );
-
   const filteredTerminals = useMemo(() => {
     return terminals.filter(t => {
       const matchSearch = !searchTerm || 
@@ -227,10 +188,9 @@ export default function Terminais() {
         t.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchTipo = tipoFilter === 'all' || t.tipo_conexao === tipoFilter;
       const matchStatus = statusFilter === 'all' || t.status === statusFilter;
-      const matchCliente = clienteFilter === 'all' || t.cliente_nome === clienteFilter;
-      return matchSearch && matchTipo && matchStatus && matchCliente;
+      return matchSearch && matchTipo && matchStatus;
     });
-  }, [terminals, searchTerm, tipoFilter, statusFilter, clienteFilter]);
+  }, [terminals, searchTerm, tipoFilter, statusFilter]);
 
   const handleEdit = (terminal) => {
     setEditingTerminal(terminal);
@@ -354,17 +314,7 @@ export default function Terminais() {
                   <SelectItem value="offline">Offline</SelectItem>
                 </SelectContent>
               </Select>
-              {clienteOptions.length > 0 && (
-                <Select value={clienteFilter} onValueChange={setClienteFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os clientes</SelectItem>
-                    {clienteOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+
             </div>
           </CardContent>
         </Card>
@@ -475,12 +425,6 @@ export default function Terminais() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <NovoClienteModal
-        open={showNovoClienteModal}
-        onClose={() => setShowNovoClienteModal(false)}
-        onCreated={(novoCliente) => setFormData(prev => ({ ...prev, cliente_id: novoCliente.id, cliente_nome: novoCliente.nome }))}
-      />
-
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -500,18 +444,8 @@ export default function Terminais() {
             </div>
 
             <div className="space-y-2">
-              <Label>Cliente</Label>
-              <div className="flex gap-2">
-                <Select value={formData.cliente_id || ''} onValueChange={(v) => setFormData({...formData, cliente_id: v})}>
-                  <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
-                  <SelectContent>
-                    {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowNovoClienteModal(true)} title="Cadastrar novo cliente">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+              <Label>Cliente / Referência</Label>
+              <Input value={formData.cliente_nome || ''} onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})} placeholder="Nome do cliente ou referência (opcional)" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

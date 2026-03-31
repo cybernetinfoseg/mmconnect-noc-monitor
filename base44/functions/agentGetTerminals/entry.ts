@@ -5,7 +5,7 @@
  * Cada utilizador vê apenas os terminais que criou (created_by).
  * Admin vê todos.
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
     try {

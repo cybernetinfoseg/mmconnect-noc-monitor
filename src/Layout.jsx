@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   Tv,
   Menu,
-  Building2,
   ChevronLeft,
   Bell,
   Shield,
@@ -33,7 +32,7 @@ const ALL_NAV_ITEMS = [
   { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
   { name: 'Modo TV', page: 'TVMode', icon: Tv },
   { name: 'Terminais', page: 'Terminais', icon: Monitor },
-  { name: 'Clientes', page: 'Clientes', icon: Building2 },
+
   { name: 'Histórico', page: 'History', icon: History },
   { name: 'Incidentes', page: 'Incidents', icon: AlertTriangle },
   { name: 'Alertas', page: 'Alertas', icon: Bell },

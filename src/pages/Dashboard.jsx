@@ -33,6 +33,7 @@ import PullToRefresh from '../components/dashboard/PullToRefresh';
 import TerminalStatusWidget from '../components/dashboard/TerminalStatusWidget';
 import AlertRulesWidget from '../components/dashboard/AlertRulesWidget';
 import RecentAuditWidget from '../components/dashboard/RecentAuditWidget';
+import { useTerminalWatchdog } from '../hooks/useTerminalWatchdog';
 const DEFAULT_WIDGETS = {
   terminalStatus: true,
   alertRules: true,
@@ -82,6 +83,9 @@ export default function Dashboard() {
 
   const perms = resolvePermissions(currentUser);
   const canSeeAll = currentUser?.role === 'admin' || currentUser?.role === 'editor';
+
+  // Watchdog local: marca terminais offline sem depender de automações
+  useTerminalWatchdog({ currentUser, onUpdate: () => { refetch(); setLastRefresh(new Date()); } });
 
   // Fetch terminals with server-side filtering for security
   const { data: terminals = [], isLoading, refetch } = useQuery({

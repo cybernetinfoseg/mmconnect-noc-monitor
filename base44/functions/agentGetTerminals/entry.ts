@@ -27,25 +27,13 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // 3. Verificar role
-        const allUsers = await base44.asServiceRole.entities.User.list();
-        const owner = allUsers.find(u => u.email === ownerEmail) || {};
-        const isAdmin = owner.role === 'admin';
-
-        // 4. Filtrar terminais: admin vê todos, utilizador vê apenas os seus
-        let terminals;
-        if (isAdmin) {
-            terminals = await base44.asServiceRole.entities.Terminal.filter({
-                ativo: true,
-                tipo_conexao: 'ip_local',
-            });
-        } else {
-            terminals = await base44.asServiceRole.entities.Terminal.filter({
-                ativo: true,
-                tipo_conexao: 'ip_local',
-                created_by: ownerEmail,
-            });
-        }
+        // 3. Filtrar terminais pelo dono da API Key (sempre por created_by)
+        // Cada utilizador, incluindo admin, vê apenas os seus próprios terminais via agente
+        const terminals = await base44.asServiceRole.entities.Terminal.filter({
+            ativo: true,
+            tipo_conexao: 'ip_local',
+            created_by: ownerEmail,
+        });
 
         const result = terminals.map(t => ({
             id: t.id,

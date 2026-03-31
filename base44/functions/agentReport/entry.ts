@@ -40,12 +40,9 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
         }
 
-        // 4. Verificar permissão: admin ou criador do terminal
-        const allUsers = await base44.asServiceRole.entities.User.list();
-        const owner = allUsers.find(u => u.email === ownerEmail) || { email: ownerEmail, role: 'user' };
-        const isAdmin = owner.role === 'admin';
-
-        if (!isAdmin && terminal.created_by !== ownerEmail) {
+        // 4. Verificar permissão: apenas o criador do terminal pode reportar
+        // (admin é tratado como qualquer outro utilizador — usa a sua própria key e os seus próprios terminais)
+        if (terminal.created_by !== ownerEmail) {
             return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
         }
 
@@ -90,8 +87,8 @@ Deno.serve(async (req) => {
                 owner_email: terminal.created_by || '',
             }).catch(() => {});
 
-            // Notificar via Telegram: admin + dono do terminal
-            const admins = allUsers.filter(u => u.role === 'admin' || u.email === terminal.created_by);
+            // Notificar via Telegram: dono do terminal (não fazemos User.list aqui)
+            const admins = [{ email: terminal.created_by, telegram_bot_token: null, telegram_chat_id: null }];
             for (const u of admins) {
                 if (u.telegram_bot_token && u.telegram_chat_id) {
                     const msg = `🔴 <b>Terminal Offline</b>\n\n` +

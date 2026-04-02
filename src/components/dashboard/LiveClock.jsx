@@ -13,11 +13,11 @@ export default function LiveClock({ className }) {
   }, []);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={className}
-    >
+      className={className}>
+      
       <div className="flex items-center gap-4">
         <div className="text-right">
           <p className="text-3xl font-bold tracking-tight text-white tabular-nums">
@@ -29,11 +29,11 @@ export default function LiveClock({ className }) {
         </div>
         <div className="relative">
           <span className="flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            
+            
           </span>
         </div>
       </div>
-    </motion.div>
-  );
+    </motion.div>);
+
 }

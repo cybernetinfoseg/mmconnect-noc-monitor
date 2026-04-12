@@ -185,10 +185,13 @@ export default function Terminais() {
   const [selectedTerminal, setSelectedTerminal] = useState(null);
   const [newLocalInput, setNewLocalInput] = useState('');
   const [showNewLocalInput, setShowNewLocalInput] = useState(false);
+  const [editingLocal, setEditingLocal] = useState(null);
+  const [editLocalInput, setEditLocalInput] = useState('');
 
   const { data: locaisDB = [], refetch: refetchLocais } = useQuery({
-    queryKey: ['locais'],
+    queryKey: ['locais', currentUser?.email],
     queryFn: () => base44.entities.Local.list('nome'),
+    enabled: !!currentUser,
   });
 
   const handleCreateLocal = async () => {
@@ -197,6 +200,24 @@ export default function Terminais() {
     setFormData(prev => ({ ...prev, local: newLocalInput.trim() }));
     setNewLocalInput('');
     setShowNewLocalInput(false);
+    refetchLocais();
+  };
+
+  const handleSaveEditLocal = async () => {
+    if (!editLocalInput.trim() || !editingLocal) return;
+    await base44.entities.Local.update(editingLocal.id, { nome: editLocalInput.trim() });
+    if (formData.local === editingLocal.nome) {
+      setFormData(prev => ({ ...prev, local: editLocalInput.trim() }));
+    }
+    setEditingLocal(null);
+    setEditLocalInput('');
+    refetchLocais();
+  };
+
+  const handleDeleteLocal = async (local) => {
+    if (!confirm(`Eliminar local "${local.nome}"?`)) return;
+    await base44.entities.Local.delete(local.id);
+    if (formData.local === local.nome) setFormData(prev => ({ ...prev, local: '' }));
     refetchLocais();
   };
 
@@ -503,7 +524,7 @@ export default function Terminais() {
                       <option key={l.id} value={l.nome}>{l.nome}</option>
                     ))}
                   </select>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewLocalInput(v => !v)} title="Novo local">
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowNewLocalInput(v => !v); setEditingLocal(null); }} title="Novo local">
                     <MapPin className="h-4 w-4" />
                   </Button>
                 </div>
@@ -517,6 +538,28 @@ export default function Terminais() {
                       autoFocus
                     />
                     <Button type="button" size="sm" onClick={handleCreateLocal} className="bg-emerald-600 hover:bg-emerald-700 shrink-0">Criar</Button>
+                  </div>
+                )}
+                {locaisDB.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400">Gerir locais:</p>
+                    {locaisDB.map(l => (
+                      <div key={l.id} className="flex items-center gap-2">
+                        {editingLocal?.id === l.id ? (
+                          <>
+                            <Input value={editLocalInput} onChange={e => setEditLocalInput(e.target.value)} className="flex-1 h-7 text-xs" onKeyDown={e => e.key === 'Enter' && handleSaveEditLocal()} autoFocus />
+                            <Button type="button" size="sm" onClick={handleSaveEditLocal} className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700">Guardar</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setEditingLocal(null)} className="h-7 px-2 text-xs">✕</Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-xs text-slate-700 truncate">{l.nome}</span>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => { setEditingLocal(l); setEditLocalInput(l.nome); setShowNewLocalInput(false); }} className="h-6 w-6 p-0 text-slate-400 hover:text-blue-600"><Pencil className="h-3 w-3" /></Button>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => handleDeleteLocal(l)} className="h-6 w-6 p-0 text-slate-400 hover:text-red-600"><Trash2 className="h-3 w-3" /></Button>
+                          </>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

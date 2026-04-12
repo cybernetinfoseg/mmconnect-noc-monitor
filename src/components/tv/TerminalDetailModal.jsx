@@ -7,7 +7,6 @@ import {
   Wifi,
   WifiOff,
   MapPin,
-  Building2,
   Server,
   Clock,
   Activity,
@@ -160,7 +159,6 @@ export default function TerminalDetailModal({ terminal, onClose }) {
 
             {/* Info */}
             <div className="bg-slate-800/40 rounded-xl px-4 py-1">
-              <InfoRow icon={Building2} label="Cliente" value={terminal.cliente_nome || terminal.cliente} />
               <InfoRow icon={MapPin} label="Local" value={terminal.local} />
               <InfoRow icon={Network} label="Tipo Conexão" value={terminal.tipo_conexao?.replace('_', ' ').toUpperCase()} />
               {connectionInfo.map(({ label, value }) => (

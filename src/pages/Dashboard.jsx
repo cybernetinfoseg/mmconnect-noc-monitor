@@ -168,7 +168,7 @@ export default function Dashboard() {
       list = [...list].sort((a, b) => (b.segundos_sem_ping || 0) - (a.segundos_sem_ping || 0));
     }
     return list;
-  }, [terminals, localFilter, clienteFilter, statusFilter, sortBy]);
+  }, [terminals, localFilter, clienteFilter, statusFilter, userFilter, sortBy]);
 
   // Calculate KPIs
   const stats = useMemo(() => {

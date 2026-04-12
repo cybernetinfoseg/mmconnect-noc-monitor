@@ -147,7 +147,7 @@ export default function Dashboard() {
   );
 
   const usuarios = useMemo(() =>
-    [...new Set(terminals.map(t => t.created_by).filter(Boolean))].sort(),
+    [...new Set(terminals.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(),
     [terminals]
   );
 
@@ -157,7 +157,7 @@ export default function Dashboard() {
       if (localFilter && t.local !== localFilter) return false;
       if (clienteFilter && t.cliente_nome !== clienteFilter && t.cliente !== clienteFilter) return false;
       if (statusFilter && t.status !== statusFilter) return false;
-      if (userFilter && t.created_by !== userFilter) return false;
+      if (userFilter && (t.usuario_email || t.created_by) !== userFilter) return false;
       return true;
     });
     if (sortBy === 'status') {

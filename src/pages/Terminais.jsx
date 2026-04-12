@@ -115,7 +115,8 @@ export default function Terminais() {
       if (editingTerminal) {
         return base44.entities.Terminal.update(editingTerminal.id, data);
       }
-      return base44.entities.Terminal.create(data);
+      // Preencher automaticamente o email do utilizador ao criar
+      return base44.entities.Terminal.create({ ...data, usuario_email: currentUser?.email });
     },
     onSuccess: async (result, data) => {
       const isEdit = !!editingTerminal;
@@ -354,10 +355,10 @@ export default function Terminais() {
                             {!terminal.ativo && <Badge variant="outline" className="text-xs">Inativo</Badge>}
                           </CardTitle>
                           <p className="text-sm text-slate-500 mt-1">{terminal.local}</p>
-                          {terminal.created_by && (
+                          {(terminal.usuario_email || terminal.created_by) && (
                             <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                               <UserIcon className="h-3 w-3 shrink-0" />
-                              {terminal.created_by}
+                              {terminal.usuario_email || terminal.created_by}
                             </p>
                           )}
                         </div>

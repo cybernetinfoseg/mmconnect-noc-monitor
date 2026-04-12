@@ -429,7 +429,6 @@ export default function Relatorios() {
                                     <th className="text-left text-xs text-slate-500 font-medium px-3 sm:px-4 py-3">#</th>
                                     <th className="text-left text-xs text-slate-500 font-medium px-3 sm:px-4 py-3">Terminal</th>
                                     <th className="text-left text-xs text-slate-500 font-medium px-3 sm:px-4 py-3 hidden sm:table-cell">Local</th>
-                                    <th className="text-left text-xs text-slate-500 font-medium px-3 sm:px-4 py-3 hidden md:table-cell">Cliente</th>
                                     <th className="text-right text-xs text-slate-500 font-medium px-3 sm:px-4 py-3">Uptime</th>
                                     <th className="text-right text-xs text-slate-500 font-medium px-3 sm:px-4 py-3">Inc.</th>
                                 </tr>
@@ -440,7 +439,6 @@ export default function Relatorios() {
                                         <td className="px-3 sm:px-4 py-2.5 text-slate-400 text-xs">{i + 1}</td>
                                         <td className="px-3 sm:px-4 py-2.5 font-medium text-slate-800 max-w-[120px] sm:max-w-none truncate">{t.nome}</td>
                                         <td className="px-3 sm:px-4 py-2.5 text-slate-500 hidden sm:table-cell">{t.local || '—'}</td>
-                                        <td className="px-3 sm:px-4 py-2.5 text-slate-500 hidden md:table-cell">{t.cliente_nome || '—'}</td>
                                         <td className="px-3 sm:px-4 py-2.5 text-right">
                                             {t.uptime != null ? (
                                                 <Badge variant="outline" className={

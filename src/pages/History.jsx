@@ -141,7 +141,7 @@ export default function History() {
   }, [uptimeData, terminalFilter, localFilter, uptimeFilter, terminals]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-3 sm:p-6">
       <div className="max-w-[1920px] mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4">

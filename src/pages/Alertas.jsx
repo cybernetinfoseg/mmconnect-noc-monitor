@@ -181,7 +181,6 @@ export default function Alertas() {
                                 </span>
                               )}
                               {rule.filtro_local && <span>📍 {rule.filtro_local}</span>}
-                              {rule.filtro_cliente && <span>🏢 {rule.filtro_cliente}</span>}
                               {rule.ultima_disparada && (
                                 <span className="flex items-center gap-1">
                                   <Zap className="h-3 w-3 text-yellow-500" />

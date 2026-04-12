@@ -56,6 +56,7 @@ export default function Terminais() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTerminal, setEditingTerminal] = useState(null);
@@ -194,6 +195,11 @@ export default function Terminais() {
     toast.success('Verificação concluída!');
   };
 
+  const usuarios = useMemo(() =>
+    [...new Set(terminals.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(),
+    [terminals]
+  );
+
   const filteredTerminals = useMemo(() => {
     return terminals.filter(t => {
       const matchSearch = !searchTerm || 
@@ -202,9 +208,10 @@ export default function Terminais() {
         t.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchTipo = tipoFilter === 'all' || t.tipo_conexao === tipoFilter;
       const matchStatus = statusFilter === 'all' || t.status === statusFilter;
-      return matchSearch && matchTipo && matchStatus;
+      const matchUser = userFilter === 'all' || (t.usuario_email || t.created_by) === userFilter;
+      return matchSearch && matchTipo && matchStatus && matchUser;
     });
-  }, [terminals, searchTerm, tipoFilter, statusFilter]);
+  }, [terminals, searchTerm, tipoFilter, statusFilter, userFilter]);
 
   const handleEdit = (terminal) => {
     setEditingTerminal(terminal);
@@ -328,6 +335,18 @@ export default function Terminais() {
                   <SelectItem value="offline">Offline</SelectItem>
                 </SelectContent>
               </Select>
+              {isAdmin && (
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="all">Todos os utilizadores</option>
+                  {usuarios.map(u => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              )}
 
             </div>
           </CardContent>
@@ -463,6 +482,15 @@ export default function Terminais() {
             <div className="space-y-2">
               <Label>Cliente / Referência</Label>
               <Input value={formData.cliente_nome || ''} onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})} placeholder="Nome do cliente ou referência (opcional)" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Utilizador do Sistema</Label>
+              <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-slate-50 text-sm text-slate-600">
+                <UserIcon className="h-4 w-4 text-slate-400 shrink-0" />
+                {currentUser?.email || '—'}
+              </div>
+              <p className="text-xs text-slate-400">Preenchido automaticamente — identifica o responsável pelo terminal</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

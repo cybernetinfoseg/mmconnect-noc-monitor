@@ -11,8 +11,14 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
-  Settings } from
-'lucide-react';
+  Settings,
+  Filter,
+  X,
+  MapPin,
+  ArrowUpDown,
+  User
+} from 'lucide-react';
+import FilterDropdown from '../components/dashboard/FilterDropdown';
 import { Button } from '@/components/ui/button';
 import StatusBadge from '../components/dashboard/StatusBadge';
 import LiveClock from '../components/dashboard/LiveClock';
@@ -57,6 +63,11 @@ export default function TVMode() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [tvLocalFilter, setTvLocalFilter] = useState(null);
+  const [tvStatusFilter, setTvStatusFilter] = useState(null);
+  const [tvUserFilter, setTvUserFilter] = useState(null);
+  const [tvSortBy, setTvSortBy] = useState('status');
   const [tvSettings, setTvSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('tv-settings');
@@ -87,11 +98,10 @@ export default function TVMode() {
     return () => clearInterval(interval);
   }, []);
 
-  // URL params override localStorage
+  // URL params override localStorage — TV local filters take priority
   const urlParams = new URLSearchParams(window.location.search);
-  const localFilter = urlParams.get('local') || mirrorFilters.local || null;
-
-  const statusFilterMirror = mirrorFilters.status || null;
+  const localFilter = tvLocalFilter || urlParams.get('local') || null;
+  const statusFilterMirror = tvStatusFilter || null;
 
   // Fetch terminals with auto-refresh based on config
   const { data: allTerminalsRaw = [], refetch } = useQuery({
@@ -140,25 +150,35 @@ export default function TVMode() {
     refetchInterval: 10000
   });
 
+  // Unique values for filter options
+  const tvLocais = useMemo(() => [...new Set(allTerminals.map(t => t.local).filter(Boolean))].sort(), [allTerminals]);
+  const tvUsuarios = useMemo(() => [...new Set(allTerminals.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(), [allTerminals]);
+
   // Apply filters
   const terminals = useMemo(() => {
     return allTerminals.filter((t) => {
       if (localFilter && t.local !== localFilter) return false;
       if (statusFilterMirror && t.status !== statusFilterMirror) return false;
+      if (tvUserFilter && (t.usuario_email || t.created_by) !== tvUserFilter) return false;
       if (tvSettings.onlyOffline && t.status !== 'offline') return false;
       return true;
     });
-  }, [allTerminals, localFilter, tvSettings.onlyOffline]);
+  }, [allTerminals, localFilter, statusFilterMirror, tvUserFilter, tvSettings.onlyOffline]);
 
-  // Sort terminals - offline first, then by time without ping
+  // Sort terminals
   const sortedTerminals = useMemo(() => {
     return [...terminals].sort((a, b) => {
-      if (a.status !== b.status) {
-        return a.status === 'offline' ? -1 : 1;
+      if (tvSortBy === 'status') {
+        if (a.status !== b.status) return a.status === 'offline' ? -1 : 1;
+        return (b.segundos_sem_ping || 0) - (a.segundos_sem_ping || 0);
+      } else if (tvSortBy === 'nome') {
+        return (a.nome || '').localeCompare(b.nome || '');
+      } else if (tvSortBy === 'ping') {
+        return (b.segundos_sem_ping || 0) - (a.segundos_sem_ping || 0);
       }
-      return (b.segundos_sem_ping || 0) - (a.segundos_sem_ping || 0);
+      return 0;
     });
-  }, [terminals]);
+  }, [terminals, tvSortBy]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -219,6 +239,19 @@ export default function TVMode() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setShowFilters(v => !v)}
+              className={cn("border-white/20 text-white h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm", showFilters ? "bg-white/20" : "bg-white/10 hover:bg-white/20")}>
+              <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline ml-1">Filtros</span>
+              {(tvLocalFilter || tvStatusFilter || tvUserFilter) && (
+                <span className="ml-1 w-4 h-4 rounded-full bg-emerald-500 text-white text-[10px] flex items-center justify-center font-bold">
+                  {[tvLocalFilter, tvStatusFilter, tvUserFilter].filter(Boolean).length}
+                </span>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm">
@@ -244,6 +277,90 @@ export default function TVMode() {
           <LiveClock />
         </div>
       </div>
+
+      {/* Filter Bar */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-slate-800/80 border-b border-slate-700/50 px-4 sm:px-8 py-3"
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Local */}
+              <div className="space-y-1 min-w-[160px]">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <MapPin className="h-3 w-3" /> Local
+                </label>
+                <select
+                  value={tvLocalFilter || ''}
+                  onChange={e => setTvLocalFilter(e.target.value || null)}
+                  className="h-8 px-2 rounded-md border border-slate-600 bg-slate-700 text-xs text-slate-200 focus:outline-none w-full"
+                >
+                  <option value="">Todos os locais</option>
+                  {tvLocais.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+              {/* Status */}
+              <div className="space-y-1 min-w-[140px]">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <Wifi className="h-3 w-3" /> Status
+                </label>
+                <select
+                  value={tvStatusFilter || ''}
+                  onChange={e => setTvStatusFilter(e.target.value || null)}
+                  className="h-8 px-2 rounded-md border border-slate-600 bg-slate-700 text-xs text-slate-200 focus:outline-none w-full"
+                >
+                  <option value="">Todos os status</option>
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+              {/* Utilizador (admin only) */}
+              {canSeeAll && (
+                <div className="space-y-1 min-w-[180px]">
+                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <User className="h-3 w-3" /> Utilizador
+                  </label>
+                  <select
+                    value={tvUserFilter || ''}
+                    onChange={e => setTvUserFilter(e.target.value || null)}
+                    className="h-8 px-2 rounded-md border border-slate-600 bg-slate-700 text-xs text-slate-200 focus:outline-none w-full"
+                  >
+                    <option value="">Todos os utilizadores</option>
+                    {tvUsuarios.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </div>
+              )}
+              {/* Ordenar */}
+              <div className="space-y-1 min-w-[140px]">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <ArrowUpDown className="h-3 w-3" /> Ordenar
+                </label>
+                <select
+                  value={tvSortBy}
+                  onChange={e => setTvSortBy(e.target.value)}
+                  className="h-8 px-2 rounded-md border border-slate-600 bg-slate-700 text-xs text-slate-200 focus:outline-none w-full"
+                >
+                  <option value="status">Status</option>
+                  <option value="nome">Nome</option>
+                  <option value="ping">Sem ping</option>
+                </select>
+              </div>
+              {/* Clear filters */}
+              {(tvLocalFilter || tvStatusFilter || tvUserFilter) && (
+                <button
+                  onClick={() => { setTvLocalFilter(null); setTvStatusFilter(null); setTvUserFilter(null); }}
+                  className="mt-4 flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="h-3 w-3" /> Limpar filtros
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* KPI Strip */}
       {tvSettings.showKPIs &&

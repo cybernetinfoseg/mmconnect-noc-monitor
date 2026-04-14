@@ -600,11 +600,12 @@ export default function Terminais() {
             )}
             {formData.tipo_conexao === 'p2s' && (
               <div className="space-y-3">
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 space-y-1">
-                  <p className="font-semibold">📡 Modo P2S — Push to Server (conexão inversa)</p>
-                  <p>Neste modo, o <strong>terminal biométrico conecta-se ao servidor</strong> do agente local na porta TCP configurada abaixo.</p>
-                  <p>O agente chama internamente <code className="bg-blue-100 px-1 rounded">SetServerPortandtick(porta, 7)</code> e fica à escuta. Não é necessário saber o IP do terminal.</p>
-                  <p className="text-blue-600">⚙️ Certifique-se que a porta TCP está aberta no firewall do servidor onde o agente corre.</p>
+                <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700 space-y-1">
+                  <p className="font-semibold">📡 Modo P2S — Push to Server (Conexão Inversa)</p>
+                  <p>O <strong>terminal conecta TCP ao servidor</strong> — não é o servidor que tenta alcançar o terminal. Ideal para terminais em rede privada/NAT.</p>
+                  <p>Compatível com: <strong>ZKTeco</strong> (SetServerPortAndTick), <strong>Anviz</strong> (Server Mode), <strong>Suprema</strong> (Server Connection), <strong>Hikvision/Dahua</strong> (Active Registration), <strong>Nitgen</strong>.</p>
+                  <p>Configure o terminal para conectar a <strong>51.91.219.145:PORTA</strong> e instale o <strong>p2s_server.py</strong> no Windows Server (Configurações → P2S Server).</p>
+                  <p className="text-violet-600">⚙️ Abra a porta TCP configurada no Firewall do Windows Server (Regras de Entrada).</p>
                 </div>
                 <div className="space-y-2">
                   <Label>Porta TCP do Servidor <span className="text-red-500">*</span></Label>

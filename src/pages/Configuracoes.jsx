@@ -41,6 +41,7 @@ import { toast } from 'sonner';
 
 import TelegramConfig from '../components/configuracoes/TelegramConfig';
 import NocServerCode from '../components/configuracoes/NocServerCode';
+import P2sServerCode from '../components/configuracoes/P2sServerCode';
 
 const APP_ID = '697aa46c9998c30665e2e19a';
 
@@ -452,8 +453,26 @@ private async Task PostP2SEvent(string terminalId, string eventType)
           </Card>
         </motion.div>
 
-        {/* Telegram Notifications */}
+        {/* P2S Server Dedicado */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card className="bg-white/80 backdrop-blur-sm border-violet-200/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Radio className="h-5 w-5 text-violet-600" />
+                P2S Server — Servidor Push to Server (Windows Server)
+              </CardTitle>
+              <CardDescription>
+                Serviço dedicado para terminais que conectam inversamente ao servidor (P2S). Compatível com ZKTeco, Anviz, Suprema, Hikvision, Dahua e Nitgen.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <P2sServerCode />
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Telegram Notifications */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
           <TelegramConfig />
         </motion.div>
 

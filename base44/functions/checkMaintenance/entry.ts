@@ -3,35 +3,29 @@
  * Pode ser chamado com { terminal_id } para verificar um terminal específico
  * ou sem parâmetros para obter todos os terminais em manutenção agora
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
-
-const APP_ID = Deno.env.get('BASE44_APP_ID');
-const API_KEY = Deno.env.get('API_KEY');
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
 
-        // Aceita: agente local (X-Api-Key + X-App-Id) OU utilizador autenticado
-        const apiKey = req.headers.get('X-Api-Key');
-        const appId = req.headers.get('X-App-Id');
-        const isAgent = apiKey && appId && apiKey === API_KEY && appId === APP_ID;
-
-        if (!isAgent) {
-            const isAuthenticated = await base44.auth.isAuthenticated();
-            if (!isAuthenticated) {
-                return Response.json({ error: 'Unauthorized' }, { status: 401 });
-            }
+        const isAuthenticated = await base44.auth.isAuthenticated();
+        if (!isAuthenticated) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await req.json().catch(() => ({}));
         const { terminal_id } = body;
 
-        const agora = new Date().toISOString();
+        const agora_ms = Date.now();
 
-        // Buscar janelas ativas onde agora está entre inicio e fim
+        // Buscar janelas ativas onde agora está entre inicio e fim (comparação por timestamp)
         const janelas = await base44.asServiceRole.entities.MaintenanceWindow.filter({ ativo: true });
-        const ativas = janelas.filter(j => j.inicio <= agora && j.fim >= agora);
+        const ativas = janelas.filter(j => {
+            const ini = new Date(j.inicio).getTime();
+            const fim = new Date(j.fim).getTime();
+            return !isNaN(ini) && !isNaN(fim) && agora_ms >= ini && agora_ms <= fim;
+        });
 
         if (terminal_id) {
             const emManutencao = ativas.some(j => j.terminal_id === terminal_id);

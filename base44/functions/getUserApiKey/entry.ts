@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Retorna a api_key activa do utilizador autenticado (lida da entidade ApiKey)
 Deno.serve(async (req) => {

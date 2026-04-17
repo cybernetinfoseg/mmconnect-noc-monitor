@@ -26,39 +26,38 @@ function buildTimmyWsUrl(terminal) {
 }
 
 async function sendTimmyCommand(terminal, command) {
-  // Timmy WebSocket Cloud: abre WS, envia comando, aguarda resposta
+  // Timmy WebSocket Cloud: abre WS nativo Deno, envia comando, aguarda resposta
   const wsUrl = buildTimmyWsUrl(terminal);
-  const WebSocket = (await import('npm:ws@8.18.0')).default;
 
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(wsUrl);
     const timeout = setTimeout(() => {
-      ws.terminate();
+      ws.close();
       reject(new Error('Timeout — terminal não respondeu em 8s'));
     }, 8000);
 
-    ws.on('open', () => {
+    ws.onopen = () => {
       ws.send(JSON.stringify(command));
-    });
+    };
 
-    ws.on('message', (data) => {
+    ws.onmessage = (event) => {
       clearTimeout(timeout);
       ws.close();
       try {
-        resolve(JSON.parse(data.toString()));
+        resolve(JSON.parse(event.data));
       } catch {
-        resolve({ result: true, raw: data.toString() });
+        resolve({ result: true, raw: event.data });
       }
-    });
+    };
 
-    ws.on('error', (err) => {
+    ws.onerror = (err) => {
       clearTimeout(timeout);
-      reject(new Error(`WS erro: ${err.message}`));
-    });
+      reject(new Error(`WS erro: ${err.message || 'conexão falhou'}`));
+    };
 
-    ws.on('close', () => {
+    ws.onclose = () => {
       clearTimeout(timeout);
-    });
+    };
   });
 }
 
@@ -94,22 +93,6 @@ async function dahuaRequest(terminal, cgiPath) {
   });
   const text = await resp.text();
   return { status: resp.status, body: text };
-}
-
-async function zktecoadmsRequest(terminal, cmd) {
-  // ADMS/ZKTeco: enviar comando via endpoint getrequest simulation
-  // The real ADMS sends commands as response to GET /iclock/getrequest
-  // Here we use the terminal's IP directly if available (for ip_publico/dns)
-  const ip = terminal.ip_publico || terminal.dns;
-  if (!ip) return { success: false, error: 'Terminal ZKTeco sem IP configurado para controlo direto' };
-  const port = terminal.porta || 4370;
-  const base = `http://${ip}:${port}`;
-  // ZKTeco HTTP API endpoint (devices with web server)
-  const resp = await fetch(`${base}/iclock/getrequest?SN=${terminal.numero_serie || ''}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'text/plain' },
-  });
-  return { status: resp.status, body: await resp.text() };
 }
 
 // ─── Action Handlers ────────────────────────────────────────────────────────
@@ -215,15 +198,14 @@ async function actionReboot(terminal) {
   if (terminal.tipo_conexao === 'websocket_cloud') {
     // Timmy reboot: envia e não espera resposta (terminal reinicia imediatamente)
     const wsUrl = buildTimmyWsUrl(terminal);
-    const WebSocket = (await import('npm:ws@8.18.0')).default;
     await new Promise((resolve) => {
       const ws = new WebSocket(wsUrl);
-      ws.on('open', () => {
+      ws.onopen = () => {
         ws.send(JSON.stringify({ cmd: 'reboot' }));
         setTimeout(() => { ws.close(); resolve(); }, 1000);
-      });
-      ws.on('error', () => resolve());
-      setTimeout(() => { ws.terminate(); resolve(); }, 5000);
+      };
+      ws.onerror = () => resolve();
+      setTimeout(() => { try { ws.close(); } catch {} resolve(); }, 5000);
     });
     return { success: true, message: 'Comando de reinício enviado. Terminal reiniciará imediatamente.' };
   }

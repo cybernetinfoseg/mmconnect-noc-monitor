@@ -52,8 +52,7 @@ import TerminalControlPanel from '../components/terminais/TerminalControlPanel';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
-import { User as UserIcon } from 'lucide-react';
-import { Zap } from 'lucide-react';
+import { User as UserIcon, Zap } from 'lucide-react';
 
 export default function Terminais() {
   const [searchTerm, setSearchTerm] = useState('');

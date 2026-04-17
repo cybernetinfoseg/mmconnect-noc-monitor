@@ -14,7 +14,6 @@ import {
   DoorOpen,
   RefreshCw,
   Info,
-  Lock,
   LockOpen,
   Loader2,
   CheckCircle2,

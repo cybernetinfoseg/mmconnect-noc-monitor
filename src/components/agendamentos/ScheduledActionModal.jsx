@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
+// adduser e blockuser requerem parâmetros dinâmicos (ID/nome do utilizador)
+// que o cron não pode fornecer — apenas disponíveis no painel de controlo manual.
 const ACOES = [
   { value: 'settime',    label: 'Acertar Relógio' },
   { value: 'getlogs',    label: 'Recolher Marcações' },
@@ -16,8 +18,6 @@ const ACOES = [
   { value: 'opendoor',   label: 'Abrir Porta' },
   { value: 'getdevinfo', label: 'Info do Dispositivo' },
   { value: 'lockctrl',   label: 'Forçar Porta Aberta' },
-  { value: 'adduser',    label: 'Adicionar Utilizador' },
-  { value: 'blockuser',  label: 'Bloquear Utilizador' },
 ];
 
 const DIAS = [

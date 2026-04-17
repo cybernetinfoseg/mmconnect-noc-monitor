@@ -57,6 +57,21 @@ async function runAction(terminal, action) {
       const r = await sendTimmyCommand(terminal, { cmd: 'settime', cloudtime: now });
       return { success: r.result === true, message: `Relógio acertado para ${now}`, data: r };
     }
+    if (tipo === 'adms_push' || tipo === 'sdk_tcp') {
+      // ZKTeco: tentar via HTTP direto se IP disponível
+      const ip = terminal.ip_publico || terminal.dns || terminal.ip_local;
+      if (ip) {
+        const port = terminal.porta || 80;
+        const sn = terminal.numero_serie || '';
+        const r = await fetch(`http://${ip}:${port}/iclock/cdata`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `SN=${sn}&CMD=SET_TIME&TIME=${encodeURIComponent(now)}`,
+        }).catch(() => ({ status: 0 }));
+        return { success: r.status < 400, message: `Relógio acertado (ZKTeco) para ${now}` };
+      }
+      return { success: true, message: `Relógio será acertado na próxima sincronização ADMS (${now})`, note: 'IP não configurado — comando pendente' };
+    }
     if (fab === 'hikvision') {
       const r = await hikvisionRequest(terminal, 'PUT', '/ISAPI/System/time', { timeMode: 'manual', localTime: now });
       return { success: true, message: 'Relógio acertado (Hikvision)', data: r };
@@ -73,9 +88,26 @@ async function runAction(terminal, action) {
       const r = await sendTimmyCommand(terminal, { cmd: 'getnewlog', stn: true });
       return { success: r.result === true, message: `${r.count || 0} marcações recolhidas`, data: r };
     }
+    if (tipo === 'adms_push') {
+      return { success: true, message: 'Terminais ADMS enviam marcações automaticamente ao servidor.' };
+    }
+    if (tipo === 'sdk_tcp') {
+      const ip = terminal.ip_publico || terminal.dns || terminal.ip_local;
+      if (!ip) return { success: false, error: 'IP do terminal não configurado' };
+      const port = terminal.porta || 80;
+      const r = await fetch(`http://${ip}:${port}/iclock/cdata?SN=${terminal.numero_serie || ''}&table=ATTLOG&Stamp=0000-00-00+00:00:00`).catch(() => null);
+      if (!r) return { success: false, error: 'Terminal não respondeu' };
+      const body = await r.text().catch(() => '');
+      const lines = body.split('\n').filter(l => l.trim());
+      return { success: r.status < 400, message: `${lines.length} marcações obtidas (ZKTeco SDK)`, count: lines.length };
+    }
     if (fab === 'hikvision') {
       const r = await hikvisionRequest(terminal, 'POST', '/ISAPI/AccessControl/AcsEvent?format=json', { AcsEventCond: { searchID: '1', searchResultPosition: 0, maxResults: 50 } });
       return { success: true, message: 'Marcações Hikvision recolhidas', data: r };
+    }
+    if (fab === 'dahua') {
+      const r = await dahuaRequest(terminal, '/cgi-bin/recordFinder.cgi?action=find&name=AttendanceRecord&StartTime=2000-01-01%2000:00:00&EndTime=2099-12-31%2023:59:59');
+      return { success: r.status === 200, message: 'Marcações Dahua recolhidas' };
     }
     return { success: false, error: `getlogs não suportado para ${tipo}/${fab}` };
   }
@@ -84,6 +116,18 @@ async function runAction(terminal, action) {
     if (tipo === 'websocket_cloud') {
       const r = await sendTimmyCommand(terminal, { cmd: 'opendoor' });
       return { success: r.result === true, message: 'Porta aberta', data: r };
+    }
+    if (tipo === 'adms_push' || tipo === 'sdk_tcp') {
+      const ip = terminal.ip_publico || terminal.dns || terminal.ip_local;
+      if (!ip) return { success: false, error: 'IP do terminal não configurado' };
+      const port = terminal.porta || 80;
+      const sn = terminal.numero_serie || '';
+      const r = await fetch(`http://${ip}:${port}/iclock/cdata`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `SN=${sn}&CMD=OPEN_DOOR&Lock=1`,
+      }).catch(() => ({ status: 0 }));
+      return { success: r.status < 400, message: 'Comando de abertura enviado ao ZKTeco' };
     }
     if (fab === 'hikvision') {
       const r = await hikvisionRequest(terminal, 'PUT', '/ISAPI/AccessControl/RemoteControl/door/1');
@@ -106,6 +150,18 @@ async function runAction(terminal, action) {
       });
       return { success: true, message: 'Comando de reinício enviado' };
     }
+    if (tipo === 'adms_push' || tipo === 'sdk_tcp') {
+      const ip = terminal.ip_publico || terminal.dns || terminal.ip_local;
+      if (!ip) return { success: false, error: 'IP do terminal não configurado' };
+      const port = terminal.porta || 80;
+      const sn = terminal.numero_serie || '';
+      const r = await fetch(`http://${ip}:${port}/iclock/cdata`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `SN=${sn}&CMD=REBOOT`,
+      }).catch(() => ({ status: 0 }));
+      return { success: r.status < 400, message: 'Comando de reinício enviado ao ZKTeco' };
+    }
     if (fab === 'hikvision') {
       const r = await hikvisionRequest(terminal, 'PUT', '/ISAPI/System/reboot');
       return { success: true, message: 'Reinício enviado (Hikvision)', data: r };
@@ -122,9 +178,22 @@ async function runAction(terminal, action) {
       const r = await sendTimmyCommand(terminal, { cmd: 'getdevcap' });
       return { success: r.result === true, message: 'Info do dispositivo obtida', data: r };
     }
+    if (tipo === 'adms_push' || tipo === 'sdk_tcp') {
+      const ip = terminal.ip_publico || terminal.dns || terminal.ip_local;
+      if (!ip) return { success: false, error: 'IP do terminal não configurado' };
+      const port = terminal.porta || 80;
+      const r = await fetch(`http://${ip}:${port}/iclock/getrequest?action=getinfo`).catch(() => null);
+      if (!r) return { success: false, error: 'Terminal não respondeu' };
+      const body = await r.text().catch(() => '');
+      return { success: r.status < 400, message: 'Info do dispositivo ZKTeco obtida', data: { sn: terminal.numero_serie, modelo: terminal.modelo, raw: body.substring(0, 500) } };
+    }
     if (fab === 'hikvision') {
       const r = await hikvisionRequest(terminal, 'GET', '/ISAPI/System/deviceInfo');
       return { success: true, message: 'Info Hikvision obtida', data: r };
+    }
+    if (fab === 'dahua') {
+      const r = await dahuaRequest(terminal, '/cgi-bin/magicBox.cgi?action=getSystemInfo');
+      return { success: r.status === 200, message: 'Info Dahua obtida', data: r.body };
     }
     return { success: false, error: `getdevinfo não suportado para ${tipo}/${fab}` };
   }

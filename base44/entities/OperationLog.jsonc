@@ -18,7 +18,9 @@
         "opendoor",
         "reboot",
         "getdevinfo",
-        "lockctrl"
+        "lockctrl",
+        "adduser",
+        "blockuser"
       ],
       "description": "A\u00e7\u00e3o executada"
     },

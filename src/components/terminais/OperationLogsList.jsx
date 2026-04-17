@@ -14,6 +14,8 @@ const ACAO_LABELS = {
   reboot:     'Reiniciar Terminal',
   getdevinfo: 'Info do Dispositivo',
   lockctrl:   'Forçar Porta Aberta',
+  adduser:    'Adicionar Utilizador',
+  blockuser:  'Bloquear Utilizador',
 };
 
 function LogRow({ log }) {

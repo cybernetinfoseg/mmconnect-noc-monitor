@@ -22,6 +22,8 @@ const ACAO_LABELS = {
   opendoor:   'Abrir Porta',
   getdevinfo: 'Info do Dispositivo',
   lockctrl:   'Forçar Porta Aberta',
+  adduser:    'Adicionar Utilizador',
+  blockuser:  'Bloquear Utilizador',
 };
 
 const ACAO_COLORS = {
@@ -31,6 +33,8 @@ const ACAO_COLORS = {
   opendoor:   'bg-amber-100 text-amber-700 border-amber-200',
   getdevinfo: 'bg-slate-100 text-slate-600 border-slate-200',
   lockctrl:   'bg-violet-100 text-violet-700 border-violet-200',
+  adduser:    'bg-teal-100 text-teal-700 border-teal-200',
+  blockuser:  'bg-rose-100 text-rose-700 border-rose-200',
 };
 
 const FREQ_LABELS = {

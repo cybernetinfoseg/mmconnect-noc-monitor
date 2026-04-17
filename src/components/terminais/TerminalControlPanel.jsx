@@ -23,8 +23,11 @@ import {
   ChevronUp,
   AlertTriangle,
   Zap,
+  UserPlus,
+  UserX,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import UserActionForm from './UserActionForm';
 
 // Mapeia tipo de conexão / fabricante para ações suportadas
 function getSupportedActions(terminal) {
@@ -32,33 +35,35 @@ function getSupportedActions(terminal) {
   const fab = terminal.fabricante || '';
 
   const all = {
-    settime:    { label: 'Acertar Relógio', icon: Clock, color: 'blue', desc: 'Sincronizar hora do terminal com o servidor' },
-    getlogs:    { label: 'Recolher Marcações', icon: ClipboardList, color: 'emerald', desc: 'Obter registos de ponto do terminal' },
-    opendoor:   { label: 'Abrir Porta', icon: DoorOpen, color: 'amber', desc: 'Acionar abertura de porta remotamente', confirm: true },
-    reboot:     { label: 'Reiniciar Terminal', icon: RefreshCw, color: 'orange', desc: 'Reiniciar o terminal imediatamente', confirm: true, danger: true },
-    getdevinfo: { label: 'Info do Dispositivo', icon: Info, color: 'slate', desc: 'Obter capacidades e estado do hardware' },
-    lockctrl:   { label: 'Forçar Porta Aberta', icon: LockOpen, color: 'violet', desc: 'Manter porta em estado aberto forçado (lockctrl fuc=1)', confirm: true },
+    settime:    { label: 'Acertar Relógio',       icon: Clock,        color: 'blue',    desc: 'Sincronizar hora do terminal com o servidor' },
+    getlogs:    { label: 'Recolher Marcações',     icon: ClipboardList,color: 'emerald', desc: 'Obter registos de ponto do terminal' },
+    opendoor:   { label: 'Abrir Porta',            icon: DoorOpen,     color: 'amber',   desc: 'Acionar abertura de porta remotamente', confirm: true },
+    reboot:     { label: 'Reiniciar Terminal',     icon: RefreshCw,    color: 'orange',  desc: 'Reiniciar o terminal imediatamente', confirm: true, danger: true },
+    getdevinfo: { label: 'Info do Dispositivo',    icon: Info,         color: 'slate',   desc: 'Obter capacidades e estado do hardware' },
+    lockctrl:   { label: 'Forçar Porta Aberta',    icon: LockOpen,     color: 'violet',  desc: 'Manter porta em estado aberto forçado', confirm: true },
+    adduser:    { label: 'Adicionar Utilizador',   icon: UserPlus,     color: 'teal',    desc: 'Registar novo utilizador no terminal', form: true },
+    blockuser:  { label: 'Bloquear Utilizador',    icon: UserX,        color: 'rose',    desc: 'Bloquear ou desbloquear acesso de utilizador', form: true },
   };
 
   if (tipo === 'websocket_cloud') {
-    return ['settime', 'getlogs', 'opendoor', 'reboot', 'getdevinfo', 'lockctrl'].map(k => ({ key: k, ...all[k] }));
+    return ['settime', 'getlogs', 'opendoor', 'reboot', 'getdevinfo', 'lockctrl', 'adduser', 'blockuser'].map(k => ({ key: k, ...all[k] }));
   }
   if (tipo === 'adms_push') {
-    return ['settime', 'getlogs'].map(k => ({ key: k, ...all[k] }));
+    return ['settime', 'getlogs', 'adduser', 'blockuser'].map(k => ({ key: k, ...all[k] }));
   }
   if (tipo === 'sdk_tcp') {
-    return ['settime'].map(k => ({ key: k, ...all[k] }));
+    return ['settime', 'adduser', 'blockuser'].map(k => ({ key: k, ...all[k] }));
   }
   if (['ip_publico', 'dns', 'ip_local'].includes(tipo)) {
     if (fab === 'hikvision') {
-      return ['settime', 'getlogs', 'opendoor', 'reboot', 'getdevinfo'].map(k => ({ key: k, ...all[k] }));
+      return ['settime', 'getlogs', 'opendoor', 'reboot', 'getdevinfo', 'adduser', 'blockuser'].map(k => ({ key: k, ...all[k] }));
     }
     if (fab === 'dahua') {
-      return ['settime', 'getlogs', 'opendoor', 'reboot', 'getdevinfo'].map(k => ({ key: k, ...all[k] }));
+      return ['settime', 'getlogs', 'opendoor', 'reboot', 'getdevinfo', 'adduser'].map(k => ({ key: k, ...all[k] }));
     }
   }
 
-  return []; // Sem suporte
+  return [];
 }
 
 const COLOR_MAP = {
@@ -68,6 +73,8 @@ const COLOR_MAP = {
   orange:  'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100',
   slate:   'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100',
   violet:  'bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100',
+  teal:    'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100',
+  rose:    'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100',
 };
 
 function ResultBox({ result }) {
@@ -124,9 +131,10 @@ function ResultBox({ result }) {
 }
 
 export default function TerminalControlPanel({ terminal, open, onClose }) {
-  const [loading, setLoading] = useState(null); // action key
+  const [loading, setLoading] = useState(null);
   const [results, setResults] = useState({});
   const [confirmAction, setConfirmAction] = useState(null);
+  const [activeForm, setActiveForm] = useState(null); // 'adduser' | 'blockuser'
 
   const actions = getSupportedActions(terminal);
   const hasSupport = actions.length > 0;
@@ -148,8 +156,15 @@ export default function TerminalControlPanel({ terminal, open, onClose }) {
     }
   };
 
+  const handleFormSubmit = async (actionKey, formData) => {
+    await executeAction(actionKey, formData);
+    setActiveForm(null);
+  };
+
   const handleActionClick = (action) => {
-    if (action.confirm) {
+    if (action.form) {
+      setActiveForm(activeForm === action.key ? null : action.key);
+    } else if (action.confirm) {
       setConfirmAction(action);
     } else {
       executeAction(action.key);
@@ -243,6 +258,16 @@ export default function TerminalControlPanel({ terminal, open, onClose }) {
                         <Badge className="bg-red-100 text-red-700 border-red-200 text-xs shrink-0">Cuidado</Badge>
                       )}
                     </button>
+
+                    {/* Formulário inline para ações que precisam de dados */}
+                    {activeForm === action.key && (
+                      <UserActionForm
+                        action={action.key}
+                        loading={loading === action.key}
+                        onSubmit={(formData) => handleFormSubmit(action.key, formData)}
+                        onCancel={() => setActiveForm(null)}
+                      />
+                    )}
 
                     {result && <ResultBox result={result} />}
                   </div>

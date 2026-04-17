@@ -16,6 +16,8 @@ const ACOES = [
   { value: 'opendoor',   label: 'Abrir Porta' },
   { value: 'getdevinfo', label: 'Info do Dispositivo' },
   { value: 'lockctrl',   label: 'Forçar Porta Aberta' },
+  { value: 'adduser',    label: 'Adicionar Utilizador' },
+  { value: 'blockuser',  label: 'Bloquear Utilizador' },
 ];
 
 const DIAS = [

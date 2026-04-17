@@ -92,6 +92,7 @@ module.exports = {
     'bg-slate-50', 'bg-slate-100', 'bg-slate-200', 'border-slate-200', 'text-slate-700', 'text-slate-800', 'text-slate-900',
     'bg-orange-50', 'bg-orange-100', 'bg-orange-200', 'border-orange-200', 'text-orange-700', 'text-orange-800', 'text-orange-900',
     'bg-rose-50', 'bg-rose-100', 'bg-rose-200', 'border-rose-200', 'text-rose-700', 'text-rose-800', 'text-rose-900',
+    'bg-teal-50', 'bg-teal-100', 'bg-teal-200', 'border-teal-200', 'text-teal-700', 'text-teal-800', 'text-teal-900',
   ],
   plugins: [require("tailwindcss-animate")],
 }

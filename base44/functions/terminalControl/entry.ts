@@ -245,13 +245,116 @@ async function actionGetDevInfo(terminal) {
 }
 
 async function actionSetDoorStatus(terminal, params) {
-  // lockctrl: fuc=1 forced open, fuc=2 forced closed, fuc=3 software open, fuc=4 relay reset
   const fuc = params?.fuc || 3;
   if (terminal.tipo_conexao === 'websocket_cloud') {
     const resp = await sendTimmyCommand(terminal, { cmd: 'lockctrl', fuc });
     return { success: resp.result === true, message: `Controlo de fechadura executado (fuc=${fuc})`, data: resp };
   }
   return { success: false, error: 'lockctrl apenas suportado via WebSocket Cloud (Timmy)' };
+}
+
+async function actionAddUser(terminal, params) {
+  const { enrollid, name, password = '', card = '', privilege = 0, accgroup = 1, timezone = 1 } = params || {};
+  if (!enrollid || !name) return { success: false, error: 'enrollid e name são obrigatórios' };
+
+  if (terminal.tipo_conexao === 'websocket_cloud') {
+    const resp = await sendTimmyCommand(terminal, {
+      cmd: 'setuser',
+      enrollid,
+      name,
+      password,
+      card,
+      privilege: Number(privilege),
+      accgroup,
+      timezone,
+    });
+    return { success: resp.result === true, message: `Utilizador "${name}" (ID:${enrollid}) adicionado`, data: resp };
+  }
+
+  if (terminal.tipo_conexao === 'adms_push' || terminal.tipo_conexao === 'sdk_tcp') {
+    // ZKTeco ADMS: enviar via HTTP query
+    const ip = terminal.ip_publico || terminal.dns || terminal.ip_local;
+    if (!ip) return { success: false, error: 'IP do terminal não configurado' };
+    const port = terminal.porta || 80;
+    const sn = terminal.numero_serie || '';
+    const body = `SN=${sn}&CMD=SET_USER&PIN=${enrollid}&Name=${encodeURIComponent(name)}&Password=${password}&Card=${card}&Privilege=${privilege}&ACC=${accgroup}&TZ=${timezone}`;
+    const resp = await fetch(`http://${ip}:${port}/iclock/cdata`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    return { success: resp.status < 400, message: `Utilizador "${name}" enviado ao ZKTeco ADMS`, note: 'Será registado na próxima sincronização' };
+  }
+
+  if (['ip_publico', 'dns', 'ip_local'].includes(terminal.tipo_conexao)) {
+    if (terminal.fabricante === 'hikvision') {
+      const resp = await hikvisionRequest(terminal, 'POST', '/ISAPI/AccessControl/UserInfo/Record?format=json', {
+        UserInfo: {
+          employeeNo: String(enrollid),
+          name,
+          userType: Number(privilege) === 14 ? 'administrator' : 'normal',
+          Valid: { enable: true, beginTime: '2000-01-01T00:00:00', endTime: '2099-12-31T23:59:59', timeType: 'local' },
+          doorRight: '1',
+          RightPlan: [{ doorNo: 1, planTemplateNo: '1' }],
+        }
+      });
+      return { success: true, message: `Utilizador "${name}" adicionado (Hikvision)`, data: resp };
+    }
+    if (terminal.fabricante === 'dahua') {
+      const resp = await dahuaRequest(terminal, `/cgi-bin/AccessUser.cgi?action=insertUser&UserID=${enrollid}&UserName=${encodeURIComponent(name)}&Password=${password}&Doors[0]=0&AuthorityType=0`);
+      return { success: resp.status === 200, message: `Utilizador "${name}" adicionado (Dahua)`, data: resp };
+    }
+  }
+
+  return { success: false, error: `adduser não suportado para ${terminal.tipo_conexao}/${terminal.fabricante}` };
+}
+
+async function actionBlockUser(terminal, params) {
+  const { enrollid, block = true } = params || {};
+  if (!enrollid) return { success: false, error: 'enrollid é obrigatório' };
+  const statusLabel = block ? 'bloqueado' : 'desbloqueado';
+
+  if (terminal.tipo_conexao === 'websocket_cloud') {
+    // Timmy: privilege=255 bloqueia, privilege=0 desbloqueia
+    const resp = await sendTimmyCommand(terminal, {
+      cmd: 'setuser',
+      enrollid,
+      privilege: block ? 255 : 0,
+    });
+    return { success: resp.result === true, message: `Utilizador ID:${enrollid} ${statusLabel}`, data: resp };
+  }
+
+  if (terminal.tipo_conexao === 'adms_push' || terminal.tipo_conexao === 'sdk_tcp') {
+    const ip = terminal.ip_publico || terminal.dns || terminal.ip_local;
+    if (!ip) return { success: false, error: 'IP do terminal não configurado' };
+    const port = terminal.porta || 80;
+    const sn = terminal.numero_serie || '';
+    const body = `SN=${sn}&CMD=SET_USER&PIN=${enrollid}&Privilege=${block ? 255 : 0}`;
+    const resp = await fetch(`http://${ip}:${port}/iclock/cdata`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    return { success: resp.status < 400, message: `Utilizador ID:${enrollid} ${statusLabel} (ZKTeco ADMS)` };
+  }
+
+  if (['ip_publico', 'dns', 'ip_local'].includes(terminal.tipo_conexao)) {
+    if (terminal.fabricante === 'hikvision') {
+      const resp = await hikvisionRequest(terminal, 'PUT', `/ISAPI/AccessControl/UserInfo/Modify?format=json`, {
+        UserInfo: {
+          employeeNo: String(enrollid),
+          Valid: { enable: !block, beginTime: '2000-01-01T00:00:00', endTime: '2099-12-31T23:59:59', timeType: 'local' },
+        }
+      });
+      return { success: true, message: `Utilizador ID:${enrollid} ${statusLabel} (Hikvision)`, data: resp };
+    }
+    // Dahua não suporta bloqueio direto via CGI simples
+    if (terminal.fabricante === 'dahua') {
+      return { success: false, error: 'Bloqueio de utilizador não suportado via API Dahua CGI' };
+    }
+  }
+
+  return { success: false, error: `blockuser não suportado para ${terminal.tipo_conexao}/${terminal.fabricante}` };
 }
 
 // ─── Main Handler ────────────────────────────────────────────────────────────
@@ -289,7 +392,9 @@ Deno.serve(async (req) => {
       case 'opendoor':  result = await actionOpenDoor(terminal); break;
       case 'reboot':    result = await actionReboot(terminal); break;
       case 'getdevinfo':result = await actionGetDevInfo(terminal); break;
-      case 'lockctrl':  result = await actionSetDoorStatus(terminal, params); break;
+      case 'lockctrl':   result = await actionSetDoorStatus(terminal, params); break;
+      case 'adduser':    result = await actionAddUser(terminal, params); break;
+      case 'blockuser':  result = await actionBlockUser(terminal, params); break;
       default:
         return Response.json({ error: `Ação desconhecida: ${action}` }, { status: 400 });
     }

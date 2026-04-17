@@ -3,7 +3,7 @@
  * Chamado internamente por agentReport/monitorAllTerminals
  * Payload: { bot_token, chat_id, message }
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
     try {

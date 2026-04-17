@@ -1,0 +1,98 @@
+{
+  "name": "ScheduledAction",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome descritivo do agendamento"
+    },
+    "terminal_id": {
+      "type": "string",
+      "description": "ID do terminal alvo"
+    },
+    "terminal_nome": {
+      "type": "string",
+      "description": "Nome do terminal (cache)"
+    },
+    "acao": {
+      "type": "string",
+      "enum": [
+        "settime",
+        "getlogs",
+        "opendoor",
+        "reboot",
+        "getdevinfo",
+        "lockctrl"
+      ],
+      "description": "A\u00e7\u00e3o remota a executar"
+    },
+    "frequencia": {
+      "type": "string",
+      "enum": [
+        "diaria",
+        "semanal",
+        "mensal",
+        "unica"
+      ],
+      "default": "diaria",
+      "description": "Frequ\u00eancia de execu\u00e7\u00e3o"
+    },
+    "hora": {
+      "type": "string",
+      "description": "Hora de execu\u00e7\u00e3o (HH:MM)"
+    },
+    "dias_semana": {
+      "type": "string",
+      "description": "Dias da semana para execu\u00e7\u00e3o semanal (JSON array: [1,2,3,4,5]). 0=Dom, 6=S\u00e1b"
+    },
+    "dia_mes": {
+      "type": "number",
+      "description": "Dia do m\u00eas para execu\u00e7\u00e3o mensal (1-31)"
+    },
+    "data_unica": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora para execu\u00e7\u00e3o \u00fanica"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se o agendamento est\u00e1 ativo"
+    },
+    "criado_por": {
+      "type": "string",
+      "description": "Email do utilizador que criou"
+    },
+    "ultima_execucao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora da \u00faltima execu\u00e7\u00e3o"
+    },
+    "ultimo_resultado": {
+      "type": "string",
+      "enum": [
+        "sucesso",
+        "falha",
+        "pendente"
+      ],
+      "description": "Resultado da \u00faltima execu\u00e7\u00e3o"
+    },
+    "total_execucoes": {
+      "type": "number",
+      "default": 0,
+      "description": "Total de execu\u00e7\u00f5es realizadas"
+    },
+    "proxima_execucao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora estimada da pr\u00f3xima execu\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "nome",
+    "terminal_id",
+    "acao",
+    "frequencia",
+    "hora"
+  ]
+}

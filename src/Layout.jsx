@@ -19,7 +19,8 @@ import {
   LogOut,
   User,
   Wrench,
-  FileBarChart2
+  FileBarChart2,
+  CalendarClock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ const ALL_NAV_ITEMS = [
   { name: 'Incidentes', page: 'Incidents', icon: AlertTriangle },
   { name: 'Alertas', page: 'Alertas', icon: Bell },
   { name: 'Manutenção', page: 'Manutencao', icon: Wrench },
+  { name: 'Agendamentos', page: 'Agendamentos', icon: CalendarClock },
   { name: 'Relatórios', page: 'Relatorios', icon: FileBarChart2 },
   { name: 'Auditoria', page: 'Auditoria', icon: ClipboardList },
   { name: 'Configurações', page: 'Configuracoes', icon: Settings },

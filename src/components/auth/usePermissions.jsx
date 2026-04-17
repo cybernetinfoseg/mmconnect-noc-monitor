@@ -12,7 +12,7 @@ export const ROLE_COLORS = {
 
 const ALL_PAGES = [
   'Dashboard', 'TVMode', 'Terminais', 'History',
-  'Incidents', 'Alertas', 'Manutencao', 'Relatorios',
+  'Incidents', 'Alertas', 'Manutencao', 'Agendamentos', 'Relatorios',
   'Auditoria', 'Configuracoes', 'Administracao',
 ];
 

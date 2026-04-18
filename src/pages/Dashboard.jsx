@@ -14,8 +14,8 @@ import {
   LayoutDashboard,
   Settings2,
   LogOut,
-  User
-} from 'lucide-react';
+  User } from
+'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -38,7 +38,7 @@ import LiveClock from '../components/dashboard/LiveClock';
 const DEFAULT_WIDGETS = {
   terminalStatus: true,
   alertRules: true,
-  recentAudit: true,
+  recentAudit: true
 };
 
 export default function Dashboard() {
@@ -55,7 +55,7 @@ export default function Dashboard() {
     try {
       const saved = localStorage.getItem('dashboard-widgets');
       return saved ? { ...DEFAULT_WIDGETS, ...JSON.parse(saved) } : DEFAULT_WIDGETS;
-    } catch { return DEFAULT_WIDGETS; }
+    } catch {return DEFAULT_WIDGETS;}
   });
 
   useEffect(() => {
@@ -64,18 +64,18 @@ export default function Dashboard() {
 
   // Fetch monitor config to get actual refresh interval
   useEffect(() => {
-    base44.entities.MonitorConfig.list()
-      .then((configs) => {
-        const config = configs[0];
-        if (config?.intervalo_sync_minutos) {
-          setRefreshInterval(config.intervalo_sync_minutos * 60 * 1000);
-        }
-      })
-      .catch(() => setRefreshInterval(30000));
+    base44.entities.MonitorConfig.list().
+    then((configs) => {
+      const config = configs[0];
+      if (config?.intervalo_sync_minutos) {
+        setRefreshInterval(config.intervalo_sync_minutos * 60 * 1000);
+      }
+    }).
+    catch(() => setRefreshInterval(30000));
   }, []);
 
   const toggleWidget = (key) => {
-    setWidgets(prev => {
+    setWidgets((prev) => {
       const next = { ...prev, [key]: !prev[key] };
       localStorage.setItem('dashboard-widgets', JSON.stringify(next));
       return next;
@@ -98,7 +98,7 @@ export default function Dashboard() {
       );
     },
     refetchInterval: refreshInterval,
-    enabled: !!currentUser,
+    enabled: !!currentUser
   });
 
   // Monitorar todos os terminais
@@ -125,29 +125,29 @@ export default function Dashboard() {
       const myTerminals = await base44.entities.Terminal.filter(
         { created_by: currentUser?.email }
       );
-      const myTerminalIds = myTerminals.map(t => t.id);
+      const myTerminalIds = myTerminals.map((t) => t.id);
       if (myTerminalIds.length === 0) return [];
       const allAlerts = await base44.entities.AlertIncident.list('-created_date', 50);
-      return allAlerts.filter(a => myTerminalIds.includes(a.terminal_id));
+      return allAlerts.filter((a) => myTerminalIds.includes(a.terminal_id));
     },
     refetchInterval: refreshInterval,
-    enabled: !!currentUser,
+    enabled: !!currentUser
   });
 
   // Get unique values for filters
   const locais = useMemo(() =>
-    [...new Set(terminals.map(t => t.local).filter(Boolean))].sort(),
-    [terminals]
+  [...new Set(terminals.map((t) => t.local).filter(Boolean))].sort(),
+  [terminals]
   );
 
   const usuarios = useMemo(() =>
-    [...new Set(terminals.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(),
-    [terminals]
+  [...new Set(terminals.map((t) => t.usuario_email || t.created_by).filter(Boolean))].sort(),
+  [terminals]
   );
 
   // Apply filters
   const filteredTerminals = useMemo(() => {
-    let list = terminals.filter(t => {
+    let list = terminals.filter((t) => {
       if (localFilter && t.local !== localFilter) return false;
       if (statusFilter && t.status !== statusFilter) return false;
       if (userFilter && (t.usuario_email || t.created_by) !== userFilter) return false;
@@ -165,15 +165,15 @@ export default function Dashboard() {
 
   // Calculate KPIs
   const stats = useMemo(() => {
-    const online = filteredTerminals.filter(t => t.status === 'online').length;
-    const offline = filteredTerminals.filter(t => t.status === 'offline').length;
+    const online = filteredTerminals.filter((t) => t.status === 'online').length;
+    const offline = filteredTerminals.filter((t) => t.status === 'offline').length;
     return {
       total: filteredTerminals.length,
       online,
       offline,
-      onlinePercentage: filteredTerminals.length > 0
-        ? ((online / filteredTerminals.length) * 100).toFixed(1)
-        : 0
+      onlinePercentage: filteredTerminals.length > 0 ?
+      (online / filteredTerminals.length * 100).toFixed(1) :
+      0
     };
   }, [filteredTerminals]);
 
@@ -221,26 +221,26 @@ export default function Dashboard() {
                 onClick={handleMonitorAll}
                 disabled={isMonitoring}
                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors disabled:opacity-50"
-                title="Atualizar"
-              >
+                title="Atualizar">
+                
                 <RefreshCw className={cn("h-4 w-4", isMonitoring && "animate-spin")} />
               </button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowWidgetConfig(v => !v)}
-                className={cn("hidden sm:flex bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5", showWidgetConfig && "bg-white/20")}
-              >
+                onClick={() => setShowWidgetConfig((v) => !v)}
+                className={cn("hidden sm:flex bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5", showWidgetConfig && "bg-white/20")}>
+                
                 <Settings2 className="h-4 w-4" />
                 Widgets
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => base44.auth.logout()}
-                className="hidden sm:flex text-slate-300 hover:text-white hover:bg-white/10 gap-1"
-                title="Sair"
-              >
+                onClick={() => base44.auth.logout()} className="items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-8 rounded-md px-3 text-xs hidden sm:flex text-slate-300 hover:text-white hover:bg-white/10 gap-1 hidden hidden"
+
+                title="Sair">
+                
                 <LogOut className="h-4 w-4" />
                 Sair
               </Button>
@@ -249,29 +249,29 @@ export default function Dashboard() {
         </div>
 
         {/* Widget Config Panel */}
-        {showWidgetConfig && (
-          <div className="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-3">
+        {showWidgetConfig &&
+        <div className="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-3">
             <div className="max-w-[1920px] mx-auto flex flex-wrap items-center gap-4 sm:gap-6">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <LayoutDashboard className="h-3.5 w-3.5" /> Widgets visíveis
               </span>
               {[
-                { key: 'terminalStatus', label: 'Status de Terminais' },
-                { key: 'alertRules', label: 'Regras de Alerta' },
-                { key: 'recentAudit', label: 'Auditoria Recente' },
-              ].map(({ key, label }) => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer">
+            { key: 'terminalStatus', label: 'Status de Terminais' },
+            { key: 'alertRules', label: 'Regras de Alerta' },
+            { key: 'recentAudit', label: 'Auditoria Recente' }].
+            map(({ key, label }) =>
+            <label key={key} className="flex items-center gap-2 cursor-pointer">
                   <Switch
-                    checked={widgets[key]}
-                    onCheckedChange={() => toggleWidget(key)}
-                    className="data-[state=checked]:bg-emerald-500"
-                  />
+                checked={widgets[key]}
+                onCheckedChange={() => toggleWidget(key)}
+                className="data-[state=checked]:bg-emerald-500" />
+              
                   <span className="text-sm text-slate-300">{label}</span>
                 </label>
-              ))}
+            )}
             </div>
           </div>
-        )}
+        }
 
         {/* Main Content */}
         <div className="w-full px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-[1920px]">
@@ -279,8 +279,8 @@ export default function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-3 sm:gap-4"
-          >
+            className="flex flex-col gap-3 sm:gap-4">
+            
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${canSeeAll ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-2 sm:gap-3`}>
               <FilterDropdown
                 label="Filtrar por Local"
@@ -288,35 +288,35 @@ export default function Dashboard() {
                 value={localFilter}
                 onChange={setLocalFilter}
                 options={locais}
-                placeholder="Todos os locais"
-              />
+                placeholder="Todos os locais" />
+              
 
-              {canSeeAll && (
-                <div className="space-y-1.5">
+              {canSeeAll &&
+              <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5" />
                     Filtrar por Utilizador
                   </label>
                   <select
-                    value={userFilter || ''}
-                    onChange={e => setUserFilter(e.target.value || null)}
-                    className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full"
-                  >
+                  value={userFilter || ''}
+                  onChange={(e) => setUserFilter(e.target.value || null)}
+                  className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full">
+                  
                     <option value="">Todos os utilizadores</option>
-                    {usuarios.map(u => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
+                    {usuarios.map((u) =>
+                  <option key={u} value={u}>{u}</option>
+                  )}
                   </select>
                 </div>
-              )}
+              }
               <FilterDropdown
                 label="Status"
                 icon={Activity}
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={['online', 'offline']}
-                placeholder="Todos os status"
-              />
+                placeholder="Todos os status" />
+              
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                   <ArrowUpDown className="h-3.5 w-3.5" />
@@ -324,9 +324,9 @@ export default function Dashboard() {
                 </label>
                 <select
                   value={sortBy}
-                  onChange={e => setSortBy(e.target.value)}
-                  className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full"
-                >
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full">
+                  
                   <option value="status">Status</option>
                   <option value="nome">Nome</option>
                   <option value="ping">Sem ping</option>
@@ -337,16 +337,16 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { setLocalFilter(null); setStatusFilter(null); setUserFilter(null); setSortBy('status'); }}
+                onClick={() => {setLocalFilter(null);setStatusFilter(null);setUserFilter(null);setSortBy('status');}}
                 disabled={!localFilter && !statusFilter && !userFilter}
-                className="text-slate-500 hover:text-slate-700 disabled:opacity-30"
-              >
+                className="text-slate-500 hover:text-slate-700 disabled:opacity-30">
+                
                 Limpar filtros
               </Button>
               <Link
                 to={`/TVMode${localFilter ? `?local=${encodeURIComponent(localFilter)}` : ''}`}
-                className="w-full sm:w-auto"
-              >
+                className="w-full sm:w-auto">
+                
                 <Button variant="outline" size="sm" className="gap-1.5 text-slate-600 w-full sm:w-auto">
                   <Tv className="h-4 w-4" />
                   Modo TV
@@ -361,22 +361,22 @@ export default function Dashboard() {
               title="Total de Terminais"
               value={stats.total}
               icon={Monitor}
-              color="blue"
-            />
+              color="blue" />
+            
             <KPICard
               title="Online"
               value={stats.online}
               icon={Wifi}
               color="green"
               trend="up"
-              trendValue={`${stats.onlinePercentage}% disponível`}
-            />
+              trendValue={`${stats.onlinePercentage}% disponível`} />
+            
             <KPICard
               title="Offline"
               value={stats.offline}
               icon={WifiOff}
-              color="red"
-            />
+              color="red" />
+            
           </div>
 
           {/* Main Grid */}
@@ -386,8 +386,8 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
-              className="md:col-span-1"
-            >
+              className="md:col-span-1">
+              
               <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wider">
@@ -397,8 +397,8 @@ export default function Dashboard() {
                 <CardContent>
                   <StatusPieChart
                     online={stats.online}
-                    offline={stats.offline}
-                  />
+                    offline={stats.offline} />
+                  
                 </CardContent>
               </Card>
             </motion.div>
@@ -408,8 +408,8 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="md:col-span-1 lg:col-span-2"
-            >
+              className="md:col-span-1 lg:col-span-2">
+              
               <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wider flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -424,8 +424,8 @@ export default function Dashboard() {
                   <TerminalsTable
                     terminals={filteredTerminals}
                     maxRows={12}
-                    compact
-                  />
+                    compact />
+                  
                 </CardContent>
               </Card>
             </motion.div>
@@ -435,8 +435,8 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              className="md:col-span-1 lg:col-span-1"
-            >
+              className="md:col-span-1 lg:col-span-1">
+              
               <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-2">
@@ -452,27 +452,27 @@ export default function Dashboard() {
           </div>
 
           {/* Custom Widgets Row */}
-          {(widgets.terminalStatus || widgets.alertRules || widgets.recentAudit) && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {widgets.terminalStatus && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          {(widgets.terminalStatus || widgets.alertRules || widgets.recentAudit) &&
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {widgets.terminalStatus &&
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                   <TerminalStatusWidget total={stats.total} online={stats.online} offline={stats.offline} />
                 </motion.div>
-              )}
-              {widgets.alertRules && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            }
+              {widgets.alertRules &&
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
                   <AlertRulesWidget />
                 </motion.div>
-              )}
-              {widgets.recentAudit && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            }
+              {widgets.recentAudit &&
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                   <RecentAuditWidget currentUser={currentUser} />
                 </motion.div>
-              )}
+            }
             </div>
-          )}
+          }
         </div>
       </div>
-    </PullToRefresh>
-  );
+    </PullToRefresh>);
+
 }

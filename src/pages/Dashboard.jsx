@@ -244,7 +244,7 @@ export default function Dashboard() {
             <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => base44.auth.logout()} className="bg-emerald-500/10 ml-64 pl-2 rounded-full flex items-center gap-1.5 flex-shrink-0"
+                onClick={() => base44.auth.logout()} className="bg-emerald-500/10 ml-48 pr-1 rounded-full flex items-center gap-1.5 flex-shrink-0"
 
                 title="Sair">
                 

@@ -206,7 +206,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+          <div className="mr-1 flex items-center gap-1 sm:gap-2 overflow-x-auto">
             {currentUser &&
               <div className="hidden sm:flex items-center gap-2 text-sm text-slate-300 whitespace-nowrap">
                 <User className="h-4 w-4 text-slate-400 shrink-0" />

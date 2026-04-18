@@ -23,7 +23,7 @@ export default function LiveClock({ className }) {
           <p className="text-white mr-16 text-3xl font-bold tracking-tight tabular-nums">
             {time.format('HH:mm:ss')}
           </p>
-          <p className="text-sm text-white/60 uppercase tracking-wider">
+          <p className="text-white/60 text-sm uppercase tracking-wider">
             {time.format('dddd, DD MMM YYYY')}
           </p>
         </div>

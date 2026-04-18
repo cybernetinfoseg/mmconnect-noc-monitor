@@ -206,16 +206,14 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-400 truncate">Terminais Biométricos</p>
                 </div>
               </div>
-              {/* Clock — bottom left, desktop only */}
-              <div className="hidden sm:block pl-1">
+              {/* Clock — all screens */}
+              <div className="pl-1">
                 <LiveClock />
               </div>
             </div>
 
             {/* Right: actions */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Mobile clock */}
-              <MobileClock className="sm:hidden" />
               {/* Refresh button — icon only, rounded */}
               <button
                 onClick={handleMonitorAll}
@@ -234,16 +232,14 @@ export default function Dashboard() {
                 <Settings2 className="h-4 w-4" />
                 Widgets
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => base44.auth.logout()} className="items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-8 rounded-md px-3 text-xs hidden sm:flex text-slate-300 hover:text-white hover:bg-white/10 gap-1 hidden hidden"
-
-                title="Sair">
-                
+              <button
+                onClick={() => base44.auth.logout()}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
+                title="Sair"
+              >
                 <LogOut className="h-4 w-4" />
-                Sair
-              </Button>
+                <span className="hidden sm:inline">Sair</span>
+              </button>
             </div>
           </div>
         </div>

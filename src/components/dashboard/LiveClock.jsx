@@ -20,7 +20,7 @@ export default function LiveClock({ className }) {
       
       <div className="flex items-center gap-4">
         <div className="text-right">
-          <p className="text-3xl font-bold tracking-tight text-white tabular-nums">
+          <p className="text-white pr-1 text-3xl font-bold tracking-tight tabular-nums">
             {time.format('HH:mm:ss')}
           </p>
           <p className="text-sm text-white/60 uppercase tracking-wider">

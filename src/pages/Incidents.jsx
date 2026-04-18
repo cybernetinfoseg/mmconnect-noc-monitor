@@ -444,6 +444,14 @@ export default function Incidents() {
               <TabsTrigger value="restored">Restaurado</TabsTrigger>
             </TabsList>
           </Tabs>
+
+          <button
+            onClick={() => { setStatusFilter('all'); setTipoFilter('all'); }}
+            disabled={statusFilter === 'all' && tipoFilter === 'all'}
+            className="text-xs text-slate-400 hover:text-slate-700 disabled:opacity-30 select-none transition-colors"
+          >
+            Limpar filtros
+          </button>
         </div>
 
         {/* Incidents List */}

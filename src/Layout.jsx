@@ -11,6 +11,7 @@ import {
   Tv,
   Menu,
   ChevronLeft,
+  Home,
   Bell,
   Shield,
   Settings,
@@ -27,6 +28,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 import PendingApproval from './components/auth/PendingApproval';
 import { useRequireAuth } from './components/auth/useRequireAuth';
+import MobileClock from './components/dashboard/MobileClock';
 
 const ALL_NAV_ITEMS = [
   { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
@@ -203,7 +205,7 @@ export default function Layout({ children, currentPageName }) {
             paddingRight: 'env(safe-area-inset-right)',
           }}
         >
-          <div className="flex items-center gap-2 h-14 px-2">
+          <div className="flex items-center h-14 px-2 gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -212,7 +214,16 @@ export default function Layout({ children, currentPageName }) {
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <span className="font-semibold text-slate-900 dark:text-white text-sm truncate">{pageLabel}</span>
+            <span className="font-semibold text-slate-900 dark:text-white text-sm truncate flex-1">{pageLabel}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="select-none h-10 w-10 shrink-0"
+              title="Dashboard"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
           </div>
         </header>
       )}
@@ -269,20 +280,24 @@ export default function Layout({ children, currentPageName }) {
               const isActive = item.page && currentPageName === item.page;
               const Icon = item.icon;
 
-              // "Menu" tab opens the sidebar sheet
+              // "Menu" tab — relógio ao lado
               if (!item.page) {
                 return (
-                  <SheetTrigger key="menu" asChild>
-                    <button
-                      className={cn(
-                        "flex-1 flex flex-col items-center justify-center py-2 gap-1 select-none transition-colors",
-                        "text-slate-400 dark:text-slate-500 active:text-slate-600"
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span className="text-[10px] font-medium">Menu</span>
-                    </button>
-                  </SheetTrigger>
+                  <div key="menu" className="flex-1 flex items-center justify-center">
+                    {/* Clock beside menu button */}
+                    <MobileClock className="mr-1" />
+                    <SheetTrigger asChild>
+                      <button
+                        className={cn(
+                          "flex flex-col items-center justify-center py-2 px-2 gap-0 select-none transition-colors",
+                          "text-slate-400 dark:text-slate-500 active:text-slate-600"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="text-[10px] font-medium">Menu</span>
+                      </button>
+                    </SheetTrigger>
+                  </div>
                 );
               }
 
@@ -297,7 +312,7 @@ export default function Layout({ children, currentPageName }) {
                     }
                   }}
                   className={cn(
-                    "flex-1 flex flex-col items-center justify-center py-2 gap-1 select-none transition-colors",
+                    "flex-1 flex flex-col items-center justify-center py-2 gap-0 select-none transition-colors",
                     isActive
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-slate-400 dark:text-slate-500 active:text-slate-600"

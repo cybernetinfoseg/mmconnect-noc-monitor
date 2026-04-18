@@ -32,6 +32,7 @@ import PullToRefresh from '../components/dashboard/PullToRefresh';
 import TerminalStatusWidget from '../components/dashboard/TerminalStatusWidget';
 import AlertRulesWidget from '../components/dashboard/AlertRulesWidget';
 import RecentAuditWidget from '../components/dashboard/RecentAuditWidget';
+import MobileClock from '../components/dashboard/MobileClock';
 const DEFAULT_WIDGETS = {
   terminalStatus: true,
   alertRules: true,
@@ -218,7 +219,9 @@ export default function Dashboard() {
                 {lastRefresh.toLocaleTimeString('pt-PT')}
               </p>
             </div>
-            {/* Mobile: single refresh button + menu; Desktop: full buttons */}
+            {/* Mobile clock */}
+            <MobileClock className="sm:hidden text-white" />
+            {/* Refresh button */}
             <Button
               variant="outline"
               size="sm"
@@ -339,16 +342,15 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-            {(localFilter || statusFilter || userFilter) && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => { setLocalFilter(null); setStatusFilter(null); setUserFilter(null); }}
-                className="text-slate-500 hover:text-slate-700"
-              >
-                Limpar filtros
-              </Button>
-            )}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => { setLocalFilter(null); setStatusFilter(null); setUserFilter(null); setSortBy('status'); }}
+              disabled={!localFilter && !statusFilter && !userFilter}
+              className="text-slate-500 hover:text-slate-700 disabled:opacity-30"
+            >
+              Limpar filtros
+            </Button>
             <Link
               to={`/TVMode${localFilter ? `?local=${encodeURIComponent(localFilter)}` : ''}`}
               className="w-full sm:w-auto"

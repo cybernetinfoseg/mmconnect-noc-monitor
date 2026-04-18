@@ -391,7 +391,7 @@ export default function Terminais() {
 
         {/* Filters */}
         <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-           <CardContent className="p-3 sm:p-4">
+           <CardContent className="p-3 sm:p-4 space-y-3">
              <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
                <div className="w-full sm:flex-1 sm:min-w-[180px] relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -419,16 +419,6 @@ export default function Terminais() {
                   <SelectItem value="api">API</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[140px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="offline">Offline</SelectItem>
-                </SelectContent>
-              </Select>
               {isAdmin && (
                  <select
                    value={userFilter}
@@ -441,7 +431,36 @@ export default function Terminais() {
                   ))}
                 </select>
               )}
+            </div>
 
+            {/* Status filter badges + clear */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Status:</span>
+              {['all', 'online', 'offline'].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-semibold select-none transition-colors border",
+                    statusFilter === s
+                      ? s === 'online'
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : s === 'offline'
+                          ? "bg-red-600 text-white border-red-600"
+                          : "bg-slate-800 text-white border-slate-800"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                  )}
+                >
+                  {s === 'all' ? 'Todos' : s === 'online' ? '🟢 Online' : '🔴 Offline'}
+                </button>
+              ))}
+              <button
+                onClick={() => { setSearchTerm(''); setTipoFilter('all'); setStatusFilter('all'); setUserFilter('all'); }}
+                disabled={!searchTerm && tipoFilter === 'all' && statusFilter === 'all' && userFilter === 'all'}
+                className="ml-auto text-xs text-slate-400 hover:text-slate-700 disabled:opacity-30 select-none transition-colors"
+              >
+                Limpar filtros
+              </button>
             </div>
           </CardContent>
         </Card>

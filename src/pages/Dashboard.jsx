@@ -196,16 +196,18 @@ export default function Dashboard() {
         <div className="bg-slate-900 text-white px-3 sm:px-6 py-3 sm:py-4 w-full">
           <div className="max-w-full mx-auto flex items-center justify-between gap-2">
             {/* Left: logo + title + clock */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-1.5 sm:p-2 bg-emerald-500/20 rounded-lg shrink-0">
-                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-emerald-500/20 rounded-lg shrink-0">
+                  <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-lg font-bold tracking-tight truncate">NOC Monitor</h1>
+                  <p className="text-xs text-slate-400 truncate">Terminais Biométricos</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight truncate">NOC Monitor</h1>
-                <p className="text-xs text-slate-400 truncate">Terminais Biométricos</p>
-              </div>
-              {/* Clock — shown next to title on desktop */}
-              <div className="hidden sm:block border-l border-white/10 pl-4 ml-2">
+              {/* Clock — bottom left, desktop only */}
+              <div className="hidden sm:block pl-1">
                 <LiveClock />
               </div>
             </div>

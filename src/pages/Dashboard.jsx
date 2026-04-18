@@ -214,8 +214,6 @@ export default function Dashboard() {
 
             {/* Right: actions */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Mobile clock */}
-              <MobileClock className="sm:hidden" />
               {/* Refresh button — icon only, rounded */}
               <button
                 onClick={handleMonitorAll}

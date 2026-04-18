@@ -252,29 +252,21 @@ export default function TVMode() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleManualRefresh}
-              disabled={isRefreshing}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm">
-
-              <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4", isRefreshing && "animate-spin")} />
-              <span className="hidden sm:inline ml-1">Atualizar</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => setShowSettings(true)}
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0">
-
               <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
-            <div className="hidden sm:block">
-              <LiveClock />
-            </div>
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className={cn(
+                "flex items-center justify-center w-10 h-10 rounded-xl border border-slate-600 bg-slate-700/80 hover:bg-slate-600 transition-colors",
+                isRefreshing && "opacity-60 cursor-not-allowed"
+              )}
+              title="Atualizar">
+              <RefreshCw className={cn("h-5 w-5 text-slate-200", isRefreshing && "animate-spin")} />
+            </button>
           </div>
-        </div>
-        {/* Mobile clock */}
-        <div className="sm:hidden mt-2 text-right">
-          <LiveClock />
         </div>
       </div>
 
@@ -523,6 +515,11 @@ export default function TVMode() {
         <div className="mt-8 text-center text-slate-500 text-sm">
           
         </div>
+      </div>
+
+      {/* Fixed bottom-left clock */}
+      <div className="fixed bottom-4 left-4 z-50 bg-slate-900/80 backdrop-blur-sm rounded-xl px-4 py-3 border border-slate-700/50">
+        <LiveClock />
       </div>
 
       {/* TV Settings Panel */}

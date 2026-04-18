@@ -18,21 +18,13 @@ export default function LiveClock({ className }) {
       animate={{ opacity: 1 }}
       className={className}>
       
-      <div className="mr-1 ml-1 flex items-center gap-4">
-        <div className="text-right">
-          <p className="text-white mr-16 text-3xl font-bold tracking-tight tabular-nums">
-            {time.format('HH:mm:ss')}
-          </p>
-          <p className="text-white/60 mr-2 text-sm uppercase tracking-wider">
-            {time.format('dddd, DD MMM YYYY')}
-          </p>
-        </div>
-        <div className="relative">
-          <span className="flex h-3 w-3">
-            
-            
-          </span>
-        </div>
+      <div className="flex flex-col">
+        <p className="text-white text-3xl font-bold tracking-tight tabular-nums">
+          {time.format('HH:mm:ss')}
+        </p>
+        <p className="text-white/60 text-sm uppercase tracking-wider">
+          {time.format('dddd, DD MMM YYYY')}
+        </p>
       </div>
     </motion.div>);
 

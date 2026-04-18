@@ -247,7 +247,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setShowCloseConfirm(true)}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
-                title="Sair da conta"
+                title="Fechar sistema"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Sair</span>
@@ -486,9 +486,9 @@ export default function Dashboard() {
     <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
+          <AlertDialogTitle>Fechar o sistema?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem a certeza que deseja sair da sua conta? Será redirecionado para a página de login.
+            Tem a certeza que deseja fechar o NOC Monitor? A sua sessão será encerrada.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -497,7 +497,7 @@ export default function Dashboard() {
             onClick={() => base44.auth.logout()}
             className="bg-red-600 hover:bg-red-700 text-white"
           >
-            Sair
+            Fechar sistema
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

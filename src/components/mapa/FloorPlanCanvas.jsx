@@ -1,88 +1,44 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Upload, Trash2, Move, Save, Loader2, Fingerprint, Scan, Shield, Cpu, MonitorSmartphone, Wifi, DoorOpen, UserCheck, Camera, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import {
+  Upload, Trash2, Move, Save, Loader2,
+  Fingerprint, Scan, Shield, Cpu, MonitorSmartphone,
+  Wifi, DoorOpen, UserCheck, Camera, ZoomIn, ZoomOut, RotateCcw
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/* ─── Cores de status ─── */
 const STATUS_COLORS = {
   online:  { dot: '#10b981', ring: '#6ee7b7' },
   offline: { dot: '#ef4444', ring: '#fca5a5' },
   warning: { dot: '#f59e0b', ring: '#fcd34d' },
   default: { dot: '#94a3b8', ring: '#cbd5e1' },
 };
+const getColor = (s) => STATUS_COLORS[s] || STATUS_COLORS.default;
 
-function getColor(status) {
-  return STATUS_COLORS[status] || STATUS_COLORS.default;
-}
-
+/* ─── Ícones disponíveis ─── */
 const TERMINAL_ICONS = [
-  { id: 'initials',     label: 'Iniciais',    Icon: null },
-  { id: 'fingerprint',  label: 'Biométrico',  Icon: Fingerprint },
-  { id: 'scan',         label: 'Scan',        Icon: Scan },
-  { id: 'shield',       label: 'Segurança',   Icon: Shield },
-  { id: 'cpu',          label: 'CPU',         Icon: Cpu },
-  { id: 'monitor',      label: 'Monitor',     Icon: MonitorSmartphone },
-  { id: 'wifi',         label: 'Wireless',    Icon: Wifi },
-  { id: 'door',         label: 'Porta',       Icon: DoorOpen },
-  { id: 'user',         label: 'Utilizador',  Icon: UserCheck },
-  { id: 'camera',       label: 'Câmara',      Icon: Camera },
+  { id: 'initials',    label: 'Iniciais',   Icon: null },
+  { id: 'fingerprint', label: 'Biométrico', Icon: Fingerprint },
+  { id: 'scan',        label: 'Scan',       Icon: Scan },
+  { id: 'shield',      label: 'Segurança',  Icon: Shield },
+  { id: 'cpu',         label: 'CPU',        Icon: Cpu },
+  { id: 'monitor',     label: 'Monitor',    Icon: MonitorSmartphone },
+  { id: 'wifi',        label: 'Wireless',   Icon: Wifi },
+  { id: 'door',        label: 'Porta',      Icon: DoorOpen },
+  { id: 'user',        label: 'Utilizador', Icon: UserCheck },
+  { id: 'camera',      label: 'Câmara',     Icon: Camera },
 ];
+const getIconEntry = (id) => TERMINAL_ICONS.find(i => i.id === id) || TERMINAL_ICONS[0];
 
-function getIconEntry(iconId) {
-  return TERMINAL_ICONS.find(i => i.id === iconId) || TERMINAL_ICONS[0];
-}
+/* ─── Constantes de zoom ─── */
+const ZOOM_MIN  = 0.5;
+const ZOOM_MAX  = 3;
+const ZOOM_STEP = 0.25;
 
-// Tooltip com posicionamento inteligente dentro do contentor
-function MarkerTooltip({ terminal, markerRef, containerRef }) {
-  const tooltipRef = useRef(null);
-  const [style, setStyle] = useState({ bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' });
-  const c = getColor(terminal.status);
-
-  useEffect(() => {
-    if (!tooltipRef.current || !containerRef?.current || !markerRef?.current) return;
-    const tip  = tooltipRef.current.getBoundingClientRect();
-    const cont = containerRef.current.getBoundingClientRect();
-    const mark = markerRef.current.getBoundingClientRect();
-
-    // Vertical: preferir acima; se sair pelo topo → abaixo
-    const spaceAbove = mark.top - cont.top;
-    const showBelow  = spaceAbove < tip.height + 12;
-
-    // Horizontal: centrado no marcador, mas clampado dentro do contentor
-    const markerCenterX = mark.left - cont.left + mark.width / 2;
-    let left = markerCenterX - tip.width / 2;
-    left = Math.max(4, Math.min(left, cont.width - tip.width - 4));
-
-    setStyle(showBelow
-      ? { top: mark.bottom - cont.top + 8, left }
-      : { bottom: cont.bottom - mark.top + 8, left }
-    );
-  }, []);
-
-  return (
-    <div
-      ref={tooltipRef}
-      className="absolute z-[500] pointer-events-none"
-      style={{ ...style, minWidth: 160, position: 'absolute' }}
-    >
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 p-3 text-xs">
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.dot }} />
-          <span className="font-bold text-slate-800 truncate">{terminal.nome}</span>
-        </div>
-        {terminal.local && <p className="text-slate-500 truncate">{terminal.local}</p>}
-        {terminal.latencia_ms && <p className="text-slate-400">Latência: {terminal.latencia_ms}ms</p>}
-        <div className="mt-1.5 text-center font-semibold rounded px-1 py-0.5"
-          style={{ backgroundColor: c.dot + '22', color: c.dot }}>
-          {terminal.status?.toUpperCase() || '—'}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Picker de ícone
+/* ─── Picker de ícone (relativo ao marcador, dentro do canvas) ─── */
 function IconPicker({ terminalId, currentIcon, onSelect, onClose }) {
   return (
     <div
@@ -109,10 +65,60 @@ function IconPicker({ terminalId, currentIcon, onSelect, onClose }) {
   );
 }
 
-const ZOOM_STEP = 0.2;
-const ZOOM_MIN  = 0.5;
-const ZOOM_MAX  = 3;
+/* ─── Tooltip flutuante renderizado no portal do wrapperRef ─── */
+function FloatingTooltip({ terminal, anchorEl, wrapperEl, zoom }) {
+  const [style, setStyle] = useState({ opacity: 0 });
+  const tipRef = useRef(null);
+  const c = getColor(terminal.status);
 
+  useEffect(() => {
+    if (!anchorEl || !wrapperEl || !tipRef.current) return;
+
+    const wRect = wrapperEl.getBoundingClientRect();
+    const aRect = anchorEl.getBoundingClientRect();
+    const tRect = tipRef.current.getBoundingClientRect();
+
+    // Posição do centro do marcador relativa ao wrapper
+    const anchorCX = aRect.left - wRect.left + aRect.width  / 2;
+    const anchorTY = aRect.top  - wRect.top;
+    const anchorBY = aRect.bottom - wRect.top;
+
+    // Tentativa: acima do marcador
+    let top = anchorTY - tRect.height - 8;
+    // Se sair pelo topo → abaixo
+    if (top < 4) top = anchorBY + 8;
+    // Clamp vertical inferior
+    if (top + tRect.height > wRect.height - 4) top = wRect.height - tRect.height - 4;
+
+    // Horizontal centrado, clampado
+    let left = anchorCX - tRect.width / 2;
+    if (left < 4) left = 4;
+    if (left + tRect.width > wRect.width - 4) left = wRect.width - tRect.width - 4;
+
+    setStyle({ opacity: 1, top, left });
+  }, [anchorEl, wrapperEl, zoom]);
+
+  return (
+    <div
+      ref={tipRef}
+      className="pointer-events-none bg-white rounded-xl shadow-2xl border border-slate-200 p-3 text-xs"
+      style={{ position: 'absolute', zIndex: 9999, minWidth: 160, transition: 'opacity .1s', ...style }}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.dot }} />
+        <span className="font-bold text-slate-800">{terminal.nome}</span>
+      </div>
+      {terminal.local     && <p className="text-slate-500 truncate">{terminal.local}</p>}
+      {terminal.latencia_ms && <p className="text-slate-400">Latência: {terminal.latencia_ms}ms</p>}
+      <div className="mt-1.5 text-center font-semibold rounded px-1 py-0.5"
+        style={{ backgroundColor: c.dot + '22', color: c.dot }}>
+        {terminal.status?.toUpperCase() || '—'}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Componente principal ─── */
 export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect }) {
   const [imageUrl, setImageUrl]     = useState(savedPlan?.imageUrl || null);
   const [positions, setPositions]   = useState(savedPlan?.positions || {});
@@ -120,14 +126,16 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
   const [editMode, setEditMode]     = useState(false);
   const [uploading, setUploading]   = useState(false);
   const [saving, setSaving]         = useState(false);
-  const [hover, setHover]           = useState(null);
-  const [iconPicker, setIconPicker] = useState(null);
+  const [hover, setHover]           = useState(null);       // terminal.id | null
+  const [iconPicker, setIconPicker] = useState(null);       // terminal.id | null
   const [zoom, setZoom]             = useState(1);
 
-  const containerRef  = useRef(null); // outer scroll container
-  const canvasRef     = useRef(null); // inner zoomable canvas
-  const markerRefs    = useRef({});   // per-terminal marker refs
+  const fileRef       = useRef(null);
+  const wrapperRef    = useRef(null);  // contentor com overflow:hidden — tooltip renderiza aqui
+  const canvasRef     = useRef(null);  // div escalada com transform:scale
+  const markerRefs    = useRef({});    // { [terminalId]: DOM el }
 
+  /* Sincronizar savedPlan */
   useEffect(() => {
     if (savedPlan) {
       setImageUrl(savedPlan.imageUrl || null);
@@ -135,31 +143,25 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     }
   }, [savedPlan?.imageUrl]);
 
-  // Close icon picker on outside click
+  /* Fechar icon picker ao clicar fora */
   useEffect(() => {
     if (!iconPicker) return;
-    const handler = () => setIconPicker(null);
-    window.addEventListener('mousedown', handler);
-    return () => window.removeEventListener('mousedown', handler);
+    const h = () => setIconPicker(null);
+    window.addEventListener('mousedown', h);
+    return () => window.removeEventListener('mousedown', h);
   }, [iconPicker]);
 
+  /* ─── Posições ─── */
   function defaultPos(idx, total) {
     const cols = Math.max(4, Math.ceil(Math.sqrt(total)));
     return { x: 10 + (idx % cols) * 14, y: 15 + Math.floor(idx / cols) * 20 };
   }
+  const getPos          = (t, i) => positions[t.id] || defaultPos(i, terminals.length);
+  const getTerminalIcon = (t)    => positions[t.id]?.icon || 'initials';
+  const setTerminalIcon = (id, iconId) =>
+    setPositions(p => ({ ...p, [id]: { ...(p[id] || {}), icon: iconId } }));
 
-  function getPos(terminal, idx) {
-    return positions[terminal.id] || defaultPos(idx, terminals.length);
-  }
-
-  function getTerminalIcon(terminal) {
-    return positions[terminal.id]?.icon || 'initials';
-  }
-
-  function setTerminalIcon(terminalId, iconId) {
-    setPositions(p => ({ ...p, [terminalId]: { ...(p[terminalId] || {}), icon: iconId } }));
-  }
-
+  /* ─── Upload ─── */
   async function handleUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -169,35 +171,31 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setImageUrl(file_url);
       toast.success('Planta carregada!');
-    } catch {
-      toast.error('Erro ao carregar a planta');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+    } catch { toast.error('Erro ao carregar a planta'); }
+    finally { setUploading(false); e.target.value = ''; }
   }
+  const removePlan = () => { setImageUrl(null); setPositions({}); };
 
-  function removePlan() { setImageUrl(null); setPositions({}); }
-
-  // Mouse drag (positions in % of canvas)
+  /* ─── Drag (coordenadas em % do canvas ANTES do scale) ─── */
   function onMouseDown(e, terminalId) {
     if (!editMode || iconPicker === terminalId) return;
     e.preventDefault(); e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
-    const cx = ((e.clientX - rect.left) / rect.width)  * 100;
-    const cy = ((e.clientY - rect.top)  / rect.height) * 100;
+    // Converter para coordenadas do canvas sem zoom
+    const cx = ((e.clientX - rect.left) / zoom / (rect.width  / zoom)) * 100;
+    const cy = ((e.clientY - rect.top)  / zoom / (rect.height / zoom)) * 100;
     const pos = positions[terminalId] || defaultPos(terminals.findIndex(t => t.id === terminalId), terminals.length);
     setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y, moved: false });
   }
 
   const onMouseMove = useCallback((e) => {
-    if (!dragging) return;
+    if (!dragging || !canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.min(97, Math.max(2, ((e.clientX - rect.left) / rect.width)  * 100 - dragging.offsetX));
-    const y = Math.min(95, Math.max(2, ((e.clientY - rect.top)  / rect.height) * 100 - dragging.offsetY));
+    const x = Math.min(97, Math.max(2, ((e.clientX - rect.left) / zoom / (rect.width  / zoom)) * 100 - dragging.offsetX));
+    const y = Math.min(95, Math.max(2, ((e.clientY - rect.top)  / zoom / (rect.height / zoom)) * 100 - dragging.offsetY));
     setPositions(p => ({ ...p, [dragging.id]: { ...(p[dragging.id] || {}), x, y } }));
     setDragging(d => d ? { ...d, moved: true } : d);
-  }, [dragging]);
+  }, [dragging, zoom]);
 
   const onMouseUp = useCallback(() => {
     if (dragging && !dragging.moved) {
@@ -207,58 +205,57 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
   }, [dragging]);
 
   useEffect(() => {
-    if (editMode) {
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    }
+    if (!editMode) return;
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
   }, [editMode, onMouseMove, onMouseUp]);
 
+  /* Touch */
   function onTouchStart(e, terminalId) {
     if (!editMode) return;
     e.preventDefault();
     const touch = e.touches[0];
     const rect  = canvasRef.current.getBoundingClientRect();
-    const cx = ((touch.clientX - rect.left) / rect.width)  * 100;
-    const cy = ((touch.clientY - rect.top)  / rect.height) * 100;
+    const cx = ((touch.clientX - rect.left) / zoom / (rect.width  / zoom)) * 100;
+    const cy = ((touch.clientY - rect.top)  / zoom / (rect.height / zoom)) * 100;
     const pos = positions[terminalId] || defaultPos(terminals.findIndex(t => t.id === terminalId), terminals.length);
     setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y, moved: false });
   }
-
   function onTouchMove(e) {
-    if (!dragging) return;
+    if (!dragging || !canvasRef.current) return;
     const touch = e.touches[0];
     const rect  = canvasRef.current.getBoundingClientRect();
-    const x = Math.min(97, Math.max(2, ((touch.clientX - rect.left) / rect.width)  * 100 - dragging.offsetX));
-    const y = Math.min(95, Math.max(2, ((touch.clientY - rect.top)  / rect.height) * 100 - dragging.offsetY));
+    const x = Math.min(97, Math.max(2, ((touch.clientX - rect.left) / zoom / (rect.width  / zoom)) * 100 - dragging.offsetX));
+    const y = Math.min(95, Math.max(2, ((touch.clientY - rect.top)  / zoom / (rect.height / zoom)) * 100 - dragging.offsetY));
     setPositions(p => ({ ...p, [dragging.id]: { ...(p[dragging.id] || {}), x, y } }));
   }
 
+  /* ─── Save ─── */
   async function handleSave() {
     setSaving(true);
     try {
       await onSave({ imageUrl, positions });
       toast.success('Planta guardada!');
       setEditMode(false); setIconPicker(null);
-    } catch {
-      toast.error('Erro ao guardar');
-    } finally { setSaving(false); }
+    } catch { toast.error('Erro ao guardar'); }
+    finally { setSaving(false); }
   }
 
-  function changeZoom(delta) {
-    setZoom(z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round((z + delta) * 10) / 10)));
-  }
+  /* ─── Zoom ─── */
+  const changeZoom = (d) =>
+    setZoom(z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round((z + d) * 100) / 100)));
 
-  const hasImage   = !!imageUrl;
-  const fileRef    = useRef(null);
-  const canvasH    = hasImage ? 360 : Math.max(140, Math.ceil(terminals.length / 6) * 100 + 40);
+  const hasImage = !!imageUrl;
+  // Altura base do canvas (antes do zoom)
+  const BASE_H = hasImage ? 400 : Math.max(160, Math.ceil(terminals.length / 6) * 100 + 60);
 
   return (
     <div className="space-y-2">
-      {/* Toolbar */}
+      {/* Toolbar edição */}
       {canEdit && (
         <div className="flex items-center gap-2 flex-wrap">
           <Button
@@ -288,12 +285,12 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
         </div>
       )}
 
-      {/* Zoom controls */}
+      {/* Controles de zoom */}
       <div className="flex items-center gap-1">
         <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeZoom(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN}>
           <ZoomOut className="h-3.5 w-3.5" />
         </Button>
-        <span className="text-xs text-slate-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
+        <span className="text-xs text-slate-500 w-10 text-center select-none">{Math.round(zoom * 100)}%</span>
         <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeZoom(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX}>
           <ZoomIn className="h-3.5 w-3.5" />
         </Button>
@@ -304,25 +301,32 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
         )}
       </div>
 
-      {/* Outer scroll container */}
+      {/*
+        wrapperRef: contentor com tamanho FIXO (não muda com o zoom).
+        Tem overflow:hidden + position:relative.
+        O tooltip e o canvas escalado ficam ambos dentro deste elemento.
+        O canvas escala com transform:scale, transformOrigin top-left.
+        O wrapper cresce em altura conforme o zoom para não cortar o conteúdo.
+      */}
       <div
-        ref={containerRef}
-        className="w-full rounded-xl overflow-auto border border-slate-200"
-        style={{ maxHeight: 560 }}
+        ref={wrapperRef}
+        className="relative w-full rounded-xl overflow-hidden border border-slate-200"
+        style={{ height: BASE_H * zoom }}
       >
-        {/* Inner zoomable canvas */}
+        {/* Canvas escalado */}
         <div
           ref={canvasRef}
-          className="relative select-none"
+          className="absolute top-0 left-0 select-none"
           style={{
-            width:  `${100 * zoom}%`,
-            minHeight: canvasH * zoom,
+            width:           '100%',
+            height:          BASE_H,
+            transformOrigin: 'top left',
+            transform:       `scale(${zoom})`,
             background: hasImage
               ? 'transparent'
               : 'repeating-linear-gradient(0deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px)',
             backgroundColor: '#f8fafc',
             cursor: editMode ? 'crosshair' : 'default',
-            transformOrigin: 'top left',
           }}
           onTouchMove={onTouchMove}
           onTouchEnd={() => setDragging(null)}
@@ -332,7 +336,7 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
               src={imageUrl}
               alt="Planta baixa"
               className="w-full object-contain"
-              style={{ minHeight: canvasH * zoom, maxHeight: 600 * zoom, display: 'block' }}
+              style={{ height: BASE_H, display: 'block' }}
               draggable={false}
             />
           )}
@@ -343,27 +347,25 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
             </span>
           )}
 
-          {/* Terminal markers */}
+          {/* Marcadores */}
           {terminals.map((terminal, idx) => {
             const pos            = getPos(terminal, idx);
             const c              = getColor(terminal.status);
             const isDraggingThis = dragging?.id === terminal.id;
-            const isHovered      = hover === terminal.id;
             const iconId         = getTerminalIcon(terminal);
-            const iconEntry      = getIconEntry(iconId);
-            const IconComponent  = iconEntry.Icon;
+            const IconComp       = getIconEntry(iconId).Icon;
             const showPicker     = editMode && iconPicker === terminal.id;
 
             return (
               <div
                 key={terminal.id}
-                ref={el => markerRefs.current[terminal.id] = el}
+                ref={el => { markerRefs.current[terminal.id] = el; }}
                 className="absolute"
                 style={{
                   left:        `${pos.x}%`,
                   top:         `${pos.y}%`,
                   transform:   'translate(-50%, -50%)',
-                  zIndex:      isDraggingThis ? 200 : showPicker ? 150 : isHovered ? 50 : 10,
+                  zIndex:      isDraggingThis ? 200 : showPicker ? 150 : 10,
                   cursor:      editMode ? 'grab' : 'pointer',
                   touchAction: editMode ? 'none' : 'auto',
                 }}
@@ -373,42 +375,38 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
                 onMouseLeave={() => setHover(null)}
                 onClick={() => !editMode && onSelect(terminal)}
               >
-                {/* Tooltip — hover only, smart positioning */}
-                <AnimatePresence>
-                  {isHovered && !editMode && (
-                    <motion.div key="tip" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}>
-                      <SmartTooltip terminal={terminal} markerEl={markerRefs.current[terminal.id]} containerEl={containerRef.current} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Icon picker */}
+                {/* Icon picker (aparece no canvas, relativo ao marcador) */}
                 <AnimatePresence>
                   {showPicker && (
                     <motion.div key="picker" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}>
-                      <IconPicker terminalId={terminal.id} currentIcon={iconId} onSelect={setTerminalIcon} onClose={() => setIconPicker(null)} />
+                      <IconPicker
+                        terminalId={terminal.id}
+                        currentIcon={iconId}
+                        onSelect={setTerminalIcon}
+                        onClose={() => setIconPicker(null)}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* Ping for offline */}
+                {/* Ping offline */}
                 {terminal.status === 'offline' && (
                   <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ backgroundColor: c.ring }} />
                 )}
 
-                {/* Marker dot */}
+                {/* Marcador circular */}
                 <div
-                  className="relative flex items-center justify-center rounded-full border-2 border-white shadow-lg transition-transform duration-150"
+                  className="relative flex items-center justify-center rounded-full border-2 border-white shadow-lg"
                   style={{
-                    width:           32,
-                    height:          32,
+                    width: 32, height: 32,
                     backgroundColor: c.dot,
-                    boxShadow:       `0 0 0 3px ${c.ring}`,
-                    transform:       isDraggingThis ? 'scale(1.3)' : 'scale(1)',
+                    boxShadow: `0 0 0 3px ${c.ring}`,
+                    transform: isDraggingThis ? 'scale(1.3)' : 'scale(1)',
+                    transition: 'transform .15s',
                   }}
                 >
-                  {IconComponent
-                    ? <IconComponent className="text-white h-4 w-4" />
+                  {IconComp
+                    ? <IconComp className="text-white h-4 w-4" />
                     : <span className="text-white text-[10px] font-bold leading-none select-none">{terminal.nome?.slice(0, 2).toUpperCase()}</span>
                   }
                 </div>
@@ -424,62 +422,24 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
           })}
 
           {editMode && (
-            <div className="absolute bottom-2 right-2 bg-blue-600/90 text-white text-[10px] px-2 py-1 rounded-lg">
+            <div className="absolute bottom-2 right-2 bg-blue-600/90 text-white text-[10px] px-2 py-1 rounded-lg pointer-events-none">
               Arraste para mover · Clique para mudar ícone
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
 
-// Tooltip com posicionamento relativo ao contentor de scroll (outer)
-function SmartTooltip({ terminal, markerEl, containerEl }) {
-  const ref = useRef(null);
-  const [pos, setPos] = useState({ top: null, left: null, bottom: null });
-  const c = getColor(terminal.status);
-
-  useEffect(() => {
-    if (!ref.current || !containerEl || !markerEl) return;
-    const tip  = ref.current.getBoundingClientRect();
-    const cont = containerEl.getBoundingClientRect();
-    const mark = markerEl.getBoundingClientRect();
-
-    // Horizontal clamp within outer container
-    let left = mark.left - cont.left + mark.width / 2 - tip.width / 2 + containerEl.scrollLeft;
-    left = Math.max(4, Math.min(left, cont.width - tip.width - 4));
-
-    // Vertical: above marker if space, else below
-    const spaceAbove = mark.top - cont.top;
-    const top = spaceAbove >= tip.height + 12
-      ? mark.top - cont.top - tip.height - 8 + containerEl.scrollTop
-      : mark.bottom - cont.top + 8 + containerEl.scrollTop;
-
-    setPos({ top, left });
-  }, [containerEl, markerEl]);
-
-  return (
-    <div
-      ref={ref}
-      className="pointer-events-none z-[500] bg-white rounded-xl shadow-2xl border border-slate-200 p-3 text-xs"
-      style={{
-        position: 'absolute',
-        top:      pos.top ?? 0,
-        left:     pos.left ?? 0,
-        minWidth: 160,
-        visibility: pos.top === null ? 'hidden' : 'visible',
-      }}
-    >
-      <div className="flex items-center gap-1.5 mb-1">
-        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.dot }} />
-        <span className="font-bold text-slate-800 truncate">{terminal.nome}</span>
-      </div>
-      {terminal.local && <p className="text-slate-500 truncate">{terminal.local}</p>}
-      {terminal.latencia_ms && <p className="text-slate-400">Latência: {terminal.latencia_ms}ms</p>}
-      <div className="mt-1.5 text-center font-semibold rounded px-1 py-0.5"
-        style={{ backgroundColor: c.dot + '22', color: c.dot }}>
-        {terminal.status?.toUpperCase() || '—'}
+        {/* Tooltips renderizados FORA do canvas escalado, dentro do wrapper fixo */}
+        {!editMode && terminals.map(terminal => (
+          hover === terminal.id && (
+            <FloatingTooltip
+              key={terminal.id}
+              terminal={terminal}
+              anchorEl={markerRefs.current[terminal.id]}
+              wrapperEl={wrapperRef.current}
+              zoom={zoom}
+            />
+          )
+        ))}
       </div>
     </div>
   );

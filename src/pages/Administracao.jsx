@@ -531,7 +531,7 @@ export default function Administracao() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Radio className="h-5 w-5 text-violet-600" />
-            NOC Server — Windows Server (51.91.219.145)
+            NOC Server — Windows Server
           </CardTitle>
           <p className="text-sm text-slate-500">Servidor unificado para terminais: Heartbeat TCP, ADMS/Push (ZKTeco, Anviz) e SDK-TCP.</p>
         </CardHeader>

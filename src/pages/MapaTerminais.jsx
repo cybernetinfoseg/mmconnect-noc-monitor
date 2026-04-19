@@ -59,9 +59,15 @@ export default function MapaTerminais() {
     enabled:  !!currentUser,
   });
 
-  const handleRefresh = () => {
-    refetch();
-    refetchPlans();
+  const [isMonitoring, setIsMonitoring] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsMonitoring(true);
+    try {
+      await base44.functions.invoke('monitorAllTerminals', {});
+    } catch {}
+    await Promise.all([refetch(), refetchPlans()]);
+    setIsMonitoring(false);
   };
 
   // Determina o dono efectivo da planta a mostrar:
@@ -149,8 +155,8 @@ export default function MapaTerminais() {
               <p className="text-xs sm:text-sm text-slate-500">Visualização por local com planta baixa</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="gap-1.5">
-            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isMonitoring || isFetching} className="gap-1.5">
+            <RefreshCw className={cn("h-4 w-4", (isMonitoring || isFetching) && "animate-spin")} />
             <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </div>

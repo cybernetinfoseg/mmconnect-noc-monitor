@@ -65,6 +65,16 @@ export default function Incidents() {
 
   const [checkingId, setCheckingId] = useState(null);
   const [checkError, setCheckError] = useState(null);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsMonitoring(true);
+    try {
+      await base44.functions.invoke('monitorAllTerminals', {});
+    } catch {}
+    await refetch();
+    setIsMonitoring(false);
+  };
 
   // Resolve incident mutation
   const resolveMutation = useMutation({
@@ -332,11 +342,12 @@ export default function Incidents() {
             <Button
               variant="outline"
               size="sm"
-              onClick={refetch}
+              onClick={handleRefresh}
+              disabled={isMonitoring}
               className="flex items-center gap-1.5">
               
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Atualizar</span>
+              <RefreshCw className={cn("h-4 w-4", isMonitoring && "animate-spin")} />
+              <span className="hidden sm:inline">{isMonitoring ? 'A verificar...' : 'Atualizar'}</span>
             </Button>
           </div>
         </div>

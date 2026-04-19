@@ -326,7 +326,7 @@ export default function Terminais() {
       case 'p2s': return `Escuta TCP :${terminal.porta || 5005}`;
       case 'heartbeat': return `${terminal.ip_publico || '127.0.0.1'}:${terminal.porta || 5005}`;
       case 'adms_push': return terminal.numero_serie ? `SN: ${terminal.numero_serie} | ADMS :8080` : 'ADMS :8080 (sem SN)';
-      case 'sdk_tcp': return terminal.ip_publico ? `${terminal.ip_publico}:${terminal.porta || 4370}` : null;
+      case 'sdk_tcp': return terminal.ip_publico ? `${terminal.ip_publico}:${terminal.porta || 5005}` : null;
       case 'websocket_cloud': return terminal.numero_serie ? `SN: ${terminal.numero_serie} | WS :${terminal.porta || 7788}` : `WS :${terminal.porta || 7788} (sem SN)`;
       case 'api': return terminal.api_endpoint || null;
       default: return null;

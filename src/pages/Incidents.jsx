@@ -461,7 +461,7 @@ export default function Incidents() {
               {filteredIncidents.length} incidente(s) encontrado(s)
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6 pr-2 pb-6 pl-6">
+          <CardContent className="pt-6 pb-6 pl-3">
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {filteredIncidents.map((incident, index) =>

@@ -52,15 +52,23 @@ export default function MapaTerminais() {
     [allTerminals, isAdmin]
   );
 
-  // Plantas baixas guardadas
+  // Plantas baixas guardadas — busca todas (admin vê tudo, utilizador vê as suas)
   const { data: floorPlans = [] } = useQuery({
     queryKey: ['floor-plans'],
     queryFn:  () => base44.entities.FloorPlan.list('local'),
     enabled:  !!currentUser,
   });
 
+  // Determina o dono efectivo da planta a mostrar:
+  // - Admin com filtro de utilizador activo → planta do utilizador filtrado
+  // - Admin sem filtro → planta do próprio admin
+  // - Utilizador normal → sempre a sua própria planta
+  const effectiveOwner = isAdmin
+    ? (userFilter !== 'all' ? userFilter : currentUser?.email)
+    : currentUser?.email;
+
   const getPlan = (local) => {
-    const plan = floorPlans.find(p => p.local === local);
+    const plan = floorPlans.find(p => p.local === local && p.owner_email === effectiveOwner);
     if (!plan) return null;
     return {
       imageUrl:  plan.image_url || null,
@@ -68,13 +76,18 @@ export default function MapaTerminais() {
     };
   };
 
+  // Pode editar apenas se for o próprio dono (ou admin a ver a sua própria planta)
+  const canEditPlan = !isAdmin
+    ? true  // utilizador normal pode sempre editar as suas plantas
+    : userFilter === 'all' || userFilter === currentUser?.email; // admin só edita quando está a ver as suas próprias plantas
+
   const savePlan = async (local, { imageUrl, positions }) => {
-    const existing = floorPlans.find(p => p.local === local);
+    const existing = floorPlans.find(p => p.local === local && p.owner_email === effectiveOwner);
     const data = {
       local,
-      image_url:  imageUrl || null,
-      positions:  JSON.stringify(positions || {}),
-      criado_por: currentUser?.email,
+      owner_email: effectiveOwner,
+      image_url:   imageUrl || null,
+      positions:   JSON.stringify(positions || {}),
     };
     if (existing) {
       await base44.entities.FloorPlan.update(existing.id, data);
@@ -284,7 +297,7 @@ export default function MapaTerminais() {
                         <FloorPlanCanvas
                           local={local}
                           terminals={termList}
-                          isAdmin={isAdmin}
+                          canEdit={canEditPlan}
                           savedPlan={getPlan(local)}
                           onSave={(plan) => savePlan(local, plan)}
                           selectedId={selectedTerminal?.id}

@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Nome do local associado \u00e0 planta"
     },
+    "owner_email": {
+      "type": "string",
+      "description": "Email do utilizador dono desta planta"
+    },
     "image_url": {
       "type": "string",
       "description": "URL da imagem da planta baixa"
@@ -13,13 +17,10 @@
     "positions": {
       "type": "string",
       "description": "JSON com posi\u00e7\u00f5es dos terminais: { terminalId: {x, y} }"
-    },
-    "criado_por": {
-      "type": "string",
-      "description": "Email do admin que criou"
     }
   },
   "required": [
-    "local"
+    "local",
+    "owner_email"
   ]
 }

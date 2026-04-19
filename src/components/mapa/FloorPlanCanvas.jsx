@@ -51,7 +51,7 @@ function MarkerTooltip({ terminal }) {
  *   selectedId    — string | null
  *   onSelect      — (terminal | null) => void
  */
-export default function FloorPlanCanvas({ local, terminals, isAdmin, savedPlan, onSave, selectedId, onSelect }) {
+export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect }) {
   const [imageUrl, setImageUrl]     = useState(savedPlan?.imageUrl || null);
   const [positions, setPositions]   = useState(savedPlan?.positions || {}); // { terminalId: {x, y} }
   const [dragging, setDragging]     = useState(null); // { id, offsetX, offsetY }
@@ -176,8 +176,8 @@ export default function FloorPlanCanvas({ local, terminals, isAdmin, savedPlan, 
 
   return (
     <div className="space-y-2">
-      {/* Toolbar (admin only) */}
-      {isAdmin && (
+      {/* Toolbar (apenas quem pode editar) */}
+      {canEdit && (
         <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant={editMode ? 'default' : 'outline'}
@@ -240,8 +240,8 @@ export default function FloorPlanCanvas({ local, terminals, isAdmin, savedPlan, 
           </span>
         )}
 
-        {/* No image hint for admin */}
-        {!hasImage && isAdmin && (
+        {/* No image hint for editable users */}
+        {!hasImage && canEdit && (
           <button
             onClick={() => fileRef.current?.click()}
             className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300 hover:text-slate-400 transition-colors"

@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Upload, Trash2, Move, Save, Loader2 } from 'lucide-react';
+import { Upload, Trash2, Move, Save, Loader2, Fingerprint, Scan, Shield, Cpu, MonitorSmartphone, Wifi, DoorOpen, UserCheck, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,7 +16,25 @@ function getColor(status) {
   return STATUS_COLORS[status] || STATUS_COLORS.default;
 }
 
-// Tooltip flutuante sobre o marcador
+// Ícones disponíveis para os terminais
+const TERMINAL_ICONS = [
+  { id: 'initials', label: 'Iniciais', Icon: null },
+  { id: 'fingerprint', label: 'Biométrico', Icon: Fingerprint },
+  { id: 'scan', label: 'Scan', Icon: Scan },
+  { id: 'shield', label: 'Segurança', Icon: Shield },
+  { id: 'cpu', label: 'CPU', Icon: Cpu },
+  { id: 'monitor', label: 'Monitor', Icon: MonitorSmartphone },
+  { id: 'wifi', label: 'Wireless', Icon: Wifi },
+  { id: 'door', label: 'Porta', Icon: DoorOpen },
+  { id: 'user', label: 'Utilizador', Icon: UserCheck },
+  { id: 'camera', label: 'Câmara', Icon: Camera },
+];
+
+function getIconEntry(iconId) {
+  return TERMINAL_ICONS.find(i => i.id === iconId) || TERMINAL_ICONS[0];
+}
+
+// Tooltip flutuante — apenas no hover
 function MarkerTooltip({ terminal }) {
   const c = getColor(terminal.status);
   return (
@@ -40,29 +57,45 @@ function MarkerTooltip({ terminal }) {
   );
 }
 
-/**
- * FloorPlanCanvas
- * Props:
- *   local         — string (nome do local)
- *   terminals     — array de terminais filtrados para este local
- *   isAdmin       — bool
- *   savedPlan     — { imageUrl, positions } | null
- *   onSave        — (plan) => void
- *   selectedId    — string | null
- *   onSelect      — (terminal | null) => void
- */
+// Picker de ícone para um terminal (aparece no modo edição ao clicar no marcador)
+function IconPicker({ terminalId, currentIcon, onSelect, onClose }) {
+  return (
+    <div className="absolute z-[300] bg-white border border-slate-200 rounded-xl shadow-2xl p-2"
+      style={{ bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)', width: 220 }}
+      onMouseDown={e => e.stopPropagation()}
+    >
+      <p className="text-[10px] text-slate-400 font-medium uppercase mb-2 px-1">Escolher ícone</p>
+      <div className="grid grid-cols-5 gap-1">
+        {TERMINAL_ICONS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            title={label}
+            onClick={() => { onSelect(terminalId, id); onClose(); }}
+            className={`flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-lg transition-colors text-[9px] font-medium
+              ${currentIcon === id ? 'bg-blue-100 text-blue-700' : 'hover:bg-slate-100 text-slate-600'}`}
+          >
+            {Icon ? <Icon className="h-4 w-4" /> : <span className="text-[11px] font-bold">AB</span>}
+            <span className="leading-tight">{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect }) {
-  const [imageUrl, setImageUrl]     = useState(savedPlan?.imageUrl || null);
-  const [positions, setPositions]   = useState(savedPlan?.positions || {}); // { terminalId: {x, y} }
-  const [dragging, setDragging]     = useState(null); // { id, offsetX, offsetY }
-  const [editMode, setEditMode]     = useState(false);
-  const [uploading, setUploading]   = useState(false);
-  const [saving, setSaving]         = useState(false);
-  const [hover, setHover]           = useState(null);
+  // positions format: { terminalId: {x, y, icon?} }
+  const [imageUrl, setImageUrl]   = useState(savedPlan?.imageUrl || null);
+  const [positions, setPositions] = useState(savedPlan?.positions || {});
+  const [dragging, setDragging]   = useState(null);
+  const [editMode, setEditMode]   = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving]       = useState(false);
+  const [hover, setHover]         = useState(null);
+  const [iconPicker, setIconPicker] = useState(null); // terminalId or null
   const containerRef = useRef(null);
   const fileRef      = useRef(null);
 
-  // Sincronizar com savedPlan externo
   useEffect(() => {
     if (savedPlan) {
       setImageUrl(savedPlan.imageUrl || null);
@@ -70,7 +103,14 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     }
   }, [savedPlan?.imageUrl]);
 
-  // Posição padrão em grelha para terminais sem posição
+  // Close icon picker on outside click
+  useEffect(() => {
+    if (!iconPicker) return;
+    const handler = () => setIconPicker(null);
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [iconPicker]);
+
   function defaultPos(idx, total) {
     const cols = Math.max(4, Math.ceil(Math.sqrt(total)));
     const col  = idx % cols;
@@ -82,7 +122,17 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     return positions[terminal.id] || defaultPos(idx, terminals.length);
   }
 
-  // Upload da planta
+  function getTerminalIcon(terminal) {
+    return positions[terminal.id]?.icon || 'initials';
+  }
+
+  function setTerminalIcon(terminalId, iconId) {
+    setPositions(p => ({
+      ...p,
+      [terminalId]: { ...(p[terminalId] || {}), icon: iconId },
+    }));
+  }
+
   async function handleUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -105,16 +155,17 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     setPositions({});
   }
 
-  // Drag handlers (% coordinates relative to container)
   function onMouseDown(e, terminalId) {
     if (!editMode) return;
+    // If clicking to open icon picker, don't start drag
+    if (iconPicker === terminalId) return;
     e.preventDefault();
     e.stopPropagation();
     const rect = containerRef.current.getBoundingClientRect();
     const cx = ((e.clientX - rect.left) / rect.width)  * 100;
     const cy = ((e.clientY - rect.top)  / rect.height) * 100;
     const pos = positions[terminalId] || defaultPos(terminals.findIndex(t => t.id === terminalId), terminals.length);
-    setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y });
+    setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y, moved: false });
   }
 
   const onMouseMove = useCallback((e) => {
@@ -122,10 +173,17 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.min(97, Math.max(2, ((e.clientX - rect.left) / rect.width)  * 100 - dragging.offsetX));
     const y = Math.min(95, Math.max(2, ((e.clientY - rect.top)  / rect.height) * 100 - dragging.offsetY));
-    setPositions(p => ({ ...p, [dragging.id]: { x, y } }));
+    setPositions(p => ({ ...p, [dragging.id]: { ...(p[dragging.id] || {}), x, y } }));
+    setDragging(d => d ? { ...d, moved: true } : d);
   }, [dragging]);
 
-  const onMouseUp = useCallback(() => setDragging(null), []);
+  const onMouseUp = useCallback((e) => {
+    if (dragging && !dragging.moved) {
+      // It was a click (no drag) — open icon picker
+      setIconPicker(id => id === dragging.id ? null : dragging.id);
+    }
+    setDragging(null);
+  }, [dragging]);
 
   useEffect(() => {
     if (editMode) {
@@ -138,7 +196,6 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     };
   }, [editMode, onMouseMove, onMouseUp]);
 
-  // Touch support
   function onTouchStart(e, terminalId) {
     if (!editMode) return;
     e.preventDefault();
@@ -147,7 +204,7 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     const cx = ((touch.clientX - rect.left) / rect.width)  * 100;
     const cy = ((touch.clientY - rect.top)  / rect.height) * 100;
     const pos = positions[terminalId] || defaultPos(terminals.findIndex(t => t.id === terminalId), terminals.length);
-    setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y });
+    setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y, moved: false });
   }
 
   function onTouchMove(e) {
@@ -156,7 +213,7 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.min(97, Math.max(2, ((touch.clientX - rect.left) / rect.width)  * 100 - dragging.offsetX));
     const y = Math.min(95, Math.max(2, ((touch.clientY - rect.top)  / rect.height) * 100 - dragging.offsetY));
-    setPositions(p => ({ ...p, [dragging.id]: { x, y } }));
+    setPositions(p => ({ ...p, [dragging.id]: { ...(p[dragging.id] || {}), x, y } }));
   }
 
   async function handleSave() {
@@ -165,6 +222,7 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
       await onSave({ imageUrl, positions });
       toast.success('Planta guardada!');
       setEditMode(false);
+      setIconPicker(null);
     } catch {
       toast.error('Erro ao guardar');
     } finally {
@@ -176,13 +234,13 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
 
   return (
     <div className="space-y-2">
-      {/* Toolbar (apenas quem pode editar) */}
+      {/* Toolbar */}
       {canEdit && (
         <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant={editMode ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setEditMode(v => !v)}
+            onClick={() => { setEditMode(v => !v); setIconPicker(null); }}
             className={editMode ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             <Move className="h-3.5 w-3.5 mr-1" />
@@ -222,7 +280,6 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
         onTouchMove={onTouchMove}
         onTouchEnd={() => setDragging(null)}
       >
-        {/* Background image */}
         {hasImage && (
           <img
             src={imageUrl}
@@ -233,77 +290,84 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
           />
         )}
 
-        {/* Label */}
         {!hasImage && (
           <span className="absolute top-2 left-3 text-[10px] text-slate-400 font-medium uppercase tracking-wider">
             Planta — {local}
           </span>
         )}
 
-
-
         {/* Terminal markers */}
         {terminals.map((terminal, idx) => {
-          const pos   = getPos(terminal, idx);
-          const c     = getColor(terminal.status);
+          const pos            = getPos(terminal, idx);
+          const c              = getColor(terminal.status);
           const isDraggingThis = dragging?.id === terminal.id;
-          const isSelected = selectedId === terminal.id;
-          const isHovered  = hover === terminal.id;
+          const isHovered      = hover === terminal.id;
+          const iconId         = getTerminalIcon(terminal);
+          const iconEntry      = getIconEntry(iconId);
+          const IconComponent  = iconEntry.Icon;
+          const showPicker     = editMode && iconPicker === terminal.id;
 
           return (
             <div
               key={terminal.id}
               className="absolute"
               style={{
-                left:      `${pos.x}%`,
-                top:       `${pos.y}%`,
-                transform: 'translate(-50%, -50%)',
-                zIndex:    isDraggingThis ? 200 : isSelected ? 100 : isHovered ? 50 : 10,
-                cursor:    editMode ? 'grab' : 'pointer',
+                left:        `${pos.x}%`,
+                top:         `${pos.y}%`,
+                transform:   'translate(-50%, -50%)',
+                zIndex:      isDraggingThis ? 200 : showPicker ? 150 : isHovered ? 50 : 10,
+                cursor:      editMode ? 'grab' : 'pointer',
                 touchAction: editMode ? 'none' : 'auto',
               }}
               onMouseDown={(e) => onMouseDown(e, terminal.id)}
               onTouchStart={(e) => onTouchStart(e, terminal.id)}
               onMouseEnter={() => !editMode && setHover(terminal.id)}
               onMouseLeave={() => setHover(null)}
-              onClick={() => !editMode && onSelect(isSelected ? null : terminal)}
+              onClick={() => !editMode && onSelect(terminal)}
             >
-              {/* Tooltip */}
+              {/* Tooltip — hover only, non-edit mode */}
               <AnimatePresence>
-                {(isSelected || isHovered) && !editMode && (
-                  <motion.div
-                    key="tip"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                  >
+                {isHovered && !editMode && (
+                  <motion.div key="tip" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}>
                     <MarkerTooltip terminal={terminal} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Icon picker — edit mode click */}
+              <AnimatePresence>
+                {showPicker && (
+                  <motion.div key="picker" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}>
+                    <IconPicker
+                      terminalId={terminal.id}
+                      currentIcon={iconId}
+                      onSelect={setTerminalIcon}
+                      onClose={() => setIconPicker(null)}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
 
               {/* Ping animation for offline */}
               {terminal.status === 'offline' && (
-                <span
-                  className="absolute inset-0 rounded-full animate-ping opacity-60"
-                  style={{ backgroundColor: c.ring }}
-                />
+                <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ backgroundColor: c.ring }} />
               )}
 
               {/* Dot marker */}
               <div
                 className="relative flex items-center justify-center rounded-full border-2 border-white shadow-lg transition-transform duration-150"
                 style={{
-                  width:           isSelected ? 40 : 32,
-                  height:          isSelected ? 40 : 32,
+                  width:           32,
+                  height:          32,
                   backgroundColor: c.dot,
                   boxShadow:       `0 0 0 3px ${c.ring}`,
-                  transform:       isDraggingThis ? 'scale(1.3)' : isSelected ? 'scale(1.2)' : 'scale(1)',
+                  transform:       isDraggingThis ? 'scale(1.3)' : 'scale(1)',
                 }}
               >
-                <span className="text-white text-[10px] font-bold leading-none select-none">
-                  {terminal.nome?.slice(0, 2).toUpperCase()}
-                </span>
+                {IconComponent
+                  ? <IconComponent className="text-white h-4 w-4" />
+                  : <span className="text-white text-[10px] font-bold leading-none select-none">{terminal.nome?.slice(0, 2).toUpperCase()}</span>
+                }
               </div>
 
               {/* Label below marker */}
@@ -316,10 +380,10 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
           );
         })}
 
-        {/* Edit overlay hint */}
+        {/* Edit mode hints */}
         {editMode && (
           <div className="absolute bottom-2 right-2 bg-blue-600/90 text-white text-[10px] px-2 py-1 rounded-lg">
-            Arraste os marcadores para reposicioná-los
+            Arraste para mover · Clique para mudar ícone
           </div>
         )}
       </div>

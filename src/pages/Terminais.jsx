@@ -324,7 +324,7 @@ export default function Terminais() {
       case 'ip_publico': return terminal.ip_publico ? `${terminal.ip_publico}:${terminal.porta || 5005}` : null;
       case 'dns': return terminal.dns ? `${terminal.dns}:${terminal.porta || 5005}` : null;
       case 'p2s': return `Escuta TCP :${terminal.porta || 5005}`;
-      case 'heartbeat': return `${terminal.ip_publico || '51.91.219.145'}:${terminal.porta || 5005}`;
+      case 'heartbeat': return `${terminal.ip_publico || '127.0.0.1'}:${terminal.porta || 5005}`;
       case 'adms_push': return terminal.numero_serie ? `SN: ${terminal.numero_serie} | ADMS :8080` : 'ADMS :8080 (sem SN)';
       case 'sdk_tcp': return terminal.ip_publico ? `${terminal.ip_publico}:${terminal.porta || 4370}` : null;
       case 'websocket_cloud': return terminal.numero_serie ? `SN: ${terminal.numero_serie} | WS :${terminal.porta || 7788}` : `WS :${terminal.porta || 7788} (sem SN)`;
@@ -702,7 +702,7 @@ export default function Terminais() {
                   <p className="font-semibold">📡 Modo P2S — Push to Server (Conexão Inversa)</p>
                   <p>O <strong>terminal conecta TCP ao servidor</strong> — não é o servidor que tenta alcançar o terminal. Ideal para terminais em rede privada/NAT.</p>
                   <p>Compatível com: <strong>ZKTeco</strong> (SetServerPortAndTick), <strong>Anviz</strong> (Server Mode), <strong>Suprema</strong> (Server Connection), <strong>Hikvision/Dahua</strong> (Active Registration), <strong>Nitgen</strong>.</p>
-                  <p>Configure o terminal para conectar a <strong>51.91.219.145:PORTA</strong> e instale o <strong>p2s_server.py</strong> no Windows Server (Configurações → P2S Server).</p>
+                  <p>Configure o terminal para conectar a <strong>127.0.0.1:PORTA</strong> e instale o <strong>p2s_server.py</strong> no Windows Server (Configurações → P2S Server).</p>
                   <p className="text-violet-600">⚙️ Abra a porta TCP configurada no Firewall do Windows Server (Regras de Entrada).</p>
                 </div>
                 <div className="space-y-2">
@@ -732,7 +732,7 @@ export default function Terminais() {
               <div className="space-y-3">
                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700 space-y-1">
                   <p className="font-semibold">📡 Heartbeat TCP — Windows Server com IP Público</p>
-                  <p>O <strong>NOC Server</strong> corre no Windows Server (<code className="bg-violet-100 px-1 rounded">51.91.219.145</code>) e escuta na porta configurada.</p>
+                  <p>O <strong>NOC Server</strong> corre no Windows Server (<code className="bg-violet-100 px-1 rounded">127.0.0.1</code>) e escuta na porta configurada.</p>
                   <p>O terminal <strong>conecta TCP ao servidor</strong> — conexão recebida = online. Sem conexão no timeout = offline.</p>
                   <p className="text-violet-600">⚙️ Abra a porta TCP no Firewall do Windows Server (regra de entrada).</p>
                 </div>

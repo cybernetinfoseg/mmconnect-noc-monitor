@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
 import { motion } from 'framer-motion';

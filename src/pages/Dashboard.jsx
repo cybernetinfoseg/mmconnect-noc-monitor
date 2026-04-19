@@ -25,8 +25,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  AlertDialogTitle } from
+'@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
@@ -219,7 +219,7 @@ export default function Dashboard() {
                 </div>
               </div>
               {/* Clock — all screens */}
-              <div className="pl-1">
+              <div className="ml-8 pl-1">
                 <LiveClock />
               </div>
             </div>
@@ -228,27 +228,27 @@ export default function Dashboard() {
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {/* Refresh button — icon only, rounded */}
               <button
-                onClick={handleMonitorAll}
-                disabled={isMonitoring}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors disabled:opacity-50"
-                title="Atualizar">
+                  onClick={handleMonitorAll}
+                  disabled={isMonitoring}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors disabled:opacity-50"
+                  title="Atualizar">
                 
                 <RefreshCw className={cn("h-4 w-4", isMonitoring && "animate-spin")} />
               </button>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowWidgetConfig((v) => !v)}
-                className={cn("hidden sm:flex bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5", showWidgetConfig && "bg-white/20")}>
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowWidgetConfig((v) => !v)}
+                  className={cn("hidden sm:flex bg-white/10 border-white/20 text-white hover:bg-white/20 gap-1.5", showWidgetConfig && "bg-white/20")}>
                 
                 <Settings2 className="h-4 w-4" />
                 Widgets
               </Button>
               <button
-                onClick={() => setShowCloseConfirm(true)}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
-                title="Fechar sistema"
-              >
+                  onClick={() => setShowCloseConfirm(true)}
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
+                  title="Fechar sistema">
+                  
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Sair</span>
               </button>
@@ -258,72 +258,72 @@ export default function Dashboard() {
 
         {/* Widget Config Panel */}
         {showWidgetConfig &&
-        <div className="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-3">
+          <div className="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-3">
             <div className="max-w-[1920px] mx-auto flex flex-wrap items-center gap-4 sm:gap-6">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <LayoutDashboard className="h-3.5 w-3.5" /> Widgets visíveis
               </span>
               {[
-            { key: 'terminalStatus', label: 'Status de Terminais' },
-            { key: 'alertRules', label: 'Regras de Alerta' },
-            { key: 'recentAudit', label: 'Auditoria Recente' }].
-            map(({ key, label }) =>
-            <label key={key} className="flex items-center gap-2 cursor-pointer">
+              { key: 'terminalStatus', label: 'Status de Terminais' },
+              { key: 'alertRules', label: 'Regras de Alerta' },
+              { key: 'recentAudit', label: 'Auditoria Recente' }].
+              map(({ key, label }) =>
+              <label key={key} className="flex items-center gap-2 cursor-pointer">
                   <Switch
-                checked={widgets[key]}
-                onCheckedChange={() => toggleWidget(key)}
-                className="data-[state=checked]:bg-emerald-500" />
+                  checked={widgets[key]}
+                  onCheckedChange={() => toggleWidget(key)}
+                  className="data-[state=checked]:bg-emerald-500" />
               
                   <span className="text-sm text-slate-300">{label}</span>
                 </label>
-            )}
+              )}
             </div>
           </div>
-        }
+          }
 
         {/* Main Content */}
         <div className="w-full px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-[1920px]">
           {/* Filters */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-3 sm:gap-4">
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col gap-3 sm:gap-4">
             
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${canSeeAll ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-2 sm:gap-3`}>
               <FilterDropdown
-                label="Filtrar por Local"
-                icon={MapPin}
-                value={localFilter}
-                onChange={setLocalFilter}
-                options={locais}
-                placeholder="Todos os locais" />
+                  label="Filtrar por Local"
+                  icon={MapPin}
+                  value={localFilter}
+                  onChange={setLocalFilter}
+                  options={locais}
+                  placeholder="Todos os locais" />
               
 
               {canSeeAll &&
-              <div className="space-y-1.5">
+                <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5" />
                     Filtrar por Utilizador
                   </label>
                   <select
-                  value={userFilter || ''}
-                  onChange={(e) => setUserFilter(e.target.value || null)}
-                  className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full">
+                    value={userFilter || ''}
+                    onChange={(e) => setUserFilter(e.target.value || null)}
+                    className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full">
                   
                     <option value="">Todos os utilizadores</option>
                     {usuarios.map((u) =>
-                  <option key={u} value={u}>{u}</option>
-                  )}
+                    <option key={u} value={u}>{u}</option>
+                    )}
                   </select>
                 </div>
-              }
+                }
               <FilterDropdown
-                label="Status"
-                icon={Activity}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={['online', 'offline']}
-                placeholder="Todos os status" />
+                  label="Status"
+                  icon={Activity}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={['online', 'offline']}
+                  placeholder="Todos os status" />
               
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -331,9 +331,9 @@ export default function Dashboard() {
                   Ordenar por
                 </label>
                 <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full">
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="h-9 px-3 rounded-md border border-slate-200 bg-white/80 text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full">
                   
                   <option value="status">Status</option>
                   <option value="nome">Nome</option>
@@ -343,17 +343,17 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {setLocalFilter(null);setStatusFilter(null);setUserFilter(null);setSortBy('status');}}
-                disabled={!localFilter && !statusFilter && !userFilter}
-                className="text-slate-500 hover:text-slate-700 disabled:opacity-30">
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {setLocalFilter(null);setStatusFilter(null);setUserFilter(null);setSortBy('status');}}
+                  disabled={!localFilter && !statusFilter && !userFilter}
+                  className="text-slate-500 hover:text-slate-700 disabled:opacity-30">
                 
                 Limpar filtros
               </Button>
               <Link
-                to={`/TVMode${localFilter ? `?local=${encodeURIComponent(localFilter)}` : ''}`}
-                className="w-full sm:w-auto">
+                  to={`/TVMode${localFilter ? `?local=${encodeURIComponent(localFilter)}` : ''}`}
+                  className="w-full sm:w-auto">
                 
                 <Button variant="outline" size="sm" className="gap-1.5 text-slate-600 w-full sm:w-auto">
                   <Tv className="h-4 w-4" />
@@ -366,24 +366,24 @@ export default function Dashboard() {
           {/* KPIs */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <KPICard
-              title="Total de Terminais"
-              value={stats.total}
-              icon={Monitor}
-              color="blue" />
+                title="Total de Terminais"
+                value={stats.total}
+                icon={Monitor}
+                color="blue" />
             
             <KPICard
-              title="Online"
-              value={stats.online}
-              icon={Wifi}
-              color="green"
-              trend="up"
-              trendValue={`${stats.onlinePercentage}% disponível`} />
+                title="Online"
+                value={stats.online}
+                icon={Wifi}
+                color="green"
+                trend="up"
+                trendValue={`${stats.onlinePercentage}% disponível`} />
             
             <KPICard
-              title="Offline"
-              value={stats.offline}
-              icon={WifiOff}
-              color="red" />
+                title="Offline"
+                value={stats.offline}
+                icon={WifiOff}
+                color="red" />
             
           </div>
 
@@ -391,10 +391,10 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {/* Chart */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              className="md:col-span-1">
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+                className="md:col-span-1">
               
               <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
                 <CardHeader className="pb-2">
@@ -404,8 +404,8 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <StatusPieChart
-                    online={stats.online}
-                    offline={stats.offline} />
+                      online={stats.online}
+                      offline={stats.offline} />
                   
                 </CardContent>
               </Card>
@@ -413,10 +413,10 @@ export default function Dashboard() {
 
             {/* Table */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="md:col-span-1 lg:col-span-2">
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="md:col-span-1 lg:col-span-2">
               
               <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
                 <CardHeader className="pb-2">
@@ -430,9 +430,9 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <TerminalsTable
-                    terminals={filteredTerminals}
-                    maxRows={12}
-                    compact />
+                      terminals={filteredTerminals}
+                      maxRows={12}
+                      compact />
                   
                 </CardContent>
               </Card>
@@ -440,10 +440,10 @@ export default function Dashboard() {
 
             {/* Alerts */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="md:col-span-1 lg:col-span-1">
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="md:col-span-1 lg:col-span-1">
               
               <Card className="h-full bg-white/80 backdrop-blur-sm border-slate-200/50">
                 <CardHeader className="pb-2">
@@ -461,24 +461,24 @@ export default function Dashboard() {
 
           {/* Custom Widgets Row */}
           {(widgets.terminalStatus || widgets.alertRules || widgets.recentAudit) &&
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {widgets.terminalStatus &&
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                   <TerminalStatusWidget total={stats.total} online={stats.online} offline={stats.offline} />
                 </motion.div>
-            }
+              }
               {widgets.alertRules &&
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
                   <AlertRulesWidget />
                 </motion.div>
-            }
+              }
               {widgets.recentAudit &&
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                   <RecentAuditWidget currentUser={currentUser} />
                 </motion.div>
-            }
+              }
             </div>
-          }
+            }
         </div>
       </div>
     </PullToRefresh>
@@ -494,9 +494,9 @@ export default function Dashboard() {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => base44.auth.logout()}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
+              onClick={() => base44.auth.logout()}
+              className="bg-red-600 hover:bg-red-700 text-white">
+              
             Fechar sistema
           </AlertDialogAction>
         </AlertDialogFooter>

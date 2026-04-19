@@ -405,7 +405,7 @@ def start_status_server(port, stop_event):
     try:
         server = HTTPServer(("0.0.0.0", port), StatusHandler)
         server.timeout = 1
-        logger.info(f"[STATUS] Interface de diagnóstico em http://51.91.219.145:{port}/status")
+        logger.info(f"[STATUS] Interface de diagnóstico em http://127.0.0.1:{port}/status")
         while not stop_event.is_set():
             server.handle_request()
         server.server_close()
@@ -447,7 +447,7 @@ def run_p2s_server(stop_event=None):
 
         logger.info("=" * 65)
         logger.info("  P2S Server — Servidor Push to Server / Conexão Inversa")
-        logger.info(f"  IP Servidor: 51.91.219.145")
+        logger.info(f"  IP Servidor: 127.0.0.1")
         logger.info(f"  Keepalive timeout: {keepalive}s")
         logger.info(f"  Diagnóstico HTTP: :{status_port}/status")
         logger.info(f"  Compatível com: ZKTeco, Anviz, Suprema, Hikvision, Dahua, Nitgen")
@@ -562,7 +562,7 @@ export default function P2sServerCode() {
         <div className="flex items-center gap-3 text-violet-700 font-mono text-xs bg-violet-100 px-2 py-1.5 rounded">
           <span>Terminal Biométrico</span>
           <span className="text-violet-500">──TCP→──</span>
-          <span className="font-semibold">51.91.219.145:PORTA</span>
+          <span className="font-semibold">127.0.0.1:PORTA</span>
           <span className="text-violet-500">──→──</span>
           <span>P2S Server</span>
           <span className="text-violet-500">──→──</span>

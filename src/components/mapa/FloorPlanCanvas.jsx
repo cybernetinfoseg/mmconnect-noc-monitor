@@ -38,12 +38,39 @@ const ZOOM_MIN  = 0.5;
 const ZOOM_MAX  = 3;
 const ZOOM_STEP = 0.25;
 
-/* ─── Picker de ícone (relativo ao marcador, dentro do canvas) ─── */
-function IconPicker({ terminalId, currentIcon, onSelect, onClose }) {
+/* ─── Picker de ícone flutuante (fora do canvas escalado) ─── */
+function FloatingIconPicker({ terminalId, currentIcon, anchorEl, wrapperEl, zoom, onSelect, onClose }) {
+  const ref = useRef(null);
+  const [style, setStyle] = useState({ opacity: 0 });
+  const PICKER_W = 224;
+
+  useEffect(() => {
+    if (!anchorEl || !wrapperEl || !ref.current) return;
+    const wRect = wrapperEl.getBoundingClientRect();
+    const aRect = anchorEl.getBoundingClientRect();
+    const pRect = ref.current.getBoundingClientRect();
+
+    const anchorCX = aRect.left - wRect.left + aRect.width / 2;
+    const anchorTY = aRect.top  - wRect.top;
+    const anchorBY = aRect.bottom - wRect.top;
+
+    // Preferir acima; se não cabe → abaixo
+    let top = anchorTY - pRect.height - 8;
+    if (top < 4) top = anchorBY + 8;
+    if (top + pRect.height > wRect.height - 4) top = Math.max(4, wRect.height - pRect.height - 4);
+
+    let left = anchorCX - PICKER_W / 2;
+    if (left < 4) left = 4;
+    if (left + PICKER_W > wRect.width - 4) left = wRect.width - PICKER_W - 4;
+
+    setStyle({ opacity: 1, top, left });
+  }, [anchorEl, wrapperEl, zoom]);
+
   return (
     <div
-      className="absolute z-[300] bg-white border border-slate-200 rounded-xl shadow-2xl p-2"
-      style={{ bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)', width: 220 }}
+      ref={ref}
+      className="bg-white border border-slate-200 rounded-xl shadow-2xl p-2"
+      style={{ position: 'absolute', zIndex: 9998, width: PICKER_W, transition: 'opacity .1s', ...style }}
       onMouseDown={e => e.stopPropagation()}
     >
       <p className="text-[10px] text-slate-400 font-medium uppercase mb-2 px-1">Escolher ícone</p>
@@ -375,20 +402,6 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
                 onMouseLeave={() => setHover(null)}
                 onClick={() => !editMode && onSelect(terminal)}
               >
-                {/* Icon picker (aparece no canvas, relativo ao marcador) */}
-                <AnimatePresence>
-                  {showPicker && (
-                    <motion.div key="picker" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}>
-                      <IconPicker
-                        terminalId={terminal.id}
-                        currentIcon={iconId}
-                        onSelect={setTerminalIcon}
-                        onClose={() => setIconPicker(null)}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 {/* Ping offline */}
                 {terminal.status === 'offline' && (
                   <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ backgroundColor: c.ring }} />
@@ -428,7 +441,7 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
           )}
         </div>
 
-        {/* Tooltips renderizados FORA do canvas escalado, dentro do wrapper fixo */}
+        {/* Tooltips — fora do canvas escalado */}
         {!editMode && terminals.map(terminal => (
           hover === terminal.id && (
             <FloatingTooltip
@@ -437,6 +450,22 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
               anchorEl={markerRefs.current[terminal.id]}
               wrapperEl={wrapperRef.current}
               zoom={zoom}
+            />
+          )
+        ))}
+
+        {/* Icon picker — fora do canvas escalado */}
+        {editMode && terminals.map(terminal => (
+          iconPicker === terminal.id && (
+            <FloatingIconPicker
+              key={terminal.id}
+              terminalId={terminal.id}
+              currentIcon={getTerminalIcon(terminal)}
+              anchorEl={markerRefs.current[terminal.id]}
+              wrapperEl={wrapperRef.current}
+              zoom={zoom}
+              onSelect={setTerminalIcon}
+              onClose={() => setIconPicker(null)}
             />
           )
         ))}

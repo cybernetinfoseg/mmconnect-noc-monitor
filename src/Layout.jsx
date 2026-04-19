@@ -20,7 +20,8 @@ import {
   User,
   Wrench,
   FileBarChart2,
-  CalendarClock
+  CalendarClock,
+  MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ const ALL_NAV_ITEMS = [
   { name: 'Histórico', page: 'History', icon: History },
   { name: 'Incidentes', page: 'Incidents', icon: AlertTriangle },
   { name: 'Alertas', page: 'Alertas', icon: Bell },
+  { name: 'Mapa', page: 'MapaTerminais', icon: MapPin },
   { name: 'Manutenção', page: 'Manutencao', icon: Wrench },
   { name: 'Agendamentos', page: 'Agendamentos', icon: CalendarClock },
   { name: 'Relatórios', page: 'Relatorios', icon: FileBarChart2 },

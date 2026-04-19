@@ -739,7 +739,7 @@ export default function Terminais() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>IP do Servidor</Label>
-                    <Input value={formData.ip_publico || ''} onChange={(e) => setFormData({...formData, ip_publico: e.target.value})} placeholder="51.91.219.145" />
+                    <Input value={formData.ip_publico || ''} onChange={(e) => setFormData({...formData, ip_publico: e.target.value})} placeholder="127.0.0.1" />
                   </div>
                   <div className="space-y-2">
                     <Label>Porta TCP <span className="text-red-500">*</span></Label>
@@ -754,7 +754,7 @@ export default function Terminais() {
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 space-y-1">
                   <p className="font-semibold">📲 ADMS / Push — ZKTeco, Anviz, Hikvision</p>
                   <p>O terminal faz <strong>HTTP POST para o servidor ADMS</strong> a cada evento. Compatível com protocolo ZKTeco iClock/ADMS e Anviz CrossChex.</p>
-                  <p>Configure no terminal: <code className="bg-blue-100 px-1 rounded">Servidor = http://51.91.219.145:8080</code></p>
+                  <p>Configure no terminal: <code className="bg-blue-100 px-1 rounded">Servidor = http://127.0.0.1:8080</code></p>
                   <p className="text-blue-600">⚠️ O <strong>Número de Série (SN)</strong> do terminal é obrigatório — é usado para identificar o terminal no servidor ADMS.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -784,7 +784,7 @@ export default function Terminais() {
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono space-y-0.5">
                   <p className="font-sans text-slate-600 font-semibold mb-1">Configuração no terminal ZKTeco:</p>
                   <p className="text-slate-700">Comm → Cloud Server / ADMS</p>
-                  <p className="text-blue-700">Server Address: <strong>51.91.219.145</strong></p>
+                  <p className="text-blue-700">Server Address: <strong>127.0.0.1</strong></p>
                   <p className="text-blue-700">Server Port: <strong>8080</strong></p>
                   <p className="text-blue-700">HTTPS: <strong>Off</strong> | Push: <strong>On</strong></p>
                 </div>

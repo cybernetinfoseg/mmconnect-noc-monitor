@@ -13,7 +13,7 @@ export default function LiveClock({ className = '' }) {
   }, []);
 
   return (
-    <div className="ml-2 select-none">
+    <div className="ml-3 select-none">
       <p className="text-white text-xl font-bold tracking-tight tabular-nums leading-none">
         {time.format('HH:mm:ss')}
       </p>

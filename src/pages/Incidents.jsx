@@ -497,7 +497,7 @@ export default function Incidents() {
                         </div>
                         
                         <div className="space-y-1">
-                          <div className="ml-2 rounded-sm flex items-center gap-2">
+                          <div className="mr-2 rounded-sm flex items-center gap-2">
                             <p className="font-semibold text-slate-900">
                               {incident.terminal_nome}
                             </p>

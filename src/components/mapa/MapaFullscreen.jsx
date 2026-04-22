@@ -181,6 +181,7 @@ export default function MapaFullscreen({ local, termList, canEdit, savedPlan, on
             selectedId={selectedTerminal?.id}
             onSelect={setSelectedTerminal}
             fullscreen
+            dark
           />
         </div>
       </div>

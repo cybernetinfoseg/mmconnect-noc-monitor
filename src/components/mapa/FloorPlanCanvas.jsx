@@ -146,7 +146,7 @@ function FloatingTooltip({ terminal, anchorEl, wrapperEl, zoom }) {
 }
 
 /* ─── Componente principal ─── */
-export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect, fullscreen = false }) {
+export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect, fullscreen = false, dark = false }) {
   const [imageUrl, setImageUrl]     = useState(savedPlan?.imageUrl || null);
   const [positions, setPositions]   = useState(savedPlan?.positions || {});
   const [dragging, setDragging]     = useState(null);
@@ -303,6 +303,12 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     ? (hasImage ? 700 : Math.max(400, Math.ceil(terminals.length / 6) * 120 + 80))
     : (hasImage ? 400 : Math.max(160, Math.ceil(terminals.length / 6) * 100 + 60));
 
+  // Estilos condicionais para tema dark (fullscreen)
+  const btnBase    = dark ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' : '';
+  const btnDanger  = dark ? 'bg-slate-700 border-slate-600 text-red-400 hover:bg-red-950 hover:border-red-700' : 'text-red-600 hover:bg-red-50';
+  const zoomText   = dark ? 'text-slate-300' : 'text-slate-500';
+  const wrapperBorder = dark ? 'border-slate-700' : 'border-slate-200';
+
   return (
     <div className="space-y-2">
       {/* Toolbar edição */}
@@ -311,23 +317,23 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
           <Button
             variant={editMode ? 'default' : 'outline'} size="sm"
             onClick={() => { setEditMode(v => !v); setIconPicker(null); }}
-            className={editMode ? 'bg-blue-600 hover:bg-blue-700' : ''}
+            className={editMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : btnBase}
           >
             <Move className="h-3.5 w-3.5 mr-1" />
             {editMode ? 'A editar...' : 'Editar posições'}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+          <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className={btnBase}>
             {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
             {hasImage ? 'Substituir planta' : 'Importar planta'}
           </Button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
           {hasImage && (
-            <Button variant="outline" size="sm" onClick={removePlan} className="text-red-600 hover:bg-red-50">
+            <Button variant="outline" size="sm" onClick={removePlan} className={btnDanger}>
               <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover planta
             </Button>
           )}
           {editMode && (
-            <Button size="sm" onClick={handleSave} disabled={saving} className="ml-auto bg-emerald-600 hover:bg-emerald-700">
+            <Button size="sm" onClick={handleSave} disabled={saving} className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600">
               {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
               Guardar
             </Button>
@@ -337,30 +343,23 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
 
       {/* Controles de zoom */}
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeZoom(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN}>
+        <Button variant="outline" size="icon" className={`h-7 w-7 ${btnBase}`} onClick={() => changeZoom(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN}>
           <ZoomOut className="h-3.5 w-3.5" />
         </Button>
-        <span className="text-xs text-slate-500 w-10 text-center select-none">{Math.round(zoom * 100)}%</span>
-        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeZoom(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX}>
+        <span className={`text-xs w-10 text-center select-none ${zoomText}`}>{Math.round(zoom * 100)}%</span>
+        <Button variant="outline" size="icon" className={`h-7 w-7 ${btnBase}`} onClick={() => changeZoom(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX}>
           <ZoomIn className="h-3.5 w-3.5" />
         </Button>
         {zoom !== 1 && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(1)} title="Repor zoom">
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${dark ? 'text-slate-300 hover:bg-slate-700' : ''}`} onClick={() => setZoom(1)} title="Repor zoom">
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
 
-      {/*
-        wrapperRef: contentor com tamanho FIXO (não muda com o zoom).
-        Tem overflow:hidden + position:relative.
-        O tooltip e o canvas escalado ficam ambos dentro deste elemento.
-        O canvas escala com transform:scale, transformOrigin top-left.
-        O wrapper cresce em altura conforme o zoom para não cortar o conteúdo.
-      */}
       <div
         ref={wrapperRef}
-        className="relative w-full rounded-xl overflow-hidden border border-slate-200"
+        className={`relative w-full rounded-xl overflow-hidden border ${wrapperBorder}`}
         style={{ height: BASE_H * zoom }}
       >
         {/* Canvas escalado */}
@@ -374,8 +373,10 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
             transform:       `scale(${zoom})`,
             background: hasImage
               ? 'transparent'
-              : 'repeating-linear-gradient(0deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px)',
-            backgroundColor: '#f8fafc',
+              : dark
+                ? 'repeating-linear-gradient(0deg,transparent,transparent 39px,#334155 39px,#334155 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#334155 39px,#334155 40px)'
+                : 'repeating-linear-gradient(0deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px)',
+            backgroundColor: dark ? '#0f172a' : '#f8fafc',
             cursor: editMode ? 'crosshair' : 'default',
           }}
           onTouchMove={onTouchMove}
@@ -392,7 +393,7 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
           )}
 
           {!hasImage && (
-            <span className="absolute top-2 left-3 text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+            <span className={`absolute top-2 left-3 text-[10px] font-medium uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
               Planta — {local}
             </span>
           )}

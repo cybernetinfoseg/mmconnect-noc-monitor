@@ -102,8 +102,8 @@ export default function UserProfileForm({ user, onSuccess, isEditMode = false })
        });
 
       if (!isEditMode) {
-        // Notify admin about new user registration (only on first submission)
-        await base44.functions.invoke('notifyAdminNewUser', {
+        // Notify admin — fire-and-forget, não bloqueia o fluxo
+        base44.functions.invoke('notifyAdminNewUser', {
            email: user.email,
            nome: form.nome.trim(),
            sobrenome: form.sobrenome.trim(),
@@ -111,14 +111,14 @@ export default function UserProfileForm({ user, onSuccess, isEditMode = false })
            telefone: form.telefone.trim(),
            motivo_acesso: form.motivo_acesso.trim(),
            data_inscricao: new Date().toLocaleString('pt-PT'),
-         });
+         }).catch(() => {});
       }
 
       toast.success(isEditMode ? 'Perfil atualizado com sucesso!' : 'Solicitação enviada! Aguarde a aprovação do admin.');
       onSuccess();
     } catch (error) {
       console.error('Erro:', error);
-      toast.error('Erro ao salvar perfil');
+      toast.error('Erro ao salvar perfil. Tente novamente.');
     } finally {
       setLoading(false);
     }

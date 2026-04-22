@@ -81,7 +81,11 @@ export default function Agendamentos() {
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, ativo }) => base44.entities.ScheduledAction.update(id, { ativo }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scheduled-actions'] }),
+    onSuccess: (_, { ativo }) => {
+      queryClient.invalidateQueries({ queryKey: ['scheduled-actions'] });
+      toast.success(ativo ? 'Agendamento ativado' : 'Agendamento pausado');
+    },
+    onError: () => toast.error('Erro ao atualizar agendamento'),
   });
 
   const deleteMutation = useMutation({
@@ -90,6 +94,7 @@ export default function Agendamentos() {
       queryClient.invalidateQueries({ queryKey: ['scheduled-actions'] });
       toast.success('Agendamento eliminado');
     },
+    onError: () => toast.error('Erro ao eliminar agendamento'),
   });
 
   const handleRunNow = async (sched) => {

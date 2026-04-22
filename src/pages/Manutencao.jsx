@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Wrench, Calendar, Clock, Trash2, Pencil, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import { format, isAfter, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import MaintenanceModal from '@/components/manutencao/MaintenanceModal';
@@ -55,7 +56,9 @@ export default function Manutencao() {
             const item = janelas.find(j => j.id === id);
             logAudit('manutencao_cancelada', id, `Manutenção "${item?.titulo || id}" do terminal "${item?.terminal_nome || ''}" removida`);
             queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
+            toast.success('Manutenção removida');
         },
+        onError: () => toast.error('Erro ao remover manutenção'),
     });
 
     const cancelMutation = useMutation({
@@ -64,7 +67,9 @@ export default function Manutencao() {
             const item = janelas.find(j => j.id === id);
             logAudit('manutencao_cancelada', id, `Manutenção "${item?.titulo || id}" do terminal "${item?.terminal_nome || ''}" cancelada`);
             queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
+            toast.success('Manutenção cancelada');
         },
+        onError: () => toast.error('Erro ao cancelar manutenção'),
     });
 
     const handleSaved = (result) => {
@@ -76,9 +81,10 @@ export default function Manutencao() {
                 ? `Manutenção "${editItem?.titulo}" do terminal "${editItem?.terminal_nome}" editada`
                 : `Nova manutenção criada`
         );
+        queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
+        toast.success(isEdit ? 'Manutenção atualizada' : 'Manutenção criada');
         setModalOpen(false);
         setEditItem(null);
-        queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
     };
 
     const handleEdit = (item) => {

@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FilterDropdown from '../components/dashboard/FilterDropdown';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { format, isSameDay } from 'date-fns';
 import pt from 'date-fns/locale/pt';
 import { formatDateTimePT } from '@/lib/localization';
@@ -89,7 +90,9 @@ export default function Incidents() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
-    }
+      toast.success('Incidente resolvido');
+    },
+    onError: () => toast.error('Erro ao resolver incidente'),
   });
 
   // Filter incidents
@@ -276,6 +279,7 @@ export default function Incidents() {
           logAudit('incidente_excluido', inc.id, `Incidente do terminal "${inc.terminal_nome}" excluído (terminal removido)`);
         }
         queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        toast.success('Incidentes removidos (terminal não existe)');
         return;
       }
 
@@ -301,6 +305,7 @@ export default function Incidents() {
         logAudit('incidente_resolvido', inc.id, `Incidente do terminal "${inc.terminal_nome}" resolvido após ${duracao} min`);
       }
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      toast.success('Incidente(s) resolvido(s) com sucesso');
     } finally {
       setCheckingId(null);
     }

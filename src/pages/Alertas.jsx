@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Plus, Trash2, ToggleLeft, ToggleRight, Mail, Zap, Clock, AlertTriangle, CheckCircle, Edit2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,8 +53,10 @@ export default function Alertas() {
     onSuccess: (_, id) => {
       const rule = rules.find(r => r.id === id);
       logAudit('alerta_excluido', id, `Regra de alerta "${rule?.nome || id}" excluída`);
-      queryClient.invalidateQueries(['alert-rules']);
+      queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
+      toast.success('Regra de alerta eliminada');
     },
+    onError: () => toast.error('Erro ao eliminar regra'),
   });
 
   const toggleMutation = useMutation({
@@ -61,8 +64,10 @@ export default function Alertas() {
     onSuccess: (_, { id, ativo }) => {
       const rule = rules.find(r => r.id === id);
       logAudit(ativo ? 'alerta_ativado' : 'alerta_desativado', id, `Regra "${rule?.nome || id}" ${ativo ? 'ativada' : 'desativada'}`);
-      queryClient.invalidateQueries(['alert-rules']);
+      queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
+      toast.success(ativo ? 'Regra ativada' : 'Regra desativada');
     },
+    onError: () => toast.error('Erro ao atualizar regra'),
   });
 
   const handleEdit = (rule) => {
@@ -237,7 +242,8 @@ export default function Alertas() {
                 ? `Regra "${editingRule?.nome}" editada`
                 : `Nova regra de alerta "${result?.nome || ''}" criada`
             );
-            queryClient.invalidateQueries(['alert-rules']);
+            queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
+            toast.success(isEdit ? 'Regra de alerta atualizada' : 'Regra de alerta criada');
             setModalOpen(false);
             setEditingRule(null);
           }}

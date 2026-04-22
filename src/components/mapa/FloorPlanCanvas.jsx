@@ -146,7 +146,7 @@ function FloatingTooltip({ terminal, anchorEl, wrapperEl, zoom }) {
 }
 
 /* ─── Componente principal ─── */
-export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect }) {
+export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect, fullscreen = false }) {
   const [imageUrl, setImageUrl]     = useState(savedPlan?.imageUrl || null);
   const [positions, setPositions]   = useState(savedPlan?.positions || {});
   const [dragging, setDragging]     = useState(null);
@@ -298,8 +298,10 @@ export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, 
     setZoom(z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round((z + d) * 100) / 100)));
 
   const hasImage = !!imageUrl;
-  // Altura base do canvas (antes do zoom)
-  const BASE_H = hasImage ? 400 : Math.max(160, Math.ceil(terminals.length / 6) * 100 + 60);
+  // Altura base do canvas (antes do zoom) — maior em modo fullscreen
+  const BASE_H = fullscreen
+    ? (hasImage ? 700 : Math.max(400, Math.ceil(terminals.length / 6) * 120 + 80))
+    : (hasImage ? 400 : Math.max(160, Math.ceil(terminals.length / 6) * 100 + 60));
 
   return (
     <div className="space-y-2">

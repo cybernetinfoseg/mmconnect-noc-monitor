@@ -33,16 +33,18 @@ Deno.serve(async (req) => {
         // Validate terminal limit
         const userEntity = await base44.asServiceRole.entities.User.filter({ email: user.email });
         const limite = userEntity[0]?.limite_terminais ?? 0;
-        if (limite > 0) {
-          // Count terminals owned by this user
-          const [byCreator, byAssigned] = await Promise.all([
-            base44.asServiceRole.entities.Terminal.filter({ created_by: user.email }),
-            base44.asServiceRole.entities.Terminal.filter({ usuario_email: user.email }),
-          ]);
-          const ids = new Set([...byCreator, ...byAssigned].map(t => t.id));
-          if (ids.size >= limite) {
-            return Response.json({ error: `Limite de ${limite} terminais atingido` }, { status: 403 });
-          }
+        // limite === 0 significa sem permissão para adicionar terminais
+        if (limite === 0) {
+          return Response.json({ error: 'Sem permissão para adicionar terminais. Contacte o administrador.' }, { status: 403 });
+        }
+        // Count terminals owned by this user
+        const [byCreator, byAssigned] = await Promise.all([
+          base44.asServiceRole.entities.Terminal.filter({ created_by: user.email }),
+          base44.asServiceRole.entities.Terminal.filter({ usuario_email: user.email }),
+        ]);
+        const ids = new Set([...byCreator, ...byAssigned].map(t => t.id));
+        if (ids.size >= limite) {
+          return Response.json({ error: `Limite de ${limite} terminais atingido` }, { status: 403 });
         }
       }
       const created = await base44.asServiceRole.entities.Terminal.create(createData);

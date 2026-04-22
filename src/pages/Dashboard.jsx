@@ -101,7 +101,6 @@ export default function Dashboard() {
   // Terminais — hook centralizado, query key partilhada com todas as páginas
   const { data: terminals = [], isLoading } = useTerminals({
     enabled: !!currentUser,
-    refetchInterval,
   });
 
   // Ciclo de monitoramento — chamado no mount e a cada refreshInterval
@@ -116,7 +115,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Erro no ciclo de monitoramento:', error);
     }
-  }, [refetch]);
+  }, [queryClient]);
 
   // Disparar ciclo ao abrir o Dashboard (assim que tiver user e terminais carregados)
   useEffect(() => {
@@ -211,7 +210,7 @@ export default function Dashboard() {
   }, [localFilter, statusFilter, sortBy]);
 
   const handlePullRefresh = async () => {
-    await refetch();
+    await queryClient.invalidateQueries({ queryKey: TERMINALS_QUERY_KEY });
     setLastRefresh(new Date());
   };
 

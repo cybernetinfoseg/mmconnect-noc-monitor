@@ -155,10 +155,11 @@ export default function Terminais() {
        );
        return { prev };
      },
-     onSuccess: (_, id) => {
+     onSuccess: async (_, id) => {
        const terminal = terminals.find(t => t.id === id);
        logAudit('terminal_excluido', id, `Terminal "${terminal?.nome || id}" excluído`);
        toast.success('Terminal eliminado');
+       await queryClient.invalidateQueries({ queryKey: TERMINALS_QUERY_KEY });
      },
      onError: (error, _, context) => {
        if (context?.prev) {

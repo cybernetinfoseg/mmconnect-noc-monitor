@@ -101,18 +101,8 @@ export default function Terminais() {
   const { data: terminals = [], isLoading } = useQuery({
     queryKey: ['terminals-manage', currentUser?.email, isAdmin],
     queryFn: async () => {
-      if (isAdmin) {
-        return await base44.entities.Terminal.list('-created_date');
-      }
-      // Non-admins see terminals where they are the creator OR assigned user
-      const [byCreator, byAssigned] = await Promise.all([
-        base44.entities.Terminal.filter({ created_by: currentUser?.email }, '-created_date'),
-        base44.entities.Terminal.filter({ usuario_email: currentUser?.email }, '-created_date'),
-      ]);
-      // Merge and deduplicate by id
-      const map = new Map();
-      [...byCreator, ...byAssigned].forEach(t => map.set(t.id, t));
-      return [...map.values()].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      // RLS handles filtering automatically — admin sees all, users see their own (created_by OR usuario_email)
+      return await base44.entities.Terminal.list('-created_date');
     },
     enabled: !!currentUser,
     refetchInterval: refreshInterval,

@@ -59,15 +59,31 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
 
+        // Aceita chamadas do scheduler (sem auth) e de qualquer utilizador autenticado
+        // Admin vê todos os terminais; utilizador comum vê apenas os seus
+        let terminals;
         const isAuthenticated = await base44.auth.isAuthenticated();
         if (isAuthenticated) {
             const user = await base44.auth.me();
-            if (user?.role !== 'admin') {
-                return Response.json({ error: 'Forbidden: acesso apenas para administradores' }, { status: 403 });
+            if (user?.role === 'admin') {
+                terminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
+            } else {
+                // Filtrar apenas terminais do utilizador (criados por ele ou atribuídos)
+                const [created, assigned] = await Promise.all([
+                    base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: user.email }),
+                    base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: user.email }),
+                ]);
+                const seen = new Set();
+                terminals = [...created, ...assigned].filter(t => {
+                    if (seen.has(t.id)) return false;
+                    seen.add(t.id);
+                    return true;
+                });
             }
+        } else {
+            // Chamada do scheduler — processa todos
+            terminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
         }
-
-        const terminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
         const agora = new Date();
         const results = [];
 

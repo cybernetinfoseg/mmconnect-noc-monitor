@@ -107,13 +107,38 @@ export default function Dashboard() {
     enabled: !!currentUser
   });
 
-  // Monitorar todos os terminais
+  // Ciclo de monitoramento — chamado no mount e a cada refreshInterval
+  const runMonitorCycle = useCallback(async () => {
+    try {
+      await base44.functions.invoke('monitorAllTerminals', {});
+      // Expirar manutenções e processar regras de alerta em paralelo (fire-and-forget)
+      base44.functions.invoke('expireMaintenanceWindows', {}).catch(() => {});
+      base44.functions.invoke('processAlertRules', {}).catch(() => {});
+      setLastRefresh(new Date());
+      setTimeout(() => refetch(), 1500);
+    } catch (error) {
+      console.error('Erro no ciclo de monitoramento:', error);
+    }
+  }, [refetch]);
+
+  // Disparar ciclo ao abrir o Dashboard (assim que tiver user e terminais carregados)
+  useEffect(() => {
+    if (!currentUser) return;
+    runMonitorCycle();
+  }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ciclo automático independente do refetchInterval dos dados
+  useEffect(() => {
+    if (!currentUser || !refreshInterval) return;
+    const interval = setInterval(runMonitorCycle, refreshInterval);
+    return () => clearInterval(interval);
+  }, [currentUser, refreshInterval, runMonitorCycle]);
+
+  // Monitorar todos os terminais (botão manual)
   const handleMonitorAll = async () => {
     setIsMonitoring(true);
     try {
-      await base44.functions.invoke('monitorAllTerminals', {});
-      setLastRefresh(new Date());
-      setTimeout(() => refetch(), 2000);
+      await runMonitorCycle();
     } catch (error) {
       console.error('Erro ao monitorar:', error);
     } finally {

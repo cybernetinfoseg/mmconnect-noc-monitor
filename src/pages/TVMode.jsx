@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { resolvePermissions } from '../components/auth/usePermissions';
@@ -120,9 +120,33 @@ export default function TVMode() {
     return allTerminalsRaw;
   }, [allTerminalsRaw, currentUser]);
 
+  // Ciclo de monitoramento automático
+  const runMonitorCycle = useCallback(async () => {
+    try {
+      await base44.functions.invoke('monitorAllTerminals', {});
+      base44.functions.invoke('expireMaintenanceWindows', {}).catch(() => {});
+      base44.functions.invoke('processAlertRules', {}).catch(() => {});
+      setTimeout(() => refetch(), 1500);
+    } catch {}
+  }, [refetch]);
+
+  // Disparar ao abrir TVMode
+  useEffect(() => {
+    if (!currentUser) return;
+    runMonitorCycle();
+  }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ciclo automático
+  useEffect(() => {
+    if (!currentUser || !refreshInterval) return;
+    const interval = setInterval(runMonitorCycle, refreshInterval);
+    return () => clearInterval(interval);
+  }, [currentUser, refreshInterval, runMonitorCycle]);
+
   // Manual refresh
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
+    await runMonitorCycle();
     await refetch();
     setTimeout(() => setIsRefreshing(false), 1000);
   };

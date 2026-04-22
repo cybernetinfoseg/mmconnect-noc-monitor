@@ -9,14 +9,7 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
 
-        // Scheduler chama sem auth; utilizador autenticado deve ser admin
-        const isAuthenticated = await base44.auth.isAuthenticated();
-        if (isAuthenticated) {
-            const user = await base44.auth.me();
-            if (user?.role !== 'admin') {
-                return Response.json({ error: 'Forbidden' }, { status: 403 });
-            }
-        }
+        // Aceita chamadas do scheduler (sem auth) e de qualquer utilizador autenticado
 
         const agora = new Date().toISOString();
 

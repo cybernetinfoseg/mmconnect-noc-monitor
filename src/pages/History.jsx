@@ -34,7 +34,7 @@ import { format, subHours, parseISO, startOfDay, endOfDay } from 'date-fns';
 export default function History() {
   const [terminalFilter, setTerminalFilter] = useState('all');
   const [localFilter, setLocalFilter] = useState('all');
-
+  const [userFilter, setUserFilter] = useState('all');
   const [uptimeFilter, setUptimeFilter] = useState('all');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
@@ -48,7 +48,7 @@ export default function History() {
   const canSeeAll = perms.isAdmin;
 
   // Fetch terminals via backend function (bypasses RLS + includes assigned terminals)
-  const { data: terminals = [] } = useQuery({
+  const { data: allTerminalsList = [] } = useQuery({
     queryKey: ['terminals-history', currentUser?.email],
     queryFn: async () => {
       const response = await base44.functions.invoke('getMyTerminals', {});
@@ -56,6 +56,18 @@ export default function History() {
     },
     enabled: !!currentUser,
   });
+
+  // Filtrar terminais por utilizador (só admin usa este filtro)
+  const terminals = useMemo(() => {
+    if (!canSeeAll || userFilter === 'all') return allTerminalsList;
+    return allTerminalsList.filter(t => (t.usuario_email || t.created_by) === userFilter);
+  }, [allTerminalsList, canSeeAll, userFilter]);
+
+  // Lista de utilizadores únicos para o filtro de admin
+  const usuarios = useMemo(() =>
+    [...new Set(allTerminalsList.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(),
+    [allTerminalsList]
+  );
 
   // Fetch status history
   const { data: allHistory = [], isLoading: historyLoading } = useQuery({
@@ -284,6 +296,17 @@ export default function History() {
             </div>
             {/* Other filters */}
             <div className="flex flex-wrap gap-2">
+              {canSeeAll && usuarios.length > 0 && (
+                <Select value={userFilter} onValueChange={(v) => { setUserFilter(v); setTerminalFilter('all'); }}>
+                  <SelectTrigger className="w-full sm:w-[160px] bg-white shadow-sm text-xs h-8">
+                    <SelectValue placeholder="Utilizador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os utilizadores</SelectItem>
+                    {usuarios.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
               <Select value={terminalFilter} onValueChange={setTerminalFilter}>
                 <SelectTrigger className="w-full sm:w-[150px] bg-white shadow-sm text-xs h-8">
                   <Monitor className="h-3 w-3 mr-1 text-slate-400 shrink-0" />

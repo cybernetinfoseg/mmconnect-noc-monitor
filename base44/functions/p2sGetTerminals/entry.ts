@@ -23,12 +23,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: "API Key sem utilizador associado" }, { status: 401 });
     }
 
-    // Buscar terminais P2S activos do utilizador
-    const terminais = await base44.asServiceRole.entities.Terminal.filter({
-      tipo_conexao: "p2s",
-      ativo: true,
-      created_by: ownerEmail,
-    });
+    // Verificar se o dono da key é admin
+    const ownerUsers = await base44.asServiceRole.entities.User.filter({ email: ownerEmail });
+    const isAdmin = ownerUsers.length > 0 && ownerUsers[0].role === 'admin';
+
+    // Admin → todos os terminais P2S; utilizador normal → apenas os seus
+    const filterParams = isAdmin
+      ? { tipo_conexao: "p2s", ativo: true }
+      : { tipo_conexao: "p2s", ativo: true, created_by: ownerEmail };
+    const terminais = await base44.asServiceRole.entities.Terminal.filter(filterParams);
 
     const result = terminais.map(t => ({
       id:            t.id,

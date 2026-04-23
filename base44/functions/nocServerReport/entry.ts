@@ -33,20 +33,30 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'terminal_id e status são obrigatórios' }, { status: 400 });
         }
 
-        // Verificar ownership
-        const terminaisDoUtilizador = await base44.asServiceRole.entities.Terminal.filter({
-            ativo: true,
-            created_by: ownerEmail,
-        });
+        // Verificar se o dono da key é admin
+        const ownerUsers = await base44.asServiceRole.entities.User.filter({ email: ownerEmail });
+        const isAdmin = ownerUsers.length > 0 && ownerUsers[0].role === 'admin';
 
-        const terminal = terminaisDoUtilizador.find(t => t.id === terminal_id);
-
-        if (!terminal) {
-            const terminalExiste = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
-            if (!terminalExiste) {
+        // Admin pode reportar qualquer terminal; utilizador normal só os seus
+        let terminal;
+        if (isAdmin) {
+            terminal = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
+            if (!terminal) {
                 return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
             }
-            return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
+        } else {
+            const terminaisDoUtilizador = await base44.asServiceRole.entities.Terminal.filter({
+                ativo: true,
+                created_by: ownerEmail,
+            });
+            terminal = terminaisDoUtilizador.find(t => t.id === terminal_id);
+            if (!terminal) {
+                const terminalExiste = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
+                if (!terminalExiste) {
+                    return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
+                }
+                return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
+            }
         }
 
         // Validar tipo

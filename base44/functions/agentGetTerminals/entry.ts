@@ -29,14 +29,23 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // 3. Filtrar terminais do utilizador — criados por ele OU atribuídos a ele
-        const [byCreator, byAssigned] = await Promise.all([
-            base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
-            base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
-        ]);
-        const map = new Map();
-        [...byCreator, ...byAssigned].forEach(t => map.set(t.id, t));
-        const allTerminals = [...map.values()];
+        // Verificar se o dono da key é admin
+        const ownerUsers = await base44.asServiceRole.entities.User.filter({ email: ownerEmail });
+        const isAdmin = ownerUsers.length > 0 && ownerUsers[0].role === 'admin';
+
+        // 3. Admin → todos os terminais; utilizador normal → apenas os seus
+        let allTerminals;
+        if (isAdmin) {
+            allTerminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
+        } else {
+            const [byCreator, byAssigned] = await Promise.all([
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
+            ]);
+            const map = new Map();
+            [...byCreator, ...byAssigned].forEach(t => map.set(t.id, t));
+            allTerminals = [...map.values()];
+        }
 
         const terminals = allTerminals.filter(t => AGENT_TYPES.includes(t.tipo_conexao));
 

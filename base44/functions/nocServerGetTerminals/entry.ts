@@ -23,20 +23,26 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // Buscar terminais dos tipos suportados pelo NOC Server
-        // Inclui terminais criados pelo utilizador OU atribuídos via usuario_email
-        const [byCreator, byEmail] = await Promise.all([
-            base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
-            base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
-        ]);
+        // Verificar se o dono da key é admin
+        const ownerUsers = await base44.asServiceRole.entities.User.filter({ email: ownerEmail });
+        const isAdmin = ownerUsers.length > 0 && ownerUsers[0].role === 'admin';
 
-        // Merge sem duplicados
-        const seen = new Set();
-        const allTerminals = [...byCreator, ...byEmail].filter(t => {
-            if (seen.has(t.id)) return false;
-            seen.add(t.id);
-            return true;
-        });
+        // Admin → todos os terminais; utilizador normal → apenas os seus
+        let allTerminals;
+        if (isAdmin) {
+            allTerminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
+        } else {
+            const [byCreator, byEmail] = await Promise.all([
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
+            ]);
+            const seen = new Set();
+            allTerminals = [...byCreator, ...byEmail].filter(t => {
+                if (seen.has(t.id)) return false;
+                seen.add(t.id);
+                return true;
+            });
+        }
 
         const supported = ['heartbeat', 'adms_push', 'sdk_tcp', 'websocket_cloud'];
         const terminals = allTerminals.filter(t => supported.includes(t.tipo_conexao));

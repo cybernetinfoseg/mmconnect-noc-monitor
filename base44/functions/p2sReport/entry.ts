@@ -31,12 +31,16 @@ Deno.serve(async (req) => {
             return Response.json({ error: "status deve ser 'online' ou 'offline'" }, { status: 400 });
         }
 
-        // Verificar que o terminal existe e pertence ao utilizador
+        // Verificar se o dono da key é admin
+        const ownerUsers = await base44.asServiceRole.entities.User.filter({ email: ownerEmail });
+        const isAdmin = ownerUsers.length > 0 && ownerUsers[0].role === 'admin';
+
+        // Verificar que o terminal existe; admin pode reportar qualquer um
         const terminal = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
         if (!terminal) {
             return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
         }
-        if (terminal.created_by !== ownerEmail) {
+        if (!isAdmin && terminal.created_by !== ownerEmail) {
             return Response.json({ error: 'Sem permissão para este terminal' }, { status: 403 });
         }
         if (terminal.tipo_conexao !== 'p2s') {

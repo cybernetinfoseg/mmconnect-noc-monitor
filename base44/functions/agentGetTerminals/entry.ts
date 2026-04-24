@@ -29,10 +29,8 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // Verificar se o dono da key é admin (sem sessão: usar list + filtro em memória)
-        const allUsers = await base44.asServiceRole.entities.User.list();
-        const ownerUser = allUsers.find(u => u.email === ownerEmail);
-        const isAdmin = ownerUser?.role === 'admin';
+        // is_admin está guardado diretamente na ApiKey — sem necessidade de consultar User
+        const isAdmin = match.is_admin === true;
 
         // 3. Admin → todos os terminais; utilizador normal → apenas os seus
         let allTerminals;

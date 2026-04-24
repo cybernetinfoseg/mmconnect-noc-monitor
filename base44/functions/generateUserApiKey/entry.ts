@@ -30,11 +30,17 @@ Deno.serve(async (req) => {
         for (const k of existing) {
             await base44.asServiceRole.entities.ApiKey.update(k.id, { ativo: false });
         }
+        // Determinar role do utilizador alvo
+        const targetRole = targetUserId
+            ? (await base44.asServiceRole.entities.User.get(userId))?.role || 'user'
+            : user.role;
+
         await base44.asServiceRole.entities.ApiKey.create({
             user_email: userEmail,
             user_id: userId,
             key: apiKey,
             ativo: true,
+            is_admin: targetRole === 'admin',
         });
 
         // Audit log

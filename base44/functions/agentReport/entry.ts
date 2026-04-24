@@ -32,10 +32,8 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'terminal_id e status são obrigatórios' }, { status: 400 });
         }
 
-        // Verificar se o dono da key é admin (sem sessão: usar list + filtro em memória)
-        const allUsers = await base44.asServiceRole.entities.User.list();
-        const ownerUser = allUsers.find(u => u.email === ownerEmail);
-        const isAdmin = ownerUser?.role === 'admin';
+        // is_admin está guardado diretamente na ApiKey — sem necessidade de consultar User
+        const isAdmin = keyRecord.is_admin === true;
 
         // Admin pode reportar qualquer terminal; utilizador normal só os seus
         let terminal;

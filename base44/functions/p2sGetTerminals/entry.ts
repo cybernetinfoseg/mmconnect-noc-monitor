@@ -23,10 +23,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: "API Key sem utilizador associado" }, { status: 401 });
     }
 
-    // Verificar se o dono da key é admin (sem sessão: usar list + filtro em memória)
-    const allUsers = await base44.asServiceRole.entities.User.list();
-    const ownerUser = allUsers.find(u => u.email === ownerEmail);
-    const isAdmin = ownerUser?.role === 'admin';
+    // is_admin está guardado diretamente na ApiKey — sem necessidade de consultar User
+    const isAdmin = apiKeys[0].is_admin === true;
 
     // Admin → todos os terminais P2S; utilizador normal → apenas os seus
     const filterParams = isAdmin

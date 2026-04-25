@@ -97,13 +97,29 @@ export default function MapaTerminais() {
   };
 
   const savePlan = async (local, { imageUrl, positions }) => {
-    const saveOwner = currentUser?.email; // always save under the current user
+    const saveOwner = currentUser?.email;
     const existing = floorPlans.find(p => p.local === local && p.owner_email === saveOwner);
+
+    // If imageUrl is a base64 data URL, upload it first to get a real URL
+    let finalImageUrl = imageUrl || null;
+    if (finalImageUrl && finalImageUrl.startsWith('data:')) {
+      try {
+        // Convert base64 to File and upload
+        const res = await fetch(finalImageUrl);
+        const blob = await res.blob();
+        const file = new File([blob], 'planta.jpg', { type: blob.type });
+        const uploaded = await base44.integrations.Core.UploadFile({ file });
+        finalImageUrl = uploaded.file_url;
+      } catch {
+        // keep base64 as fallback — it will be stored as-is
+      }
+    }
+
     const data = {
       local,
       nome:        local,
       owner_email: saveOwner,
-      image_url:   imageUrl || null,
+      image_url:   finalImageUrl,
       positions:   JSON.stringify(positions || {}),
     };
     if (existing) {

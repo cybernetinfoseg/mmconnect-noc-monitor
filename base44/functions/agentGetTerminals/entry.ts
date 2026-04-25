@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
             porta: t.porta || 5005,
             api_endpoint: t.api_endpoint,
             ativo: t.ativo,
+            desativar_poll_agente: t.desativar_poll_agente || false,
         }));
 
         console.log(`agentGetTerminals OK: ${ownerEmail} → ${result.length} terminais (${result.map(t=>t.tipo_conexao).join(', ')})`);

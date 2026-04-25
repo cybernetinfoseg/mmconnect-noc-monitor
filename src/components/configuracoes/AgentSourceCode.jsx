@@ -259,9 +259,12 @@ def ciclo_monitoramento(app_id, api_key):
     finally:
         sess.close()
 
-    ativos = [t for t in terminais if t.get("ativo", True)]
+    ativos = [t for t in terminais if t.get("ativo", True) and not t.get("desativar_poll_agente", False)]
+    ignorados = [t for t in terminais if t.get("ativo", True) and t.get("desativar_poll_agente", False)]
+    if ignorados:
+        logger.info(f"Poll desativado para: {', '.join(t.get('nome','?') for t in ignorados)}")
     if not ativos:
-        logger.info("Nenhum terminal ativo a monitorizar.")
+        logger.info("Nenhum terminal ativo a monitorizar (polling).")
         return
 
     logger.info(f"Ciclo iniciado — {len(ativos)} terminal(is) em paralelo (workers={MAX_WORKERS})")

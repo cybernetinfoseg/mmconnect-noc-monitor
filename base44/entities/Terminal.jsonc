@@ -86,6 +86,11 @@
       "type": "string",
       "description": "Endpoint da API para monitoramento"
     },
+    "desativar_poll_agente": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se verdadeiro, o agente local N\u00c3O faz polling activo a este terminal (\u00fatil quando o terminal apenas recebe push/heartbeat e n\u00e3o aceita liga\u00e7\u00f5es TCP de entrada)"
+    },
     "ultimo_ping": {
       "type": "string",
       "format": "date-time",

@@ -14,7 +14,14 @@ const AGENT_CODE = `# core_agent.py — Agente Local NOC Monitor
 #   "APP_ID":  "697aa46c9998c30665e2e19a"
 # }
 #
-# Tipos de conexao suportados: ip_local, ip_publico, dns, api
+# RESPONSABILIDADE DO AGENTE LOCAL:
+#   ip_local  -> AGENTE LOCAL (unico capaz de aceder a rede interna)
+#
+# NENHUM OUTRO TIPO DEVE SER MONITORIZADO PELO AGENTE:
+#   ip_publico / dns / api -> monitorados diretamente pelo servidor cloud (monitorAllTerminals).
+#                            Se o agente tambem os testar, causara conflito e falsos offline/online.
+#   heartbeat / adms_push / sdk_tcp / p2s / websocket_cloud -> push (nao sondaveis).
+#
 # Para terminais P2S (conexao inversa), use o p2s_server.py dedicado.
 #
 # INICIAR COMO SERVICO WINDOWS (NSSM):
@@ -37,8 +44,12 @@ LOG_FILE     = os.path.join(APP_DIR, "agent.log")
 LOCK_FILE    = os.path.join(APP_DIR, "agent.lock")
 
 DEFAULT_INTERVAL = 30       # segundos entre ciclos
-TIMEOUT          = 5        # timeout TCP/HTTP por terminal
-MAX_WORKERS      = 20       # threads paralelas para monitorar terminais
+TIMEOUT          = 5        # timeout TCP por terminal ip_local
+MAX_WORKERS      = 20       # threads paralelas
+
+# Apenas ip_local e gerido pelo agente.
+# ip_publico, dns e api sao monitorados pelo servidor cloud — nao duplicar aqui.
+AGENT_MANAGED_TYPES = {"ip_local"}
 
 BASE_URL = "https://app.base44.app/api/apps/{app_id}/functions"
 
@@ -165,8 +176,8 @@ def testar_tcp(host, porta):
 def testar_http(session, host, porta):
     t = time.time()
     try:
-        r = session.get(f"http://{host}:{porta}", timeout=TIMEOUT)
-        return True, int((time.time() - t) * 1000)
+        r = session.get(f"http://{host}:{porta}", timeout=TIMEOUT, allow_redirects=False)
+        return r.status_code < 500, int((time.time() - t) * 1000)
     except Exception:
         return False, None
 
@@ -184,47 +195,32 @@ def testar_api_endpoint(session, url):
 # Loop Principal — monitoramento paralelo
 # ──────────────────────────────────────────────────────────────
 def testar_e_reportar(t, app_id, api_key):
-    """Testa um terminal e reporta o status. Executado em thread separada."""
-    # Cada thread tem a sua propria sessao HTTP para evitar problemas de concorrencia
+    """Testa conectividade TCP de um terminal ip_local e reporta o status."""
     sess = requests.Session()
     tid  = t["id"]
     nome = t.get("nome", tid)
     tipo = t.get("tipo_conexao", "ip_local")
+
+    # Seguranca: nunca processar tipos que nao sao da responsabilidade do agente
+    if tipo not in AGENT_MANAGED_TYPES:
+        logger.debug(f"{nome} [{tipo}]: ignorado — monitorizado pelo servidor cloud.")
+        sess.close()
+        return
+
     porta_raw = t.get("porta") or 5005
+    host = t.get("ip_local", "").strip()
+
+    if not host:
+        logger.debug(f"{nome}: ip_local nao configurado, ignorado.")
+        sess.close()
+        return
 
     try:
-        if tipo == "api":
-            endpoint = t.get("api_endpoint", "")
-            if not endpoint:
-                logger.debug(f"{nome}: api_endpoint vazio, ignorado.")
-                return
-            online, latencia = testar_api_endpoint(sess, endpoint)
-            seg_sem_ping = 0
-            status = "online" if online else "offline"
-            logger.info(f"{nome} [api] -> {status.upper()} | latencia={latencia}ms")
-
-        else:
-            # ip_local, ip_publico, dns — testa TCP direto ao terminal
-            if tipo == "ip_local":
-                host = t.get("ip_local")
-            elif tipo == "ip_publico":
-                host = t.get("ip_publico")
-            else:  # dns
-                host = t.get("dns")
-
-            if not host:
-                logger.debug(f"{nome}: host nao configurado para tipo={tipo}, ignorado.")
-                return
-
-            porta = int(porta_raw)
-            # Tenta TCP primeiro (mais rapido e fiavel para terminais biometricos)
-            online, latencia = testar_tcp(host, porta)
-            if not online:
-                # Fallback HTTP
-                online, latencia = testar_http(sess, host, porta)
-            seg_sem_ping = 0 if online else int(TIMEOUT)
-            status = "online" if online else "offline"
-            logger.info(f"{nome} [{tipo}] {host}:{porta} -> {status.upper()} | latencia={latencia}ms")
+        porta = int(porta_raw)
+        online, latencia = testar_tcp(host, porta)
+        seg_sem_ping = 0 if online else int(TIMEOUT)
+        status = "online" if online else "offline"
+        logger.info(f"{nome} [ip_local] {host}:{porta} -> {status.upper()} | latencia={latencia}ms")
 
         reportar_terminal(sess, app_id, api_key,
                           terminal_id=tid,
@@ -260,15 +256,18 @@ def ciclo_monitoramento(app_id, api_key):
         sess.close()
 
     ativos = [t for t in terminais if t.get("ativo", True)]
-    if not ativos:
-        logger.info("Nenhum terminal ativo a monitorizar.")
+    # Filtrar apenas terminais ip_local — os outros tipos sao geridos pelo servidor cloud
+    geridos = [t for t in ativos if t.get("tipo_conexao", "ip_local") in AGENT_MANAGED_TYPES]
+
+    if not geridos:
+        logger.info("Nenhum terminal ip_local ativo. (ip_publico/dns/api sao monitorizados pelo servidor cloud)")
         return
 
-    logger.info(f"Ciclo iniciado — {len(ativos)} terminal(is) em paralelo (workers={MAX_WORKERS})")
+    logger.info(f"Ciclo iniciado — {len(geridos)} terminal(is) ip_local em paralelo (workers={MAX_WORKERS})")
     t0 = time.time()
 
-    with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(ativos))) as executor:
-        futures = {executor.submit(testar_e_reportar, t, app_id, api_key): t for t in ativos}
+    with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(geridos))) as executor:
+        futures = {executor.submit(testar_e_reportar, t, app_id, api_key): t for t in geridos}
         for future in as_completed(futures):
             try:
                 future.result()
@@ -378,10 +377,11 @@ export default function AgentSourceCode() {
       </div>
 
       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 space-y-1">
-        <p><strong>Tipos suportados:</strong> ip_local · ip_publico · dns · api</p>
-        <p><strong>⚡ Paralelo:</strong> todos os terminais são testados simultaneamente (até 20 threads) — sem lentidão independente do número de terminais.</p>
+        <p><strong>Responsabilidade:</strong> monitoriza <strong>apenas</strong> terminais <code className="bg-emerald-100 px-1 rounded font-mono">ip_local</code> — únicos acessíveis a partir da rede interna.</p>
+        <p><strong>ip_publico · dns · api</strong> são monitorizados pelo servidor cloud (<em>monitorAllTerminals</em>). Se o agente também os testar causa conflito e falsos offline/online.</p>
+        <p><strong>⚡ Paralelo:</strong> todos os terminais ip_local são testados em simultâneo (até 20 threads).</p>
         <p><strong>Segurança:</strong> autentica via <code className="bg-emerald-100 px-1 rounded font-mono">X-Api-Key</code> pessoal — cada agente acede apenas aos seus terminais.</p>
-        <p><strong>P2S:</strong> use o <strong>p2s_server.py</strong> dedicado (disponível em Administração → P2S Server).</p>
+        <p><strong>P2S / heartbeat / adms_push / sdk_tcp / websocket_cloud:</strong> use os servidores dedicados (NOC Server / P2S Server).</p>
       </div>
 
       {expanded && (

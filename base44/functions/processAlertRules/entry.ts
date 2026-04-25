@@ -8,22 +8,16 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
 
-        // Scheduler chama sem auth; utilizador autenticado deve ser admin
-        const isAuthenticated = await base44.auth.isAuthenticated();
-        if (isAuthenticated) {
-            const user = await base44.auth.me();
-            if (user?.role !== 'admin') {
-                return Response.json({ error: 'Forbidden' }, { status: 403 });
-            }
-        }
+        // Aceita chamadas do scheduler (sem auth) e de qualquer utilizador autenticado
 
         const now = new Date();
         const agora_ms = now.getTime();
 
-        const [rules, allTerminals, janelasAtivas] = await Promise.all([
+        const [rules, allTerminals, janelasAtivas, statusCaches] = await Promise.all([
             base44.asServiceRole.entities.AlertRule.filter({ ativo: true }),
             base44.asServiceRole.entities.Terminal.list(),
             base44.asServiceRole.entities.MaintenanceWindow.filter({ ativo: true }),
+            base44.asServiceRole.entities.StatusCache.list().catch(() => []),
         ]);
 
         // Filtrar terminais em manutenção — comparação temporal correcta com timestamps
@@ -76,13 +70,17 @@ Deno.serve(async (req) => {
                         offline.map(t => `• \`${t.nome}\` — ${t.local || '—'}`).join('\n');
                 }
             } else if (rule.gatilho === 'terminal_online') {
-                const online = filteredTerminals.filter(t => t.status === 'online');
-                if (online.length > 0) {
+                // Disparar apenas para terminais que VOLTARAM online recentemente (últimos 10 min)
+                const tenMinAgo = new Date(agora_ms - 10 * 60 * 1000).toISOString();
+                const recentlyRestored = filteredTerminals.filter(t =>
+                    t.status === 'online' && t.ultimo_ping && t.ultimo_ping > tenMinAgo
+                );
+                if (recentlyRestored.length > 0) {
                     shouldFire = true;
-                    const list = online.map(t => `• ${t.nome} (${t.local || '—'})`).join('\n');
-                    messageBody = `Terminais online detectados em ${ts}:\n\n${list}`;
-                    slackText = `🟢 *Terminais online* (${online.length}):\n` +
-                        online.map(t => `• \`${t.nome}\` — ${t.local || '—'}`).join('\n');
+                    const list = recentlyRestored.map(t => `• ${t.nome} (${t.local || '—'})`).join('\n');
+                    messageBody = `Terminais que voltaram online em ${ts}:\n\n${list}`;
+                    slackText = `🟢 *Terminais restaurados* (${recentlyRestored.length}):\n` +
+                        recentlyRestored.map(t => `• \`${t.nome}\` — ${t.local || '—'}`).join('\n');
                 }
             } else if (rule.gatilho === 'sem_ping_minutos') {
                 const threshold = (rule.condicao_valor || 5) * 60;

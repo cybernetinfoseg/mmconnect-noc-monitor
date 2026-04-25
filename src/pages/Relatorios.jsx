@@ -28,6 +28,7 @@ export default function Relatorios() {
 
     const [dataInicio, setDataInicio] = useState(sevenDaysAgo);
     const [dataFim, setDataFim] = useState(today);
+    const [userFilter, setUserFilter] = useState('all');
     const [currentUser, setCurrentUser] = useState(null);
     const [printing, setPrinting] = useState(false);
     const printRef = useRef();
@@ -39,29 +40,27 @@ export default function Relatorios() {
     const perms = resolvePermissions(currentUser);
     const canSeeAll = perms.isAdmin;
 
-    const { data: allHistory = [], isLoading: historyLoading } = useQuery({
-        queryKey: ['rel-history'],
-        queryFn: () => base44.entities.StatusHistory.list('-timestamp', 2000),
+    const { data: allTerminalsList = [] } = useQuery({
+        queryKey: ['rel-terminals', currentUser?.email],
+        queryFn: async () => {
+            const response = await base44.functions.invoke('getMyTerminals', {});
+            const all = response.data?.terminals || [];
+            return all.filter(t => t.ativo !== false);
+        },
         enabled: !!currentUser,
     });
 
-    const { data: allTerminals = [] } = useQuery({
-        queryKey: ['rel-terminals'],
-        queryFn: () => base44.entities.Terminal.filter({ ativo: true }),
-        enabled: !!currentUser,
-    });
+    // Utilizadores únicos para filtro admin
+    const usuarios = useMemo(() =>
+        [...new Set(allTerminalsList.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(),
+        [allTerminalsList]
+    );
 
-    const { data: allIncidents = [] } = useQuery({
-        queryKey: ['rel-incidents'],
-        queryFn: () => base44.entities.AlertIncident.list('-timestamp', 1000),
-        enabled: !!currentUser,
-    });
-
+    // Terminais filtrados por utilizador (admin only)
     const terminals = useMemo(() => {
-        if (!currentUser) return [];
-        if (canSeeAll) return allTerminals;
-        return allTerminals.filter(t => t.created_by === currentUser.email);
-    }, [allTerminals, currentUser, canSeeAll]);
+        if (!canSeeAll || userFilter === 'all') return allTerminalsList;
+        return allTerminalsList.filter(t => (t.usuario_email || t.created_by) === userFilter);
+    }, [allTerminalsList, canSeeAll, userFilter]);
 
     // Computed date range
     const { cutoff, cutoffEnd } = useMemo(() => {
@@ -70,25 +69,38 @@ export default function Relatorios() {
         return { cutoff: c, cutoffEnd: e };
     }, [dataInicio, dataFim]);
 
+    // myTerminalIds derived from terminals (already filtered by getMyTerminals)
+    const myTerminalIds = useMemo(() => new Set(terminals.map(t => t.id)), [terminals]);
+
+    const { data: allHistory = [], isLoading: historyLoading } = useQuery({
+        queryKey: ['rel-history', currentUser?.email],
+        queryFn: () => base44.entities.StatusHistory.list('-timestamp', 2000),
+        enabled: !!currentUser && terminals.length >= 0,
+    });
+
+    const { data: allIncidents = [] } = useQuery({
+        queryKey: ['rel-incidents', currentUser?.email],
+        queryFn: () => base44.entities.AlertIncident.list('-timestamp', 1000),
+        enabled: !!currentUser && terminals.length >= 0,
+    });
+
     const history = useMemo(() => {
         if (!currentUser) return [];
-        const myIds = canSeeAll ? null : new Set(terminals.map(t => t.id));
         return allHistory.filter(h => {
-            if (myIds && !myIds.has(h.terminal_id)) return false;
+            if (!canSeeAll && !myTerminalIds.has(h.terminal_id)) return false;
             const t = new Date(h.timestamp);
             return t >= cutoff && t <= cutoffEnd;
         });
-    }, [allHistory, currentUser, canSeeAll, terminals, cutoff, cutoffEnd]);
+    }, [allHistory, currentUser, canSeeAll, myTerminalIds, cutoff, cutoffEnd]);
 
     const incidents = useMemo(() => {
         if (!currentUser) return [];
-        const myIds = canSeeAll ? null : new Set(terminals.map(t => t.id));
         return allIncidents.filter(i => {
-            if (myIds && !myIds.has(i.terminal_id)) return false;
+            if (!canSeeAll && !myTerminalIds.has(i.terminal_id)) return false;
             const t = new Date(i.timestamp);
             return t >= cutoff && t <= cutoffEnd;
         });
-    }, [allIncidents, currentUser, canSeeAll, terminals, cutoff, cutoffEnd]);
+    }, [allIncidents, currentUser, canSeeAll, myTerminalIds, cutoff, cutoffEnd]);
 
     // Auto-select bucket size based on date range
     const { buckets, bucketSize } = useMemo(() => {
@@ -333,6 +345,17 @@ export default function Relatorios() {
                             </Button>
                         )}
                     </div>
+                    {/* User filter — admin only */}
+                    {canSeeAll && usuarios.length > 0 && (
+                        <select
+                            value={userFilter}
+                            onChange={e => setUserFilter(e.target.value)}
+                            className="h-9 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                            <option value="all">Todos os utilizadores</option>
+                            {usuarios.map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                    )}
                     {/* Action buttons */}
                     <div className="flex gap-2 shrink-0">
                         <Button onClick={handlePrint} variant="outline" size="sm" className="gap-2 h-9" disabled={printing}>

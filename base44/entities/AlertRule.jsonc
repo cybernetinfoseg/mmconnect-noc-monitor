@@ -1,0 +1,114 @@
+{
+  "name": "AlertRule",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome da regra de alerta"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se a regra est\u00e1 ativa"
+    },
+    "gatilho": {
+      "type": "string",
+      "enum": [
+        "terminal_offline",
+        "terminal_online",
+        "sem_ping_minutos",
+        "multiplos_offline"
+      ],
+      "description": "Evento que dispara o alerta"
+    },
+    "condicao_valor": {
+      "type": "number",
+      "description": "Valor da condi\u00e7\u00e3o (ex: minutos sem ping, quantidade de terminais)"
+    },
+    "filtro_local": {
+      "type": "string",
+      "description": "Filtrar por local espec\u00edfico (vazio = todos)"
+    },
+    "filtro_cliente": {
+      "type": "string",
+      "description": "Filtrar por cliente espec\u00edfico (vazio = todos)"
+    },
+    "canal": {
+      "type": "string",
+      "enum": [
+        "email",
+        "slack",
+        "ambos"
+      ],
+      "default": "email",
+      "description": "Canal de notifica\u00e7\u00e3o"
+    },
+    "destinatarios_email": {
+      "type": "string",
+      "description": "E-mails separados por v\u00edrgula"
+    },
+    "slack_webhook_url": {
+      "type": "string",
+      "description": "URL do Webhook do Slack para notifica\u00e7\u00f5es"
+    },
+    "ultima_disparada": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u00daltima vez que a regra foi disparada"
+    },
+    "cooldown_minutos": {
+      "type": "number",
+      "default": 30,
+      "description": "Tempo m\u00ednimo entre disparos (minutos)"
+    },
+    "total_disparos": {
+      "type": "number",
+      "default": 0,
+      "description": "Total de vezes que a regra foi disparada"
+    }
+  },
+  "required": [
+    "nome",
+    "gatilho",
+    "canal"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

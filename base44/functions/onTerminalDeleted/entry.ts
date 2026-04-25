@@ -21,11 +21,14 @@ Deno.serve(async (req) => {
         console.log(`[onTerminalDeleted] Limpando dados do terminal: ${terminal_id}`);
 
         // Buscar todos os dados relacionados em paralelo
-        const [caches, history, incidents, escalations] = await Promise.all([
+        const [caches, history, incidents, escalations, opLogs, maintenance, scheduled] = await Promise.all([
             base44.asServiceRole.entities.StatusCache.filter({ terminal_id }).catch(() => []),
             base44.asServiceRole.entities.StatusHistory.filter({ terminal_id }).catch(() => []),
             base44.asServiceRole.entities.AlertIncident.filter({ terminal_id }).catch(() => []),
             base44.asServiceRole.entities.EscalationAlert.filter({ terminal_id }).catch(() => []),
+            base44.asServiceRole.entities.OperationLog.filter({ terminal_id }).catch(() => []),
+            base44.asServiceRole.entities.MaintenanceWindow.filter({ terminal_id }).catch(() => []),
+            base44.asServiceRole.entities.ScheduledAction.filter({ terminal_id }).catch(() => []),
         ]);
 
         // Apagar tudo em paralelo
@@ -34,6 +37,9 @@ Deno.serve(async (req) => {
             ...history.map(r => base44.asServiceRole.entities.StatusHistory.delete(r.id).catch(() => {})),
             ...incidents.map(r => base44.asServiceRole.entities.AlertIncident.delete(r.id).catch(() => {})),
             ...escalations.map(r => base44.asServiceRole.entities.EscalationAlert.delete(r.id).catch(() => {})),
+            ...opLogs.map(r => base44.asServiceRole.entities.OperationLog.delete(r.id).catch(() => {})),
+            ...maintenance.map(r => base44.asServiceRole.entities.MaintenanceWindow.delete(r.id).catch(() => {})),
+            ...scheduled.map(r => base44.asServiceRole.entities.ScheduledAction.delete(r.id).catch(() => {})),
         ];
         await Promise.all(deleteAll);
 
@@ -44,6 +50,9 @@ Deno.serve(async (req) => {
                 history: history.length,
                 incidents: incidents.length,
                 escalations: escalations.length,
+                operation_logs: opLogs.length,
+                maintenance_windows: maintenance.length,
+                scheduled_actions: scheduled.length,
             }
         };
 

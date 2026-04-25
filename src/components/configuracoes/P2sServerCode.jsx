@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 const P2S_SERVER_CODE = `# p2s_server.py — Servidor P2S (Push to Server) para Terminais Biométricos
-# Versão: 2.0  |  IP Servidor: 51.91.219.145
+# Versão: 2.0  |  IP Servidor: 127.0.0.1
 #
 # O que é modo P2S / Push to Server?
 #   No modo P2S, o terminal biométrico NÃO espera que o servidor tente conectar-se a ele.
@@ -31,10 +31,10 @@ const P2S_SERVER_CODE = `# p2s_server.py — Servidor P2S (Push to Server) para 
 #
 # Configuração no terminal ZKTeco (via ZKAccess Software ou SDK):
 #   SetServerPortAndTick(5100, 7)   ← porta 5100, keepalive 7s
-#   O terminal tentará conectar a 51.91.219.145:5100 continuamente
+#   O terminal tentará conectar a 127.0.0.1:5100 continuamente
 #
 # Configuração no terminal Anviz (via Web UI / CrossChex):
-#   Server IP: 51.91.219.145
+#   Server IP: 127.0.0.1
 #   Server Port: 5200 (configurar porta diferente para cada terminal)
 #   Connection Mode: Server (TCP Push)
 #
@@ -239,7 +239,7 @@ def _handle_connection(conn, addr, tid, nome, keepalive_timeout):
             # Enviar ACK se necessário (alguns terminais esperam resposta)
             # ZKTeco: enviar "OK\\n" ou "000 OK\\n"
             # Anviz/Suprema: silêncio é ok
-            conn.sendall(b"OK\\n")
+            conn.sendall(b"OK\n")
     except socket.timeout:
         logger.info(f"[P2S] '{nome}' timeout ({keepalive_timeout}s) → OFFLINE")
     except (ConnectionResetError, OSError) as e:
@@ -405,7 +405,7 @@ def start_status_server(port, stop_event):
     try:
         server = HTTPServer(("0.0.0.0", port), StatusHandler)
         server.timeout = 1
-        logger.info(f"[STATUS] Interface de diagnóstico em http://51.91.219.145:{port}/status")
+        logger.info(f"[STATUS] Interface de diagnóstico em http://127.0.0.1:{port}/status")
         while not stop_event.is_set():
             server.handle_request()
         server.server_close()
@@ -447,7 +447,7 @@ def run_p2s_server(stop_event=None):
 
         logger.info("=" * 65)
         logger.info("  P2S Server — Servidor Push to Server / Conexão Inversa")
-        logger.info(f"  IP Servidor: 51.91.219.145")
+        logger.info(f"  IP Servidor: 127.0.0.1")
         logger.info(f"  Keepalive timeout: {keepalive}s")
         logger.info(f"  Diagnóstico HTTP: :{status_port}/status")
         logger.info(f"  Compatível com: ZKTeco, Anviz, Suprema, Hikvision, Dahua, Nitgen")
@@ -469,8 +469,9 @@ def run_p2s_server(stop_event=None):
 
         if not terminais:
             logger.warning("Nenhum terminal P2S encontrado. Adicione terminais com tipo=p2s no painel.")
-            # Continuar a escutar — terminais podem ser adicionados depois
-            terminais = []
+            logger.warning("⚠️  Após adicionar terminais, reinicie o serviço P2SServer para carregar as novas portas.")
+            # Encerrar — sem terminais não há portas para escutar
+            return 0
 
         logger.info(f"Terminais P2S carregados: {len(terminais)}")
         for t in terminais:
@@ -562,7 +563,7 @@ export default function P2sServerCode() {
         <div className="flex items-center gap-3 text-violet-700 font-mono text-xs bg-violet-100 px-2 py-1.5 rounded">
           <span>Terminal Biométrico</span>
           <span className="text-violet-500">──TCP→──</span>
-          <span className="font-semibold">51.91.219.145:PORTA</span>
+          <span className="font-semibold">127.0.0.1:PORTA</span>
           <span className="text-violet-500">──→──</span>
           <span>P2S Server</span>
           <span className="text-violet-500">──→──</span>
@@ -602,7 +603,7 @@ export default function P2sServerCode() {
 
       {/* Firewall */}
       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 space-y-1">
-        <p className="font-semibold">🔥 Portas a abrir no Firewall do Windows Server (51.91.219.145)</p>
+        <p className="font-semibold">🔥 Portas a abrir no Firewall do Windows Server (127.0.0.1)</p>
         <p>• <strong>5100–5xxx TCP (entrada)</strong> — Uma porta por terminal P2S (ex: 5100, 5101, 5102...)</p>
         <p>• <strong>9100 TCP (entrada)</strong> — Interface de diagnóstico HTTP <code className="bg-amber-100 px-1 rounded">/status</code></p>
         <p className="text-amber-700 mt-1">Firewall → Regras de Entrada → Nova Regra → Tipo: Porta → TCP → Porta específica</p>
@@ -615,19 +616,19 @@ export default function P2sServerCode() {
           <div>
             <p className="font-semibold">ZKTeco (via Software ZKAccess/Atentra):</p>
             <p className="font-mono bg-blue-100 px-2 py-1 rounded mt-0.5">
-              Communication → Cloud Server → Server: 51.91.219.145 | Port: 5100 | Enable Push: ON
+              Communication → Cloud Server → Server: 127.0.0.1 | Port: 5100 | Enable Push: ON
             </p>
           </div>
           <div>
             <p className="font-semibold">Anviz (via Web UI / CrossChex Cloud):</p>
             <p className="font-mono bg-blue-100 px-2 py-1 rounded mt-0.5">
-              Network → Server Mode → Server IP: 51.91.219.145 | Server Port: 5100
+              Network → Server Mode → Server IP: 127.0.0.1 | Server Port: 5100
             </p>
           </div>
           <div>
             <p className="font-semibold">Suprema (via BioStar 2):</p>
             <p className="font-mono bg-blue-100 px-2 py-1 rounded mt-0.5">
-              Configuration → Network → Server Connection → IP: 51.91.219.145 | Port: 5100
+              Configuration → Network → Server Connection → IP: 127.0.0.1 | Port: 5100
             </p>
           </div>
         </div>
@@ -643,7 +644,7 @@ export default function P2sServerCode() {
         <code className="block bg-emerald-100 px-2 py-1 rounded mt-0.5">nssm install P2SServer "C:\Python311\python.exe" "C:\Program Files\P2SServer\p2s_server.py"</code>
         <code className="block bg-emerald-100 px-2 py-1 rounded mt-0.5">nssm set P2SServer AppDirectory "C:\Program Files\P2SServer"</code>
         <code className="block bg-emerald-100 px-2 py-1 rounded mt-0.5">nssm start P2SServer</code>
-        <p className="mt-1">5. Verificar estado: <code className="bg-emerald-100 px-1 rounded">http://51.91.219.145:9100/status</code></p>
+        <p className="mt-1">5. Verificar estado: <code className="bg-emerald-100 px-1 rounded">http://127.0.0.1:9100/status</code></p>
       </div>
 
       {/* Botões */}

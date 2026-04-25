@@ -1,0 +1,59 @@
+{
+  "name": "WebhookConfig",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome descritivo do webhook"
+    },
+    "url": {
+      "type": "string",
+      "description": "URL de destino para onde os eventos s\u00e3o enviados"
+    },
+    "secret": {
+      "type": "string",
+      "description": "Segredo HMAC-SHA256 para assinar os payloads (opcional)"
+    },
+    "eventos": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "terminal_offline",
+          "terminal_restored",
+          "incident_created",
+          "incident_resolved"
+        ]
+      },
+      "description": "Lista de eventos que disparam este webhook"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se o webhook est\u00e1 activo"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email do utilizador dono do webhook"
+    },
+    "ultimo_disparo": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u00daltimo disparo com sucesso"
+    },
+    "total_disparos": {
+      "type": "number",
+      "default": 0,
+      "description": "Total de disparos realizados"
+    },
+    "ultimo_status_http": {
+      "type": "number",
+      "description": "\u00daltimo HTTP status code recebido"
+    }
+  },
+  "required": [
+    "nome",
+    "url",
+    "eventos"
+  ]
+}

@@ -54,19 +54,14 @@ export default function Auditoria() {
   }, []);
 
   const perms = resolvePermissions(currentUser);
+  const isAdmin = perms.isAdmin;
 
-  const { data: allLogs = [], isLoading, refetch } = useQuery({
-    queryKey: ['audit-logs'],
+  const { data: logs = [], isLoading, refetch } = useQuery({
+    queryKey: ['audit-logs', currentUser?.email],
     queryFn: () => base44.entities.AuditLog.list('-timestamp', 500),
     refetchInterval: 15000,
     enabled: !!currentUser,
   });
-
-  const logs = useMemo(() => {
-    if (!currentUser) return [];
-    if (perms.isAdmin) return allLogs;
-    return allLogs.filter(l => l.usuario_email === currentUser.email);
-  }, [allLogs, currentUser, perms.isAdmin]);
 
   const usuarios = useMemo(() =>
     [...new Set(logs.map(l => l.usuario_email).filter(Boolean))].sort(),
@@ -196,18 +191,20 @@ export default function Auditoria() {
                 </SelectContent>
               </Select>
 
-              <Select value={usuarioFilter} onValueChange={setUsuarioFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <User className="h-4 w-4 mr-2 text-slate-400 shrink-0" />
-                  <SelectValue placeholder="Utilizador" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os utilizadores</SelectItem>
-                  {usuarios.map(u => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isAdmin && (
+                <Select value={usuarioFilter} onValueChange={setUsuarioFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <User className="h-4 w-4 mr-2 text-slate-400 shrink-0" />
+                    <SelectValue placeholder="Utilizador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os utilizadores</SelectItem>
+                    {usuarios.map(u => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Calendar className="h-4 w-4 text-slate-400 shrink-0" />

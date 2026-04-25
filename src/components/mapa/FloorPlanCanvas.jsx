@@ -1,485 +1,499 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { cn } from '@/lib/utils';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
-import MarkerEditPopup from './MarkerEditPopup';
+import { base44 } from '@/api/base44Client';
+import {
+  Upload, Trash2, Move, Save, Loader2,
+  Fingerprint, Scan, Shield, Cpu, MonitorSmartphone,
+  Wifi, DoorOpen, UserCheck, Camera, ZoomIn, ZoomOut, RotateCcw
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Ícones biométricos por tipo de conexão (SVG inline como string — renderizado com dangerouslySetInnerHTML)
-// Usamos SVG paths simples dentro de um viewBox 0 0 24 24
-export const TYPE_ICON_SVGS = {
-  ip_local: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-    <circle cx="9" cy="10" r="2.5"/><path d="M14 8h3M14 12h3"/>
-  </svg>`,
-  ip_publico: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="10"/><path d="M12 2a14 14 0 0 1 0 20M12 2a14 14 0 0 0 0 20M2 12h20"/>
-    <circle cx="12" cy="9" r="2"/>
-  </svg>`,
-  dns: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="6" width="20" height="4" rx="1"/><rect x="2" y="14" width="20" height="4" rx="1"/>
-    <circle cx="7" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="16" r="1" fill="currentColor"/>
-    <path d="M10 8h7M10 16h7"/>
-  </svg>`,
-  p2s: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-    <circle cx="12" cy="20" r="1.5" fill="currentColor"/>
-  </svg>`,
-  heartbeat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 12h4l2-6 3 12 2-6h4M17 8a5 5 0 0 0-5-5 5 5 0 0 0-5 5"/>
-  </svg>`,
-  adms_push: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="5" y="2" width="14" height="20" rx="2"/>
-    <circle cx="12" cy="8" r="2.5"/><path d="M8 14c0-2 1.8-3 4-3s4 1 4 3"/>
-    <line x1="9" y1="18" x2="15" y2="18"/>
-  </svg>`,
-  sdk_tcp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2"/>
-    <path d="M9 9l2 2-2 2M13 15h3"/>
-  </svg>`,
-  websocket_cloud: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M18 10a6 6 0 0 0-12 0 4 4 0 0 0 0 8h12a4 4 0 0 0 0-8z"/>
-    <path d="M12 13v4M10 15l2 2 2-2"/>
-  </svg>`,
-  api: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M7 8h10M7 12h4m-4 4h7"/>
-    <rect x="3" y="4" width="18" height="16" rx="2"/>
-  </svg>`,
-  default: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="4" y="2" width="16" height="20" rx="2"/>
-    <circle cx="12" cy="9" r="3"/><path d="M7 16c0-2.5 2-4 5-4s5 1.5 5 4"/>
-    <line x1="9" y1="21" x2="15" y2="21"/>
-  </svg>`,
+/* ─── Cores de status ─── */
+const STATUS_COLORS = {
+  online:  { dot: '#10b981', ring: '#6ee7b7' },
+  offline: { dot: '#ef4444', ring: '#fca5a5' },
+  warning: { dot: '#f59e0b', ring: '#fcd34d' },
+  default: { dot: '#94a3b8', ring: '#cbd5e1' },
 };
+const getColor = (s) => STATUS_COLORS[s] || STATUS_COLORS.default;
 
-// Ícones agrupados por fabricante — estes são os ícones editáveis no popup
-export const FABRICANTE_ICON_SVGS = {
-  zkteco: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <circle cx="12" cy="8" r="2.5"/>
-    <path d="M7 14c0-2.8 2-4.5 5-4.5s5 1.7 5 4.5"/>
-    <path d="M8 19h8"/>
-  </svg>`,
-  timmy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <rect x="7" y="6" width="10" height="7" rx="1"/>
-    <circle cx="12" cy="9.5" r="2"/>
-    <path d="M8 18h8M10 16h4"/>
-  </svg>`,
-  suprema: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <path d="M8 9l4-3 4 3M8 15l4 3 4-3"/>
-    <line x1="12" y1="6" x2="12" y2="18"/>
-  </svg>`,
-  anviz: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <path d="M9 17l3-10 3 10M10.5 13h3"/>
-  </svg>`,
-  hikvision: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <circle cx="12" cy="9" r="3"/>
-    <path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
-  </svg>`,
-  dahua: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <ellipse cx="12" cy="9" rx="4" ry="3"/>
-    <path d="M8 17c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/>
-    <line x1="8" y1="20" x2="16" y2="20"/>
-  </svg>`,
-  nitgen: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <path d="M9 7h6M9 11h6M9 15h4"/>
-    <circle cx="16" cy="15" r="1.5" fill="currentColor"/>
-  </svg>`,
-  outro: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="2" width="18" height="20" rx="2"/>
-    <circle cx="12" cy="10" r="3"/>
-    <path d="M7 18c0-2.5 2-4 5-4s5 1.5 5 4"/>
-  </svg>`,
-};
+/* ─── Ícones disponíveis ─── */
+const TERMINAL_ICONS = [
+  { id: 'initials',    label: 'Iniciais',   Icon: null },
+  { id: 'fingerprint', label: 'Biométrico', Icon: Fingerprint },
+  { id: 'scan',        label: 'Scan',       Icon: Scan },
+  { id: 'shield',      label: 'Segurança',  Icon: Shield },
+  { id: 'cpu',         label: 'CPU',        Icon: Cpu },
+  { id: 'monitor',     label: 'Monitor',    Icon: MonitorSmartphone },
+  { id: 'wifi',        label: 'Wireless',   Icon: Wifi },
+  { id: 'door',        label: 'Porta',      Icon: DoorOpen },
+  { id: 'user',        label: 'Utilizador', Icon: UserCheck },
+  { id: 'camera',      label: 'Câmara',     Icon: Camera },
+];
+const getIconEntry = (id) => TERMINAL_ICONS.find(i => i.id === id) || TERMINAL_ICONS[0];
 
-export const MARKER_SIZES = {
-  small:  { circle: 24, font: 12, label: 8  },
-  medium: { circle: 32, font: 16, label: 9  },
-  large:  { circle: 44, font: 22, label: 10 },
-};
+/* ─── Constantes de zoom ─── */
+const ZOOM_MIN  = 0.5;
+const ZOOM_MAX  = 3;
+const ZOOM_STEP = 0.25;
 
-const MAX_LABEL_CHARS = 14;
+/* ─── Picker de ícone flutuante (fora do canvas escalado) ─── */
+function FloatingIconPicker({ terminalId, currentIcon, anchorEl, wrapperEl, zoom, onSelect, onClose }) {
+  const ref = useRef(null);
+  const [style, setStyle] = useState({ opacity: 0 });
+  const PICKER_W = 224;
 
-function truncate(str, max = MAX_LABEL_CHARS) {
-  if (!str) return '';
-  return str.length > max ? str.slice(0, max - 1) + '…' : str;
-}
+  useEffect(() => {
+    if (!anchorEl || !wrapperEl || !ref.current) return;
+    const wRect = wrapperEl.getBoundingClientRect();
+    const aRect = anchorEl.getBoundingClientRect();
+    const pRect = ref.current.getBoundingClientRect();
 
-function MarkerIcon({ svgString, size, color = 'white' }) {
+    const anchorCX = aRect.left - wRect.left + aRect.width / 2;
+    const anchorTY = aRect.top  - wRect.top;
+    const anchorBY = aRect.bottom - wRect.top;
+
+    // Preferir acima; se não cabe → abaixo
+    let top = anchorTY - pRect.height - 8;
+    if (top < 4) top = anchorBY + 8;
+    if (top + pRect.height > wRect.height - 4) top = Math.max(4, wRect.height - pRect.height - 4);
+
+    let left = anchorCX - PICKER_W / 2;
+    if (left < 4) left = 4;
+    if (left + PICKER_W > wRect.width - 4) left = wRect.width - PICKER_W - 4;
+
+    setStyle({ opacity: 1, top, left });
+  }, [anchorEl, wrapperEl, zoom]);
+
   return (
-    <span
-      style={{ width: size, height: size, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      dangerouslySetInnerHTML={{ __html: svgString }}
-    />
+    <div
+      ref={ref}
+      className="bg-white border border-slate-200 rounded-xl shadow-2xl p-2"
+      style={{ position: 'absolute', zIndex: 9998, width: PICKER_W, transition: 'opacity .1s', ...style }}
+      onMouseDown={e => e.stopPropagation()}
+    >
+      <p className="text-[10px] text-slate-400 font-medium uppercase mb-2 px-1">Escolher ícone</p>
+      <div className="grid grid-cols-5 gap-1">
+        {TERMINAL_ICONS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            title={label}
+            onClick={() => { onSelect(terminalId, id); onClose(); }}
+            className={`flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-lg transition-colors text-[9px] font-medium
+              ${currentIcon === id ? 'bg-blue-100 text-blue-700' : 'hover:bg-slate-100 text-slate-600'}`}
+          >
+            {Icon ? <Icon className="h-4 w-4" /> : <span className="text-[11px] font-bold">AB</span>}
+            <span className="leading-tight">{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
-export default function FloorPlanCanvas({
-  imageUrl,
-  terminals = [],
-  positions = {},
-  editMode = false,
-  onPositionChange,
-  selectedTerminalId,
-  onSelectTerminal,
-  iconConfig = {},
-  onIconConfigChange,
-}) {
-  const containerRef = useRef(null);
-  const [dragging, setDragging] = useState(null);
-  const [tooltip, setTooltip] = useState(null);
-  const [imgSize, setImgSize] = useState({ w: 1, h: 1 });
-  const [editingMarker, setEditingMarker] = useState(null); // { terminal, anchorX, anchorY }
-
-  // Zoom/pan state
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const panStart = useRef(null);
-  const isPanning = useRef(false);
+/* ─── Tooltip flutuante renderizado no portal do wrapperRef ─── */
+function FloatingTooltip({ terminal, anchorEl, wrapperEl, zoom }) {
+  const [style, setStyle] = useState({ opacity: 0 });
+  const tipRef = useRef(null);
+  const c = getColor(terminal.status);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => {
-      setImgSize({ w: el.clientWidth, h: el.clientHeight });
-    });
-    observer.observe(el);
-    setImgSize({ w: el.clientWidth, h: el.clientHeight });
-    return () => observer.disconnect();
-  }, [imageUrl]);
+    if (!anchorEl || !wrapperEl || !tipRef.current) return;
 
-  useEffect(() => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    setEditingMarker(null);
-  }, [imageUrl]);
+    const wRect = wrapperEl.getBoundingClientRect();
+    const aRect = anchorEl.getBoundingClientRect();
+    const tRect = tipRef.current.getBoundingClientRect();
 
-  const clampPan = useCallback((px, py, z) => {
-    const maxX = (imgSize.w * (z - 1)) / 2;
-    const maxY = (imgSize.h * (z - 1)) / 2;
-    return {
-      x: Math.max(-maxX, Math.min(maxX, px)),
-      y: Math.max(-maxY, Math.min(maxY, py)),
-    };
-  }, [imgSize]);
+    // Posição do centro do marcador relativa ao wrapper
+    const anchorCX = aRect.left - wRect.left + aRect.width  / 2;
+    const anchorTY = aRect.top  - wRect.top;
+    const anchorBY = aRect.bottom - wRect.top;
 
-  const getRelativePos = useCallback((e) => {
-    const rect = containerRef.current.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const cx = (clientX - rect.left - rect.width / 2 - pan.x) / zoom + rect.width / 2;
-    const cy = (clientY - rect.top - rect.height / 2 - pan.y) / zoom + rect.height / 2;
-    const x = Math.max(0, Math.min(100, (cx / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, (cy / rect.height) * 100));
-    return { x, y };
-  }, [zoom, pan]);
+    // Tentativa: acima do marcador
+    let top = anchorTY - tRect.height - 8;
+    // Se sair pelo topo → abaixo
+    if (top < 4) top = anchorBY + 8;
+    // Clamp vertical inferior
+    if (top + tRect.height > wRect.height - 4) top = wRect.height - tRect.height - 4;
 
-  const handleMouseDown = useCallback((e, terminalId) => {
-    if (!editMode) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(terminalId);
-    setEditingMarker(null);
-  }, [editMode]);
+    // Horizontal centrado, clampado
+    let left = anchorCX - tRect.width / 2;
+    if (left < 4) left = 4;
+    if (left + tRect.width > wRect.width - 4) left = wRect.width - tRect.width - 4;
 
-  const handleContainerMouseDown = useCallback((e) => {
-    if (dragging) return;
-    // Pan with left click on empty canvas area in zoom > 1, or middle button
-    if ((e.button === 0 && zoom > 1 && !e.target.closest('[data-terminal]')) || e.button === 1) {
-      e.preventDefault();
-      isPanning.current = true;
-      panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
-    }
-  }, [dragging, pan, zoom]);
-
-  const handleMouseMove = useCallback((e) => {
-    if (isPanning.current) {
-      const nx = e.clientX - panStart.current.x;
-      const ny = e.clientY - panStart.current.y;
-      setPan(clampPan(nx, ny, zoom));
-      return;
-    }
-    if (!dragging || !editMode) return;
-    e.preventDefault();
-    const { x, y } = getRelativePos(e);
-    onPositionChange?.(dragging, x, y);
-  }, [dragging, editMode, getRelativePos, onPositionChange, clampPan, zoom]);
-
-  const handleMouseUp = useCallback(() => {
-    setDragging(null);
-    isPanning.current = false;
-  }, []);
-
-  const handleCanvasClick = useCallback((e) => {
-    if (editMode) return;
-    setTooltip(null);
-  }, [editMode]);
-
-  // Compute tooltip position in screen space
-  const computeTooltipPos = (x, y) => {
-    const TW = 200; const TH = 120;
-    const cW = imgSize.w; const cH = imgSize.h;
-    const markerX = (x / 100) * cW * zoom + pan.x + cW / 2 - cW * zoom / 2;
-    const markerY = (y / 100) * cH * zoom + pan.y + cH / 2 - cH * zoom / 2;
-    let left = markerX + 18;
-    let top = markerY - 55;
-    if (left + TW > cW) left = markerX - TW - 18;
-    if (left < 0) left = 4;
-    if (top < 0) top = markerY + 18;
-    if (top + TH > cH) top = cH - TH - 4;
-    return { left, top };
-  };
-
-  const terminalsWithPos = terminals.filter(t => positions[t.id]);
-  const terminalsWithoutPos = terminals.filter(t => !positions[t.id]);
-
-  const getMarkerConfig = (terminal) => {
-    const fabricante = terminal.fabricante || 'outro';
-    const tipo = terminal.tipo_conexao || 'default';
-    // Prefer per-terminal override, then per-fabricante, then per-tipo
-    const custom = iconConfig[terminal.id] || iconConfig[fabricante] || iconConfig[tipo] || {};
-    const svgKey = custom.iconKey || fabricante;
-    const svgString = FABRICANTE_ICON_SVGS[svgKey] || FABRICANTE_ICON_SVGS[fabricante] || TYPE_ICON_SVGS[tipo] || TYPE_ICON_SVGS.default;
-    const sizeKey = custom.size || 'medium';
-    const sizes = MARKER_SIZES[sizeKey] || MARKER_SIZES.medium;
-    return { svgString, sizes, sizeKey, svgKey };
-  };
-
-  const handleMarkerClick = (e, terminal, pos) => {
-    e.stopPropagation();
-    if (editMode) {
-      // In edit mode: click opens icon editor popup
-      const rect = containerRef.current.getBoundingClientRect();
-      const markerScreenX = (pos.x / 100) * imgSize.w * zoom + pan.x + imgSize.w / 2 - imgSize.w * zoom / 2;
-      const markerScreenY = (pos.y / 100) * imgSize.h * zoom + pan.y + imgSize.h / 2 - imgSize.h * zoom / 2;
-      setEditingMarker({ terminal, anchorX: markerScreenX, anchorY: markerScreenY });
-    } else {
-      if (selectedTerminalId === terminal.id) {
-        onSelectTerminal?.(null);
-        setTooltip(null);
-      } else {
-        onSelectTerminal?.(terminal);
-        setTooltip({ terminal, ...computeTooltipPos(pos.x, pos.y) });
-      }
-    }
-  };
-
-  const handleIconConfigSave = (terminalId, newCfg) => {
-    if (!onIconConfigChange) return;
-    onIconConfigChange({ ...iconConfig, [terminalId]: newCfg });
-    setEditingMarker(null);
-  };
+    setStyle({ opacity: 1, top, left });
+  }, [anchorEl, wrapperEl, zoom]);
 
   return (
-    <div className="relative w-full h-full select-none overflow-hidden rounded-xl">
-      {/* Zoom controls */}
-      <div className="absolute top-2 right-2 z-50 flex flex-col gap-1">
-        <button
-          onClick={() => setZoom(z => { const n = Math.min(5, +(z + 0.4).toFixed(1)); setPan(p => clampPan(p.x, p.y, n)); return n; })}
-          className="w-8 h-8 bg-white/90 border border-slate-200 rounded-lg shadow flex items-center justify-center hover:bg-slate-50 transition-colors"
-          title="Zoom in"
-        >
-          <ZoomIn className="w-4 h-4 text-slate-600" />
-        </button>
-        <button
-          onClick={() => setZoom(z => { const n = Math.max(1, +(z - 0.4).toFixed(1)); setPan(p => clampPan(p.x, p.y, n)); return n; })}
-          className="w-8 h-8 bg-white/90 border border-slate-200 rounded-lg shadow flex items-center justify-center hover:bg-slate-50 transition-colors"
-          title="Zoom out"
-        >
-          <ZoomOut className="w-4 h-4 text-slate-600" />
-        </button>
-        <button
-          onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-          className="w-8 h-8 bg-white/90 border border-slate-200 rounded-lg shadow flex items-center justify-center hover:bg-slate-50 transition-colors"
-          title="Reset"
-        >
-          <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
-        </button>
-        {zoom > 1 && (
-          <span className="text-[10px] text-center font-semibold text-slate-500 bg-white/80 rounded px-1">
-            {Math.round(zoom * 100)}%
-          </span>
+    <div
+      ref={tipRef}
+      className="pointer-events-none bg-white rounded-xl shadow-2xl border border-slate-200 p-3 text-xs"
+      style={{ position: 'absolute', zIndex: 9999, minWidth: 160, transition: 'opacity .1s', ...style }}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.dot }} />
+        <span className="font-bold text-slate-800">{terminal.nome}</span>
+      </div>
+      {terminal.local     && <p className="text-slate-500 truncate">{terminal.local}</p>}
+      {terminal.latencia_ms && <p className="text-slate-400">Latência: {terminal.latencia_ms}ms</p>}
+      <div className="mt-1.5 text-center font-semibold rounded px-1 py-0.5"
+        style={{ backgroundColor: c.dot + '22', color: c.dot }}>
+        {terminal.status?.toUpperCase() || '—'}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Componente principal ─── */
+export default function FloorPlanCanvas({ local, terminals, canEdit, savedPlan, onSave, selectedId, onSelect, fullscreen = false, dark = false }) {
+  const [imageUrl, setImageUrl]     = useState(savedPlan?.imageUrl || null);
+  const [positions, setPositions]   = useState(savedPlan?.positions || {});
+  const [dragging, setDragging]     = useState(null);
+  const [editMode, setEditMode]     = useState(false);
+  const [uploading, setUploading]   = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [hover, setHover]           = useState(null);       // terminal.id | null
+  const [iconPicker, setIconPicker] = useState(null);       // terminal.id | null
+  const [zoom, setZoom]             = useState(1);
+
+  const fileRef       = useRef(null);
+  const wrapperRef    = useRef(null);  // contentor com overflow:hidden — tooltip renderiza aqui
+  const canvasRef     = useRef(null);  // div escalada com transform:scale
+  const markerRefs    = useRef({});    // { [terminalId]: DOM el }
+
+  /* Sanitizar posições — trazer terminais fora dos limites para dentro */
+  function sanitizePositions(pos) {
+    const out = {};
+    for (const [id, p] of Object.entries(pos || {})) {
+      out[id] = {
+        ...p,
+        x: Math.min(97, Math.max(3, p.x ?? 10)),
+        y: Math.min(95, Math.max(3, p.y ?? 10)),
+      };
+    }
+    return out;
+  }
+
+  /* Sincronizar savedPlan */
+  useEffect(() => {
+    if (savedPlan) {
+      setImageUrl(savedPlan.imageUrl || null);
+      setPositions(sanitizePositions(savedPlan.positions || {}));
+    }
+  }, [savedPlan?.imageUrl]);
+
+  /* Fechar icon picker ao clicar fora */
+  useEffect(() => {
+    if (!iconPicker) return;
+    const h = () => setIconPicker(null);
+    window.addEventListener('mousedown', h);
+    return () => window.removeEventListener('mousedown', h);
+  }, [iconPicker]);
+
+  /* ─── Posições ─── */
+  function defaultPos(idx, total) {
+    const cols = Math.max(4, Math.ceil(Math.sqrt(total)));
+    return { x: 10 + (idx % cols) * 12, y: 12 + Math.floor(idx / cols) * 18 };
+  }
+  const getPos          = (t, i) => positions[t.id] || defaultPos(i, terminals.length);
+  const getTerminalIcon = (t)    => positions[t.id]?.icon || 'initials';
+  const setTerminalIcon = (id, iconId) =>
+    setPositions(p => ({ ...p, [id]: { ...(p[id] || {}), icon: iconId } }));
+
+  /* ─── Upload ─── */
+  async function handleUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Imagem deve ter menos de 5MB'); return; }
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setImageUrl(file_url);
+      toast.success('Planta carregada!');
+    } catch { toast.error('Erro ao carregar a planta'); }
+    finally { setUploading(false); e.target.value = ''; }
+  }
+  const removePlan = () => { setImageUrl(null); setPositions({}); };
+
+  /* ─── Helpers de coordenadas ─── */
+  // Converte clientX/Y para % do canvas (sem zoom), usando o canvasRef já escalado
+  function clientToCanvasPercent(clientX, clientY) {
+    const rect = canvasRef.current.getBoundingClientRect();
+    // rect.width e rect.height já incluem o zoom (scale)
+    // Dividir por zoom para obter as dimensões originais do canvas
+    const canvasW = rect.width  / zoom;
+    const canvasH = rect.height / zoom;
+    const x = ((clientX - rect.left) / zoom / canvasW) * 100;
+    const y = ((clientY - rect.top)  / zoom / canvasH) * 100;
+    return { x, y };
+  }
+
+  /* ─── Drag (coordenadas em % do canvas ANTES do scale) ─── */
+  function onMouseDown(e, terminalId) {
+    if (!editMode || iconPicker === terminalId) return;
+    e.preventDefault(); e.stopPropagation();
+    const { x: cx, y: cy } = clientToCanvasPercent(e.clientX, e.clientY);
+    const pos = positions[terminalId] || defaultPos(terminals.findIndex(t => t.id === terminalId), terminals.length);
+    setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y, moved: false });
+  }
+
+  const onMouseMove = useCallback((e) => {
+    if (!dragging || !canvasRef.current) return;
+    const { x: rawX, y: rawY } = clientToCanvasPercent(e.clientX, e.clientY);
+    const x = Math.min(97, Math.max(3, rawX - dragging.offsetX));
+    const y = Math.min(95, Math.max(3, rawY - dragging.offsetY));
+    setPositions(p => ({ ...p, [dragging.id]: { ...(p[dragging.id] || {}), x, y } }));
+    setDragging(d => d ? { ...d, moved: true } : d);
+  }, [dragging, zoom]);
+
+  const onMouseUp = useCallback(() => {
+    if (dragging && !dragging.moved) {
+      setIconPicker(id => id === dragging.id ? null : dragging.id);
+    }
+    setDragging(null);
+  }, [dragging]);
+
+  useEffect(() => {
+    if (!editMode) return;
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [editMode, onMouseMove, onMouseUp]);
+
+  /* Touch */
+  function onTouchStart(e, terminalId) {
+    if (!editMode) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const { x: cx, y: cy } = clientToCanvasPercent(touch.clientX, touch.clientY);
+    const pos = positions[terminalId] || defaultPos(terminals.findIndex(t => t.id === terminalId), terminals.length);
+    setDragging({ id: terminalId, offsetX: cx - pos.x, offsetY: cy - pos.y, moved: false });
+  }
+  function onTouchMove(e) {
+    if (!dragging || !canvasRef.current) return;
+    const touch = e.touches[0];
+    const { x: rawX, y: rawY } = clientToCanvasPercent(touch.clientX, touch.clientY);
+    const x = Math.min(97, Math.max(3, rawX - dragging.offsetX));
+    const y = Math.min(95, Math.max(3, rawY - dragging.offsetY));
+    setPositions(p => ({ ...p, [dragging.id]: { ...(p[dragging.id] || {}), x, y } }));
+  }
+
+  /* ─── Save ─── */
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave({ imageUrl, positions });
+      toast.success('Planta guardada!');
+      setEditMode(false); setIconPicker(null);
+    } catch { toast.error('Erro ao guardar'); }
+    finally { setSaving(false); }
+  }
+
+  /* ─── Zoom ─── */
+  const changeZoom = (d) =>
+    setZoom(z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round((z + d) * 100) / 100)));
+
+  const hasImage = !!imageUrl;
+  // Altura base do canvas (antes do zoom) — maior em modo fullscreen
+  const BASE_H = fullscreen
+    ? (hasImage ? 700 : Math.max(400, Math.ceil(terminals.length / 6) * 120 + 80))
+    : (hasImage ? 400 : Math.max(160, Math.ceil(terminals.length / 6) * 100 + 60));
+
+  // Estilos condicionais para tema dark (fullscreen)
+  const btnBase    = dark ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' : '';
+  const btnDanger  = dark ? 'bg-slate-700 border-slate-600 text-red-400 hover:bg-red-950 hover:border-red-700' : 'text-red-600 hover:bg-red-50';
+  const zoomText   = dark ? 'text-slate-300' : 'text-slate-500';
+  const wrapperBorder = dark ? 'border-slate-700' : 'border-slate-200';
+
+  return (
+    <div className="space-y-2">
+      {/* Toolbar edição */}
+      {canEdit && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant={editMode ? 'default' : 'outline'} size="sm"
+            onClick={() => { setEditMode(v => !v); setIconPicker(null); }}
+            className={editMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : btnBase}
+          >
+            <Move className="h-3.5 w-3.5 mr-1" />
+            {editMode ? 'A editar...' : 'Editar posições'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className={btnBase}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+            {hasImage ? 'Substituir planta' : 'Importar planta'}
+          </Button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          {hasImage && (
+            <Button variant="outline" size="sm" onClick={removePlan} className={btnDanger}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover planta
+            </Button>
+          )}
+          {editMode && (
+            <Button size="sm" onClick={handleSave} disabled={saving} className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600">
+              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+              Guardar
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Controles de zoom */}
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" className={`h-7 w-7 ${btnBase}`} onClick={() => changeZoom(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN}>
+          <ZoomOut className="h-3.5 w-3.5" />
+        </Button>
+        <span className={`text-xs w-10 text-center select-none ${zoomText}`}>{Math.round(zoom * 100)}%</span>
+        <Button variant="outline" size="icon" className={`h-7 w-7 ${btnBase}`} onClick={() => changeZoom(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX}>
+          <ZoomIn className="h-3.5 w-3.5" />
+        </Button>
+        {zoom !== 1 && (
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${dark ? 'text-slate-300 hover:bg-slate-700' : ''}`} onClick={() => setZoom(1)} title="Repor zoom">
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
         )}
       </div>
 
-      {/* Canvas */}
       <div
-        ref={containerRef}
-        className="relative w-full h-full bg-slate-100 overflow-hidden rounded-xl"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onMouseDown={handleContainerMouseDown}
-        onTouchMove={handleMouseMove}
-        onTouchEnd={handleMouseUp}
-        onClick={handleCanvasClick}
-        style={{ cursor: dragging ? 'grabbing' : isPanning.current ? 'grabbing' : zoom > 1 ? 'grab' : 'default' }}
+        ref={wrapperRef}
+        className={`relative w-full rounded-xl overflow-hidden border ${wrapperBorder}`}
+        style={{ height: BASE_H * zoom }}
       >
-        {/* Zoom/pan layer */}
+        {/* Canvas escalado */}
         <div
+          ref={canvasRef}
+          className="absolute top-0 left-0 select-none"
           style={{
-            position: 'absolute', inset: 0,
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'center center',
-            willChange: 'transform',
+            width:           '100%',
+            height:          BASE_H,
+            transformOrigin: 'top left',
+            transform:       `scale(${zoom})`,
+            background: hasImage
+              ? 'transparent'
+              : dark
+                ? 'repeating-linear-gradient(0deg,transparent,transparent 39px,#334155 39px,#334155 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#334155 39px,#334155 40px)'
+                : 'repeating-linear-gradient(0deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#e2e8f0 39px,#e2e8f0 40px)',
+            backgroundColor: dark ? '#0f172a' : '#f8fafc',
+            cursor: editMode ? 'crosshair' : 'default',
           }}
+          onTouchMove={onTouchMove}
+          onTouchEnd={() => setDragging(null)}
         >
-          {imageUrl ? (
-            <img src={imageUrl} alt="Planta baixa" className="w-full h-full object-contain pointer-events-none" draggable={false} />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">Sem planta baixa</div>
+          {hasImage && (
+            <img
+              src={imageUrl}
+              alt="Planta baixa"
+              className="w-full object-contain"
+              style={{ height: BASE_H, display: 'block' }}
+              draggable={false}
+            />
           )}
 
-          {terminalsWithPos.map(terminal => {
-            const pos = positions[terminal.id];
-            const isOnline = terminal.status === 'online';
-            const isSelected = selectedTerminalId === terminal.id;
-            const isWarning = terminal.status === 'warning';
-            const isEditingThis = editingMarker?.terminal?.id === terminal.id;
-            const { svgString, sizes } = getMarkerConfig(terminal);
+          {!hasImage && (
+            <span className={`absolute top-2 left-3 text-[10px] font-medium uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+              Planta — {local}
+            </span>
+          )}
+
+          {/* Marcadores */}
+          {terminals.map((terminal, idx) => {
+            const pos            = getPos(terminal, idx);
+            const c              = getColor(terminal.status);
+            const isDraggingThis = dragging?.id === terminal.id;
+            const iconId         = getTerminalIcon(terminal);
+            const IconComp       = getIconEntry(iconId).Icon;
+            const showPicker     = editMode && iconPicker === terminal.id;
 
             return (
               <div
                 key={terminal.id}
-                data-terminal={terminal.id}
+                ref={el => { markerRefs.current[terminal.id] = el; }}
                 className="absolute"
                 style={{
-                  left: `${pos.x}%`, top: `${pos.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: isSelected || isEditingThis ? 30 : 20,
-                  cursor: editMode ? 'pointer' : 'pointer',
+                  left:        `${pos.x}%`,
+                  top:         `${pos.y}%`,
+                  transform:   'translate(-50%, -50%)',
+                  zIndex:      isDraggingThis ? 200 : showPicker ? 150 : 10,
+                  cursor:      editMode ? 'grab' : 'pointer',
+                  touchAction: editMode ? 'none' : 'auto',
                 }}
-                onMouseDown={(e) => { if (editMode && !e.shiftKey) handleMouseDown(e, terminal.id); }}
-                onTouchStart={(e) => handleMouseDown(e, terminal.id)}
-                onClick={(e) => handleMarkerClick(e, terminal, pos)}
+                onMouseDown={(e) => onMouseDown(e, terminal.id)}
+                onTouchStart={(e) => onTouchStart(e, terminal.id)}
+                onMouseEnter={() => !editMode && setHover(terminal.id)}
+                onMouseLeave={() => setHover(null)}
+                onClick={() => !editMode && onSelect(terminal)}
               >
-                {!isOnline && !isWarning && (
-                  <span className="absolute rounded-full animate-ping bg-red-400 opacity-40"
-                    style={{ width: sizes.circle * 1.7, height: sizes.circle * 1.7, top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }}
-                  />
+                {/* Ping offline */}
+                {terminal.status === 'offline' && (
+                  <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ backgroundColor: c.ring }} />
                 )}
+
+                {/* Marcador circular */}
                 <div
-                  className={cn(
-                    "rounded-full border-2 flex items-center justify-center shadow-lg transition-all",
-                    isOnline ? "bg-emerald-500 border-emerald-300" :
-                    isWarning ? "bg-amber-500 border-amber-300" :
-                    "bg-red-500 border-red-300",
-                    (isSelected || isEditingThis) && "ring-2 ring-white ring-offset-1 scale-125",
-                    editMode && "ring-2 ring-violet-400 ring-offset-1"
-                  )}
-                  style={{ width: sizes.circle, height: sizes.circle }}
+                  className="relative flex items-center justify-center rounded-full border-2 border-white shadow-lg"
+                  style={{
+                    width: 32, height: 32,
+                    backgroundColor: c.dot,
+                    boxShadow: `0 0 0 3px ${c.ring}`,
+                    transform: isDraggingThis ? 'scale(1.3)' : 'scale(1)',
+                    transition: 'transform .15s',
+                  }}
                 >
-                  <MarkerIcon svgString={svgString} size={sizes.font} color="white" />
+                  {IconComp
+                    ? <IconComp className="text-white h-4 w-4" />
+                    : <span className="text-white text-[10px] font-bold leading-none select-none">{terminal.nome?.slice(0, 2).toUpperCase()}</span>
+                  }
                 </div>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5">
-                  <span
-                    className={cn(
-                      "block text-center px-1 py-0.5 rounded shadow-sm font-semibold truncate",
-                      isOnline ? "bg-emerald-600 text-white" :
-                      isWarning ? "bg-amber-500 text-white" : "bg-red-600 text-white"
-                    )}
-                    style={{ fontSize: sizes.label, maxWidth: 82 }}
-                    title={terminal.nome}
-                  >
-                    {truncate(terminal.nome)}
+
+                {/* Label */}
+                <div className="mt-1 text-center" style={{ width: 60, marginLeft: -14 }}>
+                  <span className="text-[9px] font-semibold text-slate-700 bg-white/80 px-1 rounded leading-tight block truncate">
+                    {terminal.nome}
                   </span>
                 </div>
               </div>
             );
           })}
-        </div>
 
-        {/* Tooltip */}
-        {tooltip && !editMode && (
-          <div
-            className="absolute z-40 bg-white border border-slate-200 rounded-lg shadow-xl p-3 w-52 pointer-events-none"
-            style={{ left: tooltip.left, top: tooltip.top }}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className={cn("w-2.5 h-2.5 rounded-full shrink-0",
-                tooltip.terminal.status === 'online' ? "bg-emerald-500" :
-                tooltip.terminal.status === 'warning' ? "bg-amber-500" : "bg-red-500"
-              )} />
-              <p className="font-semibold text-slate-900 text-sm truncate">{tooltip.terminal.nome}</p>
+          {editMode && (
+            <div className="absolute bottom-2 right-2 bg-blue-600/90 text-white text-[10px] px-2 py-1 rounded-lg pointer-events-none">
+              Arraste para mover · Clique para mudar ícone
             </div>
-            {tooltip.terminal.modelo && <p className="text-xs text-slate-500 mb-0.5">🖥 {tooltip.terminal.modelo}</p>}
-            {tooltip.terminal.fabricante && <p className="text-xs text-slate-500 mb-0.5">🏭 {tooltip.terminal.fabricante}</p>}
-            {tooltip.terminal.local && <p className="text-xs text-slate-500 mb-0.5">📍 {tooltip.terminal.local}</p>}
-            {tooltip.terminal.cliente_nome && <p className="text-xs text-slate-500 mb-0.5">🏢 {tooltip.terminal.cliente_nome}</p>}
-            <p className={cn("text-xs font-semibold mt-1",
-              tooltip.terminal.status === 'online' ? "text-emerald-600" :
-              tooltip.terminal.status === 'warning' ? "text-amber-600" : "text-red-600"
-            )}>
-              {tooltip.terminal.status === 'online' ? '● Online' :
-               tooltip.terminal.status === 'warning' ? '● Atenção' : '● Offline'}
-              {tooltip.terminal.latencia_ms ? ` — ${tooltip.terminal.latencia_ms}ms` : ''}
-            </p>
-          </div>
-        )}
-
-        {/* Marker edit popup */}
-        {editMode && editingMarker && (
-          <MarkerEditPopup
-            terminal={editingMarker.terminal}
-            anchorX={editingMarker.anchorX}
-            anchorY={editingMarker.anchorY}
-            containerSize={imgSize}
-            currentConfig={iconConfig[editingMarker.terminal.id] || iconConfig[editingMarker.terminal.fabricante] || {}}
-            onSave={(cfg) => handleIconConfigSave(editingMarker.terminal.id, cfg)}
-            onClose={() => setEditingMarker(null)}
-          />
-        )}
-      </div>
-
-      {/* Terminais sem posição */}
-      {editMode && terminalsWithoutPos.length > 0 && (
-        <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg p-2 z-50">
-          <p className="text-xs font-semibold text-slate-600 mb-1.5">Terminais não posicionados — arraste para a planta:</p>
-          <div className="flex flex-wrap gap-1.5">
-            {terminalsWithoutPos.map(t => {
-              const { svgString } = getMarkerConfig(t);
-              return (
-                <UnpositionedMarker key={t.id} terminal={t} svgString={svgString} containerRef={containerRef} zoom={zoom} pan={pan}
-                  onDrop={(x, y) => onPositionChange?.(t.id, x, y)}
-                />
-              );
-            })}
-          </div>
+          )}
         </div>
-      )}
-    </div>
-  );
-}
 
-function UnpositionedMarker({ terminal, svgString, containerRef, zoom, pan, onDrop }) {
-  const isOnline = terminal.status === 'online';
-  return (
-    <div
-      draggable
-      onDragStart={(e) => e.dataTransfer.setData('terminal_id', terminal.id)}
-      onDragEnd={(e) => {
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const cW = rect.width; const cH = rect.height;
-        const cx = (e.clientX - rect.left - cW / 2 - pan.x) / zoom + cW / 2;
-        const cy = (e.clientY - rect.top - cH / 2 - pan.y) / zoom + cH / 2;
-        const x = Math.max(0, Math.min(100, (cx / cW) * 100));
-        const y = Math.max(0, Math.min(100, (cy / cH) * 100));
-        if (x > 0 && y > 0 && x < 100 && y < 100) onDrop(x, y);
-      }}
-      className={cn(
-        "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium cursor-grab active:cursor-grabbing border text-white max-w-[130px]",
-        isOnline ? "bg-emerald-500 border-emerald-300" : "bg-red-500 border-red-300"
-      )}
-      title={terminal.nome}
-    >
-      <MarkerIcon svgString={svgString} size={12} color="white" />
-      <span className="truncate">{terminal.nome}</span>
+        {/* Tooltips — fora do canvas escalado */}
+        {!editMode && terminals.map(terminal => (
+          hover === terminal.id && (
+            <FloatingTooltip
+              key={terminal.id}
+              terminal={terminal}
+              anchorEl={markerRefs.current[terminal.id]}
+              wrapperEl={wrapperRef.current}
+              zoom={zoom}
+            />
+          )
+        ))}
+
+        {/* Icon picker — fora do canvas escalado */}
+        {editMode && terminals.map(terminal => (
+          iconPicker === terminal.id && (
+            <FloatingIconPicker
+              key={terminal.id}
+              terminalId={terminal.id}
+              currentIcon={getTerminalIcon(terminal)}
+              anchorEl={markerRefs.current[terminal.id]}
+              wrapperEl={wrapperRef.current}
+              zoom={zoom}
+              onSelect={setTerminalIcon}
+              onClose={() => setIconPicker(null)}
+            />
+          )
+        ))}
+      </div>
     </div>
   );
 }

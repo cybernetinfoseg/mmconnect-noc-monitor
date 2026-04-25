@@ -64,10 +64,10 @@ const AuthenticatedApp = () => {
         />
       ))}
       <Route path="/Manutencao" element={<LayoutWrapper currentPageName="Manutencao"><Manutencao /></LayoutWrapper>} />
-      <Route path="/MapaTerminais" element={<LayoutWrapper currentPageName="MapaTerminais"><MapaTerminais /></LayoutWrapper>} />
       <Route path="/Relatorios" element={<LayoutWrapper currentPageName="Relatorios"><Relatorios /></LayoutWrapper>} />
       <Route path="/Agendamentos" element={<LayoutWrapper currentPageName="Agendamentos"><Agendamentos /></LayoutWrapper>} />
       <Route path="/CompletarPerfil" element={<LayoutWrapper currentPageName="CompletarPerfil"><CompletarPerfil /></LayoutWrapper>} />
+      <Route path="/MapaTerminais" element={<LayoutWrapper currentPageName="MapaTerminais"><MapaTerminais /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

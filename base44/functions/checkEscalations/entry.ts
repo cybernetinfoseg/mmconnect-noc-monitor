@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
         // Buscar dados em paralelo
         const [openAlerts, admins, allUsers, terminals] = await Promise.all([
-            base44.asServiceRole.entities.EscalationAlert.filter({ resolvido: false, escalado: false }),
+            base44.asServiceRole.entities.EscalationAlert.filter({ resolvido: false }),
             base44.asServiceRole.entities.User.filter({ role: 'admin' }),
             base44.asServiceRole.entities.User.list().catch(() => []),
             base44.asServiceRole.entities.Terminal.list(),
@@ -33,8 +33,10 @@ Deno.serve(async (req) => {
         const onlineIds = new Set(terminals.filter(t => t.status === 'online').map(t => t.id));
 
         const escalated = [];
+        // Separar: não escalados (candidatos a escalação) e todos os abertos (para resolver)
+        const naoEscalados = openAlerts.filter(a => !a.escalado);
 
-        for (const alert of openAlerts) {
+        for (const alert of naoEscalados) {
             const offlineSince = new Date(alert.offline_desde);
             if (isNaN(offlineSince.getTime())) continue; // guard contra datas inválidas
             if (offlineSince <= threshold24h) {
@@ -75,9 +77,8 @@ Deno.serve(async (req) => {
             }
         }
 
-        // Resolver alertas de terminais que voltaram online
-        const allOpen = await base44.asServiceRole.entities.EscalationAlert.filter({ resolvido: false });
-        const toResolve = allOpen.filter(a => onlineIds.has(a.terminal_id));
+        // Resolver alertas de terminais que voltaram online (usar openAlerts já carregado)
+        const toResolve = openAlerts.filter(a => onlineIds.has(a.terminal_id));
         await Promise.all(toResolve.map(a =>
             base44.asServiceRole.entities.EscalationAlert.update(a.id, { resolvido: true }).catch(() => {})
         ));

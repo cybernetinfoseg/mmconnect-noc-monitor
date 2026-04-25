@@ -1,548 +1,390 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTerminals, TERMINALS_QUERY_KEY } from '@/hooks/useTerminals';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
-import FloorPlanCanvas from '@/components/mapa/FloorPlanCanvas';
-
+import { MapPin, Monitor, AlertTriangle, Search, RefreshCw, Maximize2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import {
-  Map,
-  Upload,
-  Plus,
-  Pencil,
-  Trash2,
-  Save,
-  X,
-  LayoutGrid,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  User as UserIcon,
-  Layers,
-} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import FloorPlanCanvas from '@/components/mapa/FloorPlanCanvas';
+import MapaFullscreen from '@/components/mapa/MapaFullscreen';
+
+const STATUS_COLORS = {
+  online:  { bg: 'bg-emerald-500', text: 'text-emerald-700', light: 'bg-emerald-50 border-emerald-200' },
+  offline: { bg: 'bg-red-500',     text: 'text-red-700',     light: 'bg-red-50 border-red-200'     },
+  warning: { bg: 'bg-yellow-500',  text: 'text-yellow-700',  light: 'bg-yellow-50 border-yellow-200'},
+  default: { bg: 'bg-slate-400',   text: 'text-slate-600',   light: 'bg-slate-50 border-slate-200' },
+};
+function getColors(status) { return STATUS_COLORS[status] || STATUS_COLORS.default; }
 
 export default function MapaTerminais() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [selectedPlanId, setSelectedPlanId] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  const [positions, setPositions] = useState({});
-  const [showNewPlanDialog, setShowNewPlanDialog] = useState(false);
-  const [newPlanName, setNewPlanName] = useState('');
-  const [newPlanOwner, setNewPlanOwner] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [userFilter, setUserFilter] = useState('all');
-  const [iconConfig, setIconConfig] = useState({});
-
+  const [currentUser, setCurrentUser]     = useState(null);
+  const [selectedTerminal, setSelectedTerminal] = useState(null);
+  const [search, setSearch]               = useState('');
+  const [statusFilter, setStatusFilter]   = useState('all');
+  const [localFilter, setLocalFilter]     = useState('all');
+  const [userFilter, setUserFilter]       = useState('all');
+  const [fullscreenLocal, setFullscreenLocal] = useState(null); // { local, termList }
   const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
-  const perms = resolvePermissions(currentUser);
+  const perms   = resolvePermissions(currentUser);
   const isAdmin = perms.isAdmin;
 
-  // Fetch terminais
-  const { data: allTerminals = [] } = useQuery({
-    queryKey: ['terminals-mapa', currentUser?.email, isAdmin],
-    queryFn: async () => {
-      if (!currentUser) return [];
-      if (isAdmin) return base44.entities.Terminal.list('-created_date');
-      const [byOwner, byCreated] = await Promise.all([
-        base44.entities.Terminal.filter({ usuario_email: currentUser.email }, '-created_date'),
-        base44.entities.Terminal.filter({ created_by: currentUser.email }, '-created_date'),
-      ]);
-      const seen = new Set();
-      return [...byOwner, ...byCreated].filter(t => {
-        if (seen.has(t.id)) return false;
-        seen.add(t.id);
-        return true;
-      });
-    },
-    enabled: !!currentUser,
-    refetchInterval: 30000,
-  });
+  // Terminais — hook centralizado, query key partilhada com todas as páginas
+  const { data: allTerminals = [], isLoading, isFetching, refetch } = useTerminals({ enabled: !!currentUser });
 
-  // Fetch plantas
-  const { data: floorPlans = [] } = useQuery({
-    queryKey: ['floor-plans', currentUser?.email],
-    queryFn: () => base44.entities.FloorPlan.list('nome'),
-    enabled: !!currentUser,
-  });
-
-  // Todos os utilizadores (admin) — para seletor no dialog e filtro
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['users-for-plans'],
-    queryFn: () => base44.entities.User.list(),
-    enabled: !!currentUser && isAdmin,
-  });
-
-  // Lista de utilizadores para filtro admin (baseado nos utilizadores existentes)
-  const usuarios = useMemo(() => {
-    if (!isAdmin) return [];
-    return allUsers.map(u => u.email).filter(Boolean).sort();
-  }, [allUsers, isAdmin]);
-
-  // Plantas filtradas por utilizador (admin) ou do próprio utilizador
-  const visiblePlans = useMemo(() => {
-    if (!isAdmin) return floorPlans.filter(p => p.owner_email === currentUser?.email || p.created_by === currentUser?.email);
-    if (userFilter === 'all') return floorPlans;
-    return floorPlans.filter(p => p.owner_email === userFilter);
-  }, [floorPlans, isAdmin, userFilter, currentUser]);
-
-  // Seleciona automaticamente a primeira planta disponível
-  useEffect(() => {
-    if (visiblePlans.length > 0 && !selectedPlanId) {
-      setSelectedPlanId(visiblePlans[0].id);
-    }
-    if (visiblePlans.length === 0) setSelectedPlanId(null);
-  }, [visiblePlans]);
-
-  const selectedPlan = useMemo(
-    () => visiblePlans.find(p => p.id === selectedPlanId) || null,
-    [visiblePlans, selectedPlanId]
+  // Utilizadores únicos (só para admin)
+  const usuarios = useMemo(() =>
+    isAdmin ? [...new Set(allTerminals.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort() : [],
+    [allTerminals, isAdmin]
   );
 
-  // Terminais visíveis para a planta selecionada
-  const planOwner = selectedPlan?.owner_email;
-  const terminalsForPlan = useMemo(() => {
-    if (!selectedPlan) return [];
-    if (isAdmin) {
-      // Admin vê os terminais do dono da planta
-      return allTerminals.filter(t => (t.usuario_email || t.created_by) === planOwner);
-    }
-    return allTerminals;
-  }, [allTerminals, selectedPlan, isAdmin, planOwner]);
-
-  // Inicializa posições da planta selecionada
-  useEffect(() => {
-    if (!selectedPlan) { setPositions({}); return; }
-    try {
-      const saved = JSON.parse(selectedPlan.terminais_posicoes || '[]');
-      const pos = {};
-      saved.forEach(({ terminal_id, x, y }) => { pos[terminal_id] = { x, y }; });
-      setPositions(pos);
-    } catch {
-      setPositions({});
-    }
-  }, [selectedPlan?.id, selectedPlan?.terminais_posicoes]);
-
-  const handlePositionChange = useCallback((terminalId, x, y) => {
-    setPositions(prev => ({ ...prev, [terminalId]: { x, y } }));
-  }, []);
-
-  // Salvar posições
-  const saveMutation = useMutation({
-    mutationFn: ({ id, positions }) => {
-      const arr = Object.entries(positions).map(([terminal_id, { x, y }]) => ({ terminal_id, x, y }));
-      return base44.entities.FloorPlan.update(id, { terminais_posicoes: JSON.stringify(arr) });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['floor-plans']);
-      setEditMode(false);
-      toast.success('Posições guardadas!');
-    },
-    onError: () => toast.error('Erro ao guardar posições'),
+  // Plantas baixas guardadas — busca todas (admin vê tudo, utilizador vê as suas)
+  const { data: floorPlans = [], refetch: refetchPlans } = useQuery({
+    queryKey: ['floor-plans'],
+    queryFn:  () => base44.entities.FloorPlan.list('local'),
+    enabled:  !!currentUser,
   });
 
-  const handleSave = () => {
-    if (!selectedPlan) return;
-    saveMutation.mutate({ id: selectedPlan.id, positions });
+  const [isMonitoring, setIsMonitoring] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsMonitoring(true);
+    try {
+      if (isAdmin) {
+        await base44.functions.invoke('monitorAllTerminals', {});
+      } else {
+        // Utilizadores não-admin verificam cada terminal ativo individualmente
+        const ativos = allTerminals.filter(t => t.ativo !== false && ['ip_publico','dns','api'].includes(t.tipo_conexao));
+        await Promise.all(ativos.map(t =>
+          base44.functions.invoke('monitorTerminal', { terminalId: t.id }).catch(() => {})
+        ));
+      }
+    } catch {}
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: TERMINALS_QUERY_KEY }),
+      refetchPlans()
+    ]);
+    setIsMonitoring(false);
   };
 
-  // Upload de imagem
-  const handleImageUpload = async (e, planId) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.FloorPlan.update(planId, { imagem_url: file_url });
-      queryClient.invalidateQueries(['floor-plans']);
-      toast.success('Planta actualizada!');
-    } catch {
-      toast.error('Erro ao carregar imagem');
-    } finally {
-      setUploading(false);
-    }
+  // Determina o dono efectivo da planta a mostrar:
+  // - Admin com filtro de utilizador activo → planta do utilizador filtrado
+  // - Admin sem filtro → planta do próprio admin
+  // - Utilizador normal → sempre a sua própria planta
+  const effectiveOwner = isAdmin
+    ? (userFilter !== 'all' ? userFilter : currentUser?.email)
+    : currentUser?.email;
+
+  const getPlan = (local) => {
+    const plan = floorPlans.find(p => p.local === local && p.owner_email === effectiveOwner);
+    if (!plan) return null;
+    return {
+      imageUrl:  plan.image_url || null,
+      positions: plan.positions ? JSON.parse(plan.positions) : {},
+    };
   };
 
-  // Criar nova planta
-  const createMutation = useMutation({
-    mutationFn: ({ nome, owner_email }) =>
-      base44.entities.FloorPlan.create({
-        nome,
-        owner_email: owner_email || currentUser?.email,
-        terminais_posicoes: '[]',
-        ativo: true,
-      }),
-    onSuccess: (plan) => {
-      queryClient.invalidateQueries(['floor-plans']);
-      setSelectedPlanId(plan.id);
-      setShowNewPlanDialog(false);
-      setNewPlanName('');
-      setNewPlanOwner('');
-      toast.success('Planta criada!');
-    },
-    onError: () => toast.error('Erro ao criar planta'),
-  });
+  // Pode editar apenas se for o próprio dono (ou admin a ver a sua própria planta)
+  const canEditPlan = !isAdmin
+    ? true  // utilizador normal pode sempre editar as suas plantas
+    : userFilter === 'all' || userFilter === currentUser?.email; // admin só edita quando está a ver as suas próprias plantas
 
-  // Eliminar planta
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.FloorPlan.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['floor-plans']);
-      setSelectedPlanId(null);
-      toast.success('Planta eliminada');
-    },
-    onError: () => toast.error('Erro ao eliminar planta'),
-  });
+  const savePlan = async (local, { imageUrl, positions }) => {
+    const existing = floorPlans.find(p => p.local === local && p.owner_email === effectiveOwner);
+    const data = {
+      local,
+      owner_email: effectiveOwner,
+      image_url:   imageUrl || null,
+      positions:   JSON.stringify(positions || {}),
+    };
+    if (existing) {
+      await base44.entities.FloorPlan.update(existing.id, data);
+    } else {
+      await base44.entities.FloorPlan.create(data);
+    }
+    queryClient.invalidateQueries(['floor-plans']);
+  };
 
-  // Estatísticas da planta actual
-  const stats = useMemo(() => {
-    const positioned = terminalsForPlan.filter(t => positions[t.id]);
-    const online = positioned.filter(t => t.status === 'online').length;
-    const offline = positioned.filter(t => t.status === 'offline').length;
-    const warning = positioned.filter(t => t.status === 'warning').length;
-    return { total: positioned.length, online, offline, warning };
-  }, [terminalsForPlan, positions]);
+  const terminals = useMemo(() => allTerminals.filter(t => t.ativo !== false), [allTerminals]);
+  const locais    = useMemo(() => [...new Set(terminals.map(t => t.local).filter(Boolean))].sort(), [terminals]);
 
-  const [selectedTerminal, setSelectedTerminal] = useState(null);
+  const filtered = useMemo(() => {
+    return terminals.filter(t => {
+      const matchSearch = !search || t.nome?.toLowerCase().includes(search.toLowerCase()) || t.local?.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === 'all' || t.status === statusFilter;
+      const matchLocal  = localFilter  === 'all' || t.local === localFilter;
+      const matchUser   = !isAdmin || userFilter === 'all' || (t.usuario_email || t.created_by) === userFilter;
+      return matchSearch && matchStatus && matchLocal && matchUser;
+    });
+  }, [terminals, search, statusFilter, localFilter, userFilter, isAdmin]);
 
-  const canEdit = selectedPlan && (
-    isAdmin || selectedPlan.owner_email === currentUser?.email || selectedPlan.created_by === currentUser?.email
-  );
+  const groupedByLocal = useMemo(() => {
+    const groups = {};
+    filtered.forEach(t => {
+      const key = t.local || 'Sem local';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(t);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [filtered]);
+
+  const stats = useMemo(() => ({
+    total:   terminals.length,
+    online:  terminals.filter(t => t.status === 'online').length,
+    offline: terminals.filter(t => t.status === 'offline').length,
+    warning: terminals.filter(t => t.status === 'warning').length,
+  }), [terminals]);
+
+  const hasActiveFilters = search || statusFilter !== 'all' || localFilter !== 'all' || userFilter !== 'all';
 
   return (
+    <>
+    {/* ── Overlay Fullscreen ── */}
+    <AnimatePresence>
+      {fullscreenLocal && (
+        <MapaFullscreen
+          local={fullscreenLocal.local}
+          termList={fullscreenLocal.termList}
+          canEdit={canEditPlan}
+          savedPlan={getPlan(fullscreenLocal.local)}
+          onSave={(plan) => savePlan(fullscreenLocal.local, plan)}
+          onClose={() => setFullscreenLocal(null)}
+          onRefresh={handleRefresh}
+          isRefreshing={isMonitoring || isFetching}
+        />
+      )}
+    </AnimatePresence>
+
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 w-full overflow-x-hidden">
-      <div className="w-full px-3 sm:px-6 py-4 sm:py-6 space-y-4 max-w-[1920px]">
+      <div className="w-full px-3 sm:px-6 py-4 sm:py-6 space-y-5 max-w-[1920px]">
 
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-violet-100 rounded-xl shrink-0">
-              <Map className="h-6 w-6 text-violet-600" />
+            <div className="p-3 bg-teal-100 rounded-xl shrink-0">
+              <MapPin className="h-6 w-6 text-teal-600" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Mapa de Terminais</h1>
-              <p className="text-xs sm:text-sm text-slate-500">Planta baixa interativa com estado em tempo real</p>
+              <p className="text-xs sm:text-sm text-slate-500">Visualização por local com planta baixa</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Filtro de utilizador — apenas admin */}
-            {isAdmin && (
-              <Select value={userFilter} onValueChange={(v) => { setUserFilter(v); setSelectedPlanId(null); }}>
-                <SelectTrigger className="w-[180px]">
-                  <UserIcon className="h-4 w-4 mr-2 text-slate-400" />
-                  <SelectValue placeholder="Utilizador" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os utilizadores</SelectItem>
-                  {usuarios.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-
-            {canEdit && !editMode && (
-              <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="gap-2">
-                <Pencil className="h-4 w-4" /> Editar Posições
-              </Button>
-            )}
-            {editMode && (
-              <>
-                <Button size="sm" onClick={handleSave} disabled={saveMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-                  <Save className="h-4 w-4" />
-                  {saveMutation.isPending ? 'A guardar...' : 'Guardar'}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setEditMode(false)} className="gap-2">
-                  <X className="h-4 w-4" /> Cancelar
-                </Button>
-              </>
-            )}
-            <Button size="sm" onClick={() => setShowNewPlanDialog(true)} className="bg-violet-600 hover:bg-violet-700 gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nova Planta</span>
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isMonitoring || isFetching} className="gap-1.5">
+            <RefreshCw className={cn("h-4 w-4", (isMonitoring || isFetching) && "animate-spin")} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Painel lateral */}
-          <div className="lg:col-span-1 space-y-3">
-
-            {/* Seletor de plantas */}
-            <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-violet-600" /> Plantas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3 space-y-1">
-                {visiblePlans.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-2 text-center">Nenhuma planta disponível</p>
-                ) : (
-                  visiblePlans.map(plan => (
-                    <div
-                      key={plan.id}
-                      className={cn(
-                        "flex items-center justify-between gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors text-sm group",
-                        selectedPlanId === plan.id
-                          ? "bg-violet-100 text-violet-900"
-                          : "hover:bg-slate-50 text-slate-700"
-                      )}
-                      onClick={() => { setSelectedPlanId(plan.id); setEditMode(false); setSelectedTerminal(null); }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{plan.nome}</p>
-                        {isAdmin && plan.owner_email && (
-                          <p className="text-[10px] text-slate-400 truncate">{plan.owner_email}</p>
-                        )}
-                      </div>
-                      {(isAdmin || plan.owner_email === currentUser?.email) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Eliminar "${plan.nome}"?`)) deleteMutation.mutate(plan.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 hover:text-red-600 text-slate-400 shrink-0"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
+        {/* KPI Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Total',   value: stats.total,   color: 'text-slate-700',   bg: 'bg-white'      },
+            { label: 'Online',  value: stats.online,  color: 'text-emerald-700', bg: 'bg-emerald-50' },
+            { label: 'Offline', value: stats.offline, color: 'text-red-700',     bg: 'bg-red-50'     },
+            { label: 'Atenção', value: stats.warning, color: 'text-yellow-700',  bg: 'bg-yellow-50'  },
+          ].map(k => (
+            <Card key={k.label} className={cn('border-slate-200', k.bg)}>
+              <CardContent className="p-3 sm:p-4 flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-medium">{k.label}</span>
+                <span className={cn('text-2xl font-bold', k.color)}>{k.value}</span>
               </CardContent>
             </Card>
+          ))}
+        </div>
 
-            {/* Upload de imagem da planta seleccionada */}
-            {selectedPlan && canEdit && (
-              <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-                <CardContent className="px-3 py-3 space-y-2">
-                  <p className="text-xs font-semibold text-slate-600">Imagem da Planta</p>
-                  <label className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 cursor-pointer hover:bg-slate-50 transition-colors text-xs text-slate-500",
-                    uploading && "opacity-50 pointer-events-none"
-                  )}>
-                    <Upload className="h-4 w-4 shrink-0" />
-                    {uploading ? 'A carregar...' : 'Carregar imagem (PNG/JPG/SVG)'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleImageUpload(e, selectedPlan.id)}
-                      disabled={uploading}
-                    />
-                  </label>
-                  {selectedPlan.imagem_url && (
-                    <img src={selectedPlan.imagem_url} alt="preview" className="w-full h-20 object-contain rounded border border-slate-100 bg-slate-50" />
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Estatísticas */}
-            {selectedPlan && (
-              <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-                <CardContent className="px-3 py-3 space-y-2">
-                  <p className="text-xs font-semibold text-slate-600">Estado dos Terminais</p>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1.5 text-emerald-700"><CheckCircle2 className="h-3.5 w-3.5" /> Online</span>
-                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">{stats.online}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1.5 text-red-700"><XCircle className="h-3.5 w-3.5" /> Offline</span>
-                      <Badge className="bg-red-100 text-red-800 border-red-200">{stats.offline}</Badge>
-                    </div>
-                    {stats.warning > 0 && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 text-amber-700"><AlertTriangle className="h-3.5 w-3.5" /> Atenção</span>
-                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">{stats.warning}</Badge>
-                      </div>
-                    )}
-                    <div className="border-t border-slate-100 pt-1 flex items-center justify-between text-xs text-slate-500">
-                      <span>Posicionados</span>
-                      <span className="font-semibold">{stats.total} / {terminalsForPlan.length}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Lista de terminais na planta */}
-            {selectedPlan && terminalsForPlan.length > 0 && (
-              <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-                <CardHeader className="pb-1 pt-3 px-3">
-                  <CardTitle className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Terminais</CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3 space-y-1 max-h-64 overflow-y-auto">
-                  {terminalsForPlan.map(t => {
-                    const hasPos = !!positions[t.id];
-                    return (
-                      <button
-                        key={t.id}
-                        onClick={() => {
-                          setSelectedTerminal(prev => prev?.id === t.id ? null : t);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-left transition-colors",
-                          selectedTerminal?.id === t.id ? "bg-violet-50 text-violet-900" : "hover:bg-slate-50"
-                        )}
-                      >
-                        <span className={cn(
-                          "w-2 h-2 rounded-full shrink-0",
-                          t.status === 'online' ? "bg-emerald-500" :
-                          t.status === 'warning' ? "bg-amber-500" : "bg-red-500"
-                        )} />
-                        <span className="flex-1 truncate font-medium">{t.nome}</span>
-                        {!hasPos && <span className="text-slate-300 text-[9px]">sem pos.</span>}
-                      </button>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
+        {/* Filtros */}
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-start sm:items-center">
+          {/* Pesquisa */}
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input placeholder="Pesquisar terminal ou local..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 bg-white" />
           </div>
 
-          {/* Canvas principal */}
-          <div className="lg:col-span-3">
-            {!selectedPlan ? (
-              <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50 h-[500px]">
-                <CardContent className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-                  <LayoutGrid className="h-12 w-12 opacity-30" />
-                  <p className="text-sm">Selecione ou crie uma planta baixa</p>
-                  <Button size="sm" onClick={() => setShowNewPlanDialog(true)} className="bg-violet-600 hover:bg-violet-700 gap-2">
-                    <Plus className="h-4 w-4" /> Nova Planta
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50 overflow-hidden">
-                <CardHeader className="pb-2 pt-3 px-4 flex flex-row items-center justify-between">
-                  <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                    <Map className="h-4 w-4 text-violet-600" />
-                    {selectedPlan.nome}
-                    {isAdmin && selectedPlan.owner_email && (
-                      <span className="text-xs font-normal text-slate-400 ml-1">— {selectedPlan.owner_email}</span>
-                    )}
-                  </CardTitle>
-                  {editMode && (
-                    <Badge className="bg-violet-100 text-violet-800 border-violet-200 text-xs animate-pulse">
-                      Modo Edição
-                    </Badge>
-                  )}
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div style={{ height: '560px' }} className="w-full">
-                    {selectedPlan.imagem_url ? (
-                      <FloorPlanCanvas
-                       imageUrl={selectedPlan.imagem_url}
-                       terminals={terminalsForPlan}
-                       positions={positions}
-                       editMode={editMode}
-                       onPositionChange={handlePositionChange}
-                       selectedTerminalId={selectedTerminal?.id}
-                       onSelectTerminal={setSelectedTerminal}
-                       iconConfig={iconConfig}
-                       onIconConfigChange={setIconConfig}
-                       />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 bg-slate-50">
-                        <Upload className="h-10 w-10 opacity-30" />
-                        <p className="text-sm">Carregue uma imagem de planta baixa no painel lateral</p>
-                        {canEdit && (
-                          <label className="cursor-pointer px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2">
-                            <Upload className="h-4 w-4" />
-                            Carregar imagem
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => handleImageUpload(e, selectedPlan.id)}
-                            />
-                          </label>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                {editMode && (
-                  <div className="px-4 py-2 bg-violet-50 border-t border-violet-100 text-xs text-violet-700">
-                    💡 Arraste marcadores para reposicionar. Clique num marcador para editar o seu ícone e tamanho. Terminais sem posição aparecem em baixo.
-                  </div>
+          {/* Local */}
+          <select
+            value={localFilter}
+            onChange={e => setLocalFilter(e.target.value)}
+            className="h-9 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="all">Todos os locais</option>
+            {locais.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+
+          {/* Utilizador — apenas admin */}
+          {isAdmin && (
+            <select
+              value={userFilter}
+              onChange={e => setUserFilter(e.target.value)}
+              className="h-9 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="all">Todos os utilizadores</option>
+              {usuarios.map(u => <option key={u} value={u}>{u}</option>)}
+            </select>
+          )}
+
+          {/* Status pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {['all', 'online', 'offline', 'warning'].map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={cn(
+                  'px-3 py-1 rounded-full text-xs font-semibold select-none transition-colors border',
+                  statusFilter === s
+                    ? s === 'online'  ? 'bg-emerald-600 text-white border-emerald-600'
+                    : s === 'offline' ? 'bg-red-600 text-white border-red-600'
+                    : s === 'warning' ? 'bg-yellow-500 text-white border-yellow-500'
+                    : 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
                 )}
-              </Card>
+              >
+                {s === 'all' ? 'Todos' : s === 'online' ? '🟢 Online' : s === 'offline' ? '🔴 Offline' : '🟡 Atenção'}
+              </button>
+            ))}
+            {hasActiveFilters && (
+              <button onClick={() => { setSearch(''); setStatusFilter('all'); setLocalFilter('all'); setUserFilter('all'); }}
+                className="text-xs text-slate-400 hover:text-slate-700 transition-colors ml-1">
+                Limpar
+              </button>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Dialog nova planta */}
-      <Dialog open={showNewPlanDialog} onOpenChange={(open) => { setShowNewPlanDialog(open); if (!open) { setNewPlanName(''); setNewPlanOwner(''); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Nova Planta Baixa</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome da Planta *</Label>
-              <Input
-                value={newPlanName}
-                onChange={e => setNewPlanName(e.target.value)}
-                placeholder="Ex: Piso 1 — Entrada Principal"
-              />
+        {/* Legenda */}
+        <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap">
+          <span className="font-medium text-slate-700">Legenda:</span>
+          {[['online','Online'],['offline','Offline'],['warning','Atenção']].map(([s, l]) => (
+            <span key={s} className="flex items-center gap-1.5">
+              <span className={cn('w-3 h-3 rounded-full', getColors(s).bg)} />{l}
+            </span>
+          ))}
+          <span className="ml-auto text-slate-400">{filtered.length} terminal(is) exibido(s)</span>
+        </div>
+
+        {/* Mapa por locais */}
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64 text-slate-400">
+              <RefreshCw className="h-6 w-6 animate-spin mr-2" /> A carregar terminais...
             </div>
-            {isAdmin && (
-              <div className="space-y-2">
-                <Label>Utilizador *</Label>
-                <Select value={newPlanOwner} onValueChange={setNewPlanOwner}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar utilizador..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allUsers.map(u => (
-                      <SelectItem key={u.id} value={u.email}>
-                        {u.full_name ? `${u.full_name} (${u.email})` : u.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          ) : groupedByLocal.length === 0 ? (
+            <Card className="bg-white border-slate-200">
+              <CardContent className="py-16 text-center text-slate-400">
+                <Monitor className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                <p>Nenhum terminal encontrado com os filtros activos</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <AnimatePresence>
+              {groupedByLocal.map(([local, termList], gi) => {
+                const hasOffline  = termList.some(t => t.status === 'offline');
+                const hasWarning  = termList.some(t => t.status === 'warning');
+                const localStatus = hasOffline ? 'offline' : hasWarning ? 'warning' : 'online';
+                const lc          = getColors(localStatus);
+
+                return (
+                  <motion.div
+                    key={local}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -16 }}
+                    transition={{ delay: gi * 0.04 }}
+                  >
+                    <Card className={cn('bg-white border overflow-visible', hasOffline ? 'border-red-200' : hasWarning ? 'border-yellow-200' : 'border-slate-200')}>
+                      {/* Cabeçalho do local */}
+                      <CardHeader className={cn('py-3 px-4 rounded-t-xl', hasOffline ? 'bg-red-50' : hasWarning ? 'bg-yellow-50' : 'bg-emerald-50/50')}>
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <MapPin className={cn('h-4 w-4 shrink-0', lc.text)} />
+                            <CardTitle className={cn('text-sm font-bold', lc.text)}>{local}</CardTitle>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {termList.filter(t => t.status === 'online').length > 0 && (
+                              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">
+                                {termList.filter(t => t.status === 'online').length} online
+                              </Badge>
+                            )}
+                            {termList.filter(t => t.status === 'offline').length > 0 && (
+                              <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px] animate-pulse">
+                                {termList.filter(t => t.status === 'offline').length} offline
+                              </Badge>
+                            )}
+                            {termList.filter(t => t.status === 'warning').length > 0 && (
+                              <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-[10px]">
+                                {termList.filter(t => t.status === 'warning').length} atenção
+                              </Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Modo TV / Fullscreen"
+                              onClick={() => setFullscreenLocal({ local, termList })}
+                              className="h-7 w-7 text-slate-400 hover:text-teal-700 hover:bg-teal-50 shrink-0"
+                            >
+                              <Maximize2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="p-4 sm:p-5">
+                        <FloorPlanCanvas
+                          local={local}
+                          terminals={termList}
+                          canEdit={canEditPlan}
+                          savedPlan={getPlan(local)}
+                          onSave={(plan) => savePlan(local, plan)}
+                          selectedId={selectedTerminal?.id}
+                          onSelect={setSelectedTerminal}
+                        />
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          )}
+        </div>
+
+        {/* Painel de offline */}
+        {terminals.filter(t => t.status === 'offline').length > 0 && (
+          <Card className="bg-red-50 border-red-200">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm text-red-700 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 animate-pulse" />
+                Terminais Offline ({terminals.filter(t => t.status === 'offline').length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {terminals.filter(t => t.status === 'offline').map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTerminal(t)}
+                    className="flex items-center gap-2 bg-white border border-red-200 rounded-lg px-3 py-2 text-left hover:border-red-400 transition-colors"
+                  >
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-red-800 truncate">{t.nome}</p>
+                      <p className="text-xs text-red-500 truncate">{t.local || 'Sem local'}</p>
+                    </div>
+                  </button>
+                ))}
               </div>
-            )}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowNewPlanDialog(false)} className="flex-1">Cancelar</Button>
-              <Button
-                onClick={() => createMutation.mutate({ nome: newPlanName.trim(), owner_email: newPlanOwner || currentUser?.email })}
-                disabled={!newPlanName.trim() || (isAdmin && !newPlanOwner) || createMutation.isPending}
-                className="flex-1 bg-violet-600 hover:bg-violet-700"
-              >
-                {createMutation.isPending ? 'A criar...' : 'Criar'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
+    </>
   );
 }

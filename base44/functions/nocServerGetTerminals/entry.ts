@@ -23,15 +23,25 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // Buscar terminais — usa usuario_email (ownership real) com fallback para created_by
-        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
-        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
-        const seen = new Set();
-        const allTerminals = [...byUsuario, ...byCreated].filter(t => {
-            if (seen.has(t.id)) return false;
-            seen.add(t.id);
-            return true;
-        });
+        // is_admin está guardado diretamente na ApiKey — sem necessidade de consultar User
+        const isAdmin = match.is_admin === true;
+
+        // Admin → todos os terminais; utilizador normal → apenas os seus
+        let allTerminals;
+        if (isAdmin) {
+            allTerminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
+        } else {
+            const [byCreator, byEmail] = await Promise.all([
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
+            ]);
+            const seen = new Set();
+            allTerminals = [...byCreator, ...byEmail].filter(t => {
+                if (seen.has(t.id)) return false;
+                seen.add(t.id);
+                return true;
+            });
+        }
 
         const supported = ['heartbeat', 'adms_push', 'sdk_tcp', 'websocket_cloud'];
         const terminals = allTerminals.filter(t => supported.includes(t.tipo_conexao));

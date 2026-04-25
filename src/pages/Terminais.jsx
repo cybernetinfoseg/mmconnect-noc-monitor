@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTerminals, TERMINALS_QUERY_KEY } from '@/hooks/useTerminals';
 import LocalSelectField from '../components/terminais/LocalSelectField';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -72,161 +73,147 @@ export default function Terminais() {
   const [editingTerminal, setEditingTerminal] = useState(null);
   const [formData, setFormData] = useState({});
   const [currentUser, setCurrentUser] = useState(null);
+  const [userLoaded, setUserLoaded] = useState(false);
   
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me().then(u => { setCurrentUser(u); setUserLoaded(true); }).catch(() => setUserLoaded(true));
   }, []);
 
   const perms = resolvePermissions(currentUser);
   const isAdmin = perms.isAdmin;
   const limiteTerminais = perms.limite_terminais;
 
-  const [refreshInterval, setRefreshInterval] = useState(5000);
+  // Terminais — hook centralizado, query key partilhada com todas as páginas
+  const { data: terminals = [], isLoading } = useTerminals({ enabled: userLoaded && !!currentUser });
 
-  // Fetch monitor config to get actual refresh interval
-  useEffect(() => {
-    base44.entities.MonitorConfig.list()
-      .then((configs) => {
-        const config = configs[0];
-        if (config?.intervalo_sync_minutos) {
-          setRefreshInterval(config.intervalo_sync_minutos * 60 * 1000);
-        }
-      })
-      .catch(() => setRefreshInterval(5000));
-  }, []);
-
-  // Fetch terminals with server-side filtering for security
-  const { data: terminals = [], isLoading } = useQuery({
-    queryKey: ['terminals-manage', currentUser?.email, isAdmin],
-    queryFn: async () => {
-      if (isAdmin) {
-        return await base44.entities.Terminal.list('-created_date');
-      }
-      // Non-admins: terminais onde são o dono (usuario_email) OU criador (created_by)
-      const [byOwner, byCreated] = await Promise.all([
-        base44.entities.Terminal.filter({ usuario_email: currentUser?.email }, '-created_date'),
-        base44.entities.Terminal.filter({ created_by: currentUser?.email }, '-created_date'),
-      ]);
-      const seen = new Set();
-      return [...byOwner, ...byCreated].filter(t => {
-        if (seen.has(t.id)) return false;
-        seen.add(t.id);
-        return true;
-      });
-    },
-    enabled: !!currentUser, // Only run when user is loaded
-    refetchInterval: refreshInterval,
-  });
-
-  const atLimit = !isAdmin && (limiteTerminais === 0 || (limiteTerminais > 0 && terminalCount >= limiteTerminais));
+  const terminalCount = terminals.length;
+  // Só calcular atLimit quando o user estiver carregado — evita falso positivo enquanto user=null
+  const atLimit = userLoaded && !isAdmin && limiteTerminais > 0 && terminalCount >= limiteTerminais;
 
 
   const logAudit = (acao, entidade_id, descricao) =>
     base44.functions.invoke('auditLog', { acao, entidade: 'Terminal', entidade_id, descricao }).catch(() => {});
 
   const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (editingTerminal) {
-        return base44.entities.Terminal.update(editingTerminal.id, data);
-      }
-      return base44.entities.Terminal.create({ ...data, usuario_email: data.usuario_email || currentUser?.email });
-    },
-    onMutate: async (data) => {
-      await queryClient.cancelQueries(['terminals-manage']);
-      const previous = queryClient.getQueryData(['terminals-manage']);
-      if (editingTerminal) {
-        queryClient.setQueryData(['terminals-manage'], (old = []) =>
-          old.map(t => t.id === editingTerminal.id ? { ...t, ...data } : t)
+     mutationFn: async (data) => {
+       const response = await base44.functions.invoke('saveTerminal', {
+         terminalId: editingTerminal?.id || null,
+         data: editingTerminal ? data : { ...data, usuario_email: data.usuario_email || currentUser?.email },
+       });
+       return response.data?.terminal;
+     },
+     onMutate: async (data) => {
+       await queryClient.cancelQueries({ queryKey: TERMINALS_QUERY_KEY });
+        const prev = queryClient.getQueryData(TERMINALS_QUERY_KEY);
+        if (editingTerminal) {
+          queryClient.setQueryData(TERMINALS_QUERY_KEY, (old = []) =>
+            old.map(t => t.id === editingTerminal.id ? { ...t, ...data } : t)
+          );
+        } else {
+          queryClient.setQueryData(TERMINALS_QUERY_KEY, (old = []) => [
+            ...old,
+            { ...data, id: 'temp_' + Date.now(), usuario_email: data.usuario_email || currentUser?.email, status: 'offline' }
+          ]);
+        }
+        return { prev };
+       },
+       onSuccess: async (result, data) => {
+        const isEdit = !!editingTerminal;
+        const nome = data.nome || editingTerminal?.nome || '';
+        const terminalId = editingTerminal?.id || result?.id || '';
+        logAudit(
+          isEdit ? 'terminal_editado' : 'terminal_criado',
+          terminalId,
+          isEdit ? `Terminal "${nome}" editado` : `Terminal "${nome}" criado`
         );
-      } else {
-        const optimistic = { ...data, id: `optimistic-${Date.now()}`, status: 'offline', created_date: new Date().toISOString() };
-        queryClient.setQueryData(['terminals-manage'], (old = []) => [optimistic, ...old]);
-      }
-      return { previous };
-    },
-    onSuccess: async (result, data) => {
-      const isEdit = !!editingTerminal;
-      const nome = data.nome || editingTerminal?.nome || '';
-      const terminalId = editingTerminal?.id || result?.id || '';
-      logAudit(
-        isEdit ? 'terminal_editado' : 'terminal_criado',
-        terminalId,
-        isEdit ? `Terminal "${nome}" editado` : `Terminal "${nome}" criado`
-      );
-      setDialogOpen(false);
-      setEditingTerminal(null);
-      setFormData({});
-      toast.success(isEdit ? 'Terminal atualizado' : 'Terminal criado');
-      const tipo = data.tipo_conexao || 'ip_local';
-      if (tipo !== 'ip_local' && terminalId) {
-        base44.functions.invoke('monitorTerminal', { terminalId }).catch(() => {});
-      }
-      queryClient.invalidateQueries(['terminals-manage']);
-    },
-    onError: (error, _data, context) => {
-      if (context?.previous) queryClient.setQueryData(['terminals-manage'], context.previous);
-      toast.error(`Erro: ${error.message}`);
-    },
-  });
+        setDialogOpen(false);
+        setEditingTerminal(null);
+        setFormData({});
+        toast.success(isEdit ? 'Terminal atualizado' : 'Terminal criado');
+        const tipo = data.tipo_conexao || 'ip_local';
+        if (tipo !== 'ip_local' && terminalId) {
+          await base44.functions.invoke('monitorTerminal', { terminalId }).catch(() => {});
+        }
+        queryClient.invalidateQueries({ queryKey: TERMINALS_QUERY_KEY });
+       },
+       onError: (error, _, context) => {
+        if (context?.prev) {
+          queryClient.setQueryData(TERMINALS_QUERY_KEY, context.prev);
+        }
+       toast.error(`Erro: ${error.message}`);
+     },
+   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Terminal.delete(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries(['terminals-manage']);
-      const previous = queryClient.getQueryData(['terminals-manage']);
-      queryClient.setQueryData(['terminals-manage'], (old = []) => old.filter(t => t.id !== id));
-      return { previous, id };
-    },
-    onSuccess: (_, id, context) => {
-      const terminal = (context?.previous || []).find(t => t.id === id);
-      logAudit('terminal_excluido', id, `Terminal "${terminal?.nome || id}" excluído`);
-      toast.success('Terminal eliminado');
-      queryClient.invalidateQueries(['terminals-manage']);
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previous) queryClient.setQueryData(['terminals-manage'], context.previous);
-      toast.error('Erro ao eliminar terminal');
-    },
-  });
+     mutationFn: (id) => base44.functions.invoke('deleteTerminal', { terminalId: id }),
+     onMutate: async (id) => {
+       await queryClient.cancelQueries({ queryKey: TERMINALS_QUERY_KEY });
+       const prev = queryClient.getQueryData(TERMINALS_QUERY_KEY);
+       queryClient.setQueryData(TERMINALS_QUERY_KEY, (old = []) =>
+         old.filter(t => t.id !== id)
+       );
+       return { prev };
+     },
+     onSuccess: async (_, id) => {
+       const terminal = terminals.find(t => t.id === id);
+       logAudit('terminal_excluido', id, `Terminal "${terminal?.nome || id}" excluído`);
+       toast.success('Terminal eliminado');
+       await queryClient.invalidateQueries({ queryKey: TERMINALS_QUERY_KEY });
+     },
+     onError: (error, _, context) => {
+       if (context?.prev) {
+         queryClient.setQueryData(TERMINALS_QUERY_KEY, context.prev);
+       }
+       toast.error('Erro ao eliminar terminal');
+     },
+   });
 
   const [refreshingTerminalId, setRefreshingTerminalId] = useState(null);
 
   const monitorMutation = useMutation({
-    mutationFn: async (terminal) => {
-      setRefreshingTerminalId(terminal.id);
-      if (terminal.tipo_conexao === 'ip_local') {
-        return { success: true, status: terminal.status, info: 'ip_local usa agente local' };
-      }
-      const response = await base44.functions.invoke('monitorTerminal', { terminalId: terminal.id });
-      return response.data;
-    },
-    onMutate: async (terminal) => {
-      // Optimistically show a "checking" state by clearing latency to indicate pending
-      queryClient.setQueryData(['terminals-manage'], (old = []) =>
-        old.map(t => t.id === terminal.id ? { ...t, ultimo_check: new Date().toISOString() } : t)
-      );
-    },
-    onSuccess: (data, terminal) => {
-      setRefreshingTerminalId(null);
-      if (data?.success && data.status) {
-        // Apply result optimistically before refetch
-        queryClient.setQueryData(['terminals-manage'], (old = []) =>
-          old.map(t => t.id === terminal.id ? { ...t, status: data.status, latencia_ms: data.latencia ?? t.latencia_ms } : t)
-        );
-        if (data.status === 'online') {
-          toast.success(`${terminal.nome}: ✅ ONLINE${data.latencia ? ' (' + data.latencia + 'ms)' : ''}`);
-        } else {
-          toast.error(`${terminal.nome}: ❌ OFFLINE${data.error ? ' - ' + data.error : ''}`);
-        }
-      } else if (data?.error) {
-        toast.info(`${terminal.nome}: ${data.error}`);
-      }
-      queryClient.invalidateQueries(['terminals-manage']);
-    },
-    onError: (error) => { setRefreshingTerminalId(null); toast.error(`Erro: ${error.message}`); },
-  });
+     mutationFn: async (terminal) => {
+       setRefreshingTerminalId(terminal.id);
+       if (terminal.tipo_conexao === 'ip_local') {
+         return { success: true, status: terminal.status, info: 'ip_local usa agente local' };
+       }
+       const response = await base44.functions.invoke('monitorTerminal', { terminalId: terminal.id });
+       return response.data;
+     },
+     onMutate: async (terminal) => {
+       await queryClient.cancelQueries({ queryKey: TERMINALS_QUERY_KEY });
+       const prev = queryClient.getQueryData(TERMINALS_QUERY_KEY);
+       queryClient.setQueryData(TERMINALS_QUERY_KEY, (old = []) =>
+         old.map(t => t.id === terminal.id ? { ...t, status: 'loading' } : t)
+       );
+       return { prev };
+     },
+     onSuccess: (data, terminal) => {
+       setRefreshingTerminalId(null);
+       if (data?.status) {
+         queryClient.setQueryData(TERMINALS_QUERY_KEY, (old = []) =>
+           old.map(t => t.id === terminal.id ? { ...t, status: data.status, latencia_ms: data.latencia } : t)
+         );
+       }
+       if (data?.success) {
+         if (data.status === 'online') {
+           toast.success(`${terminal.nome}: ✅ ONLINE${data.latencia ? ' (' + data.latencia + 'ms)' : ''}`);
+         } else {
+           toast.error(`${terminal.nome}: ❌ OFFLINE${data.error ? ' - ' + data.error : ''}`);
+         }
+       } else if (data?.error) {
+         toast.info(`${terminal.nome}: ${data.error}`);
+       }
+     },
+     onError: (error, _, context) => {
+       setRefreshingTerminalId(null);
+       if (context?.prev) {
+         queryClient.setQueryData(TERMINALS_QUERY_KEY, context.prev);
+       }
+       toast.error(`Erro: ${error.message}`);
+     },
+   });
 
   const [selectedTerminal, setSelectedTerminal] = useState(null);
   const [controlTerminal, setControlTerminal] = useState(null);
@@ -252,7 +239,7 @@ export default function Terminais() {
     for (const terminal of terminaisAtivos) {
       await base44.functions.invoke('monitorTerminal', { terminalId: terminal.id }).catch(() => {});
     }
-    queryClient.invalidateQueries(['terminals-manage']);
+    queryClient.invalidateQueries({ queryKey: TERMINALS_QUERY_KEY });
     setVerificandoTodos(false);
     toast.success('Verificação concluída!');
   };
@@ -260,12 +247,6 @@ export default function Terminais() {
   const usuarios = useMemo(() =>
     [...new Set(terminals.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(),
     [terminals]
-  );
-
-  // Contagem de terminais do utilizador atual (para limite) — usa usuario_email como ownership real
-  const terminalCount = useMemo(() =>
-    terminals.filter(t => (t.usuario_email || t.created_by) === currentUser?.email).length,
-    [terminals, currentUser]
   );
 
   const filteredTerminals = useMemo(() => {
@@ -320,9 +301,9 @@ export default function Terminais() {
       case 'ip_publico': return terminal.ip_publico ? `${terminal.ip_publico}:${terminal.porta || 5005}` : null;
       case 'dns': return terminal.dns ? `${terminal.dns}:${terminal.porta || 5005}` : null;
       case 'p2s': return `Escuta TCP :${terminal.porta || 5005}`;
-      case 'heartbeat': return `${terminal.ip_publico || '51.91.219.145'}:${terminal.porta || 5005}`;
+      case 'heartbeat': return `${terminal.ip_publico || '127.0.0.1'}:${terminal.porta || 5005}`;
       case 'adms_push': return terminal.numero_serie ? `SN: ${terminal.numero_serie} | ADMS :8080` : 'ADMS :8080 (sem SN)';
-      case 'sdk_tcp': return terminal.ip_publico ? `${terminal.ip_publico}:${terminal.porta || 4370}` : null;
+      case 'sdk_tcp': return terminal.ip_publico ? `${terminal.ip_publico}:${terminal.porta || 5005}` : null;
       case 'websocket_cloud': return terminal.numero_serie ? `SN: ${terminal.numero_serie} | WS :${terminal.porta || 7788}` : `WS :${terminal.porta || 7788} (sem SN)`;
       case 'api': return terminal.api_endpoint || null;
       default: return null;
@@ -342,13 +323,13 @@ export default function Terminais() {
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
               <p className="text-xs sm:text-sm text-emerald-600 flex items-center gap-1">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0 inline-block"></span>
-                Auto-refresh {refreshInterval >= 60000 ? (refreshInterval / 60000).toFixed(0) + 'm' : (refreshInterval / 1000).toFixed(0) + 's'}
+                Auto-refresh
                 <span className="ml-2 font-semibold text-slate-600">
                   • {filteredTerminals.length !== terminalCount ? `${filteredTerminals.length} de ` : ''}{terminalCount} terminal{terminalCount !== 1 ? 'is' : ''}
                 </span>
                 {!isAdmin && (
                   <span className={cn("ml-2 font-semibold", atLimit ? "text-red-600" : "text-slate-500")}>
-                    • {terminalCount}/{limiteTerminais} terminais
+                    • {terminalCount}/{limiteTerminais === 0 ? '0' : limiteTerminais} terminais
                   </span>
                 )}
               </p>
@@ -387,7 +368,7 @@ export default function Terminais() {
 
         {/* Filters */}
         <Card className="bg-white/80 backdrop-blur-sm border-slate-200/50">
-           <CardContent className="p-3 sm:p-4">
+           <CardContent className="p-3 sm:p-4 space-y-3">
              <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
                <div className="w-full sm:flex-1 sm:min-w-[180px] relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -415,16 +396,6 @@ export default function Terminais() {
                   <SelectItem value="api">API</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[140px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="offline">Offline</SelectItem>
-                </SelectContent>
-              </Select>
               {isAdmin && (
                  <select
                    value={userFilter}
@@ -437,7 +408,36 @@ export default function Terminais() {
                   ))}
                 </select>
               )}
+            </div>
 
+            {/* Status filter badges + clear */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Status:</span>
+              {['all', 'online', 'offline'].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-semibold select-none transition-colors border",
+                    statusFilter === s
+                      ? s === 'online'
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : s === 'offline'
+                          ? "bg-red-600 text-white border-red-600"
+                          : "bg-slate-800 text-white border-slate-800"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                  )}
+                >
+                  {s === 'all' ? 'Todos' : s === 'online' ? '🟢 Online' : '🔴 Offline'}
+                </button>
+              ))}
+              <button
+                onClick={() => { setSearchTerm(''); setTipoFilter('all'); setStatusFilter('all'); setUserFilter('all'); }}
+                disabled={!searchTerm && tipoFilter === 'all' && statusFilter === 'all' && userFilter === 'all'}
+                className="ml-auto text-xs text-slate-400 hover:text-slate-700 disabled:opacity-30 select-none transition-colors"
+              >
+                Limpar filtros
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -680,7 +680,7 @@ export default function Terminais() {
                   <p className="font-semibold">📡 Modo P2S — Push to Server (Conexão Inversa)</p>
                   <p>O <strong>terminal conecta TCP ao servidor</strong> — não é o servidor que tenta alcançar o terminal. Ideal para terminais em rede privada/NAT.</p>
                   <p>Compatível com: <strong>ZKTeco</strong> (SetServerPortAndTick), <strong>Anviz</strong> (Server Mode), <strong>Suprema</strong> (Server Connection), <strong>Hikvision/Dahua</strong> (Active Registration), <strong>Nitgen</strong>.</p>
-                  <p>Configure o terminal para conectar a <strong>51.91.219.145:PORTA</strong> e instale o <strong>p2s_server.py</strong> no Windows Server (Configurações → P2S Server).</p>
+                  <p>Configure o terminal para conectar a <strong>127.0.0.1:PORTA</strong> e instale o <strong>p2s_server.py</strong> no Windows Server (Configurações → P2S Server).</p>
                   <p className="text-violet-600">⚙️ Abra a porta TCP configurada no Firewall do Windows Server (Regras de Entrada).</p>
                 </div>
                 <div className="space-y-2">
@@ -710,14 +710,14 @@ export default function Terminais() {
               <div className="space-y-3">
                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700 space-y-1">
                   <p className="font-semibold">📡 Heartbeat TCP — Windows Server com IP Público</p>
-                  <p>O <strong>NOC Server</strong> corre no Windows Server (<code className="bg-violet-100 px-1 rounded">51.91.219.145</code>) e escuta na porta configurada.</p>
+                  <p>O <strong>NOC Server</strong> corre no Windows Server (<code className="bg-violet-100 px-1 rounded">127.0.0.1</code>) e escuta na porta configurada.</p>
                   <p>O terminal <strong>conecta TCP ao servidor</strong> — conexão recebida = online. Sem conexão no timeout = offline.</p>
                   <p className="text-violet-600">⚙️ Abra a porta TCP no Firewall do Windows Server (regra de entrada).</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>IP do Servidor</Label>
-                    <Input value={formData.ip_publico || ''} onChange={(e) => setFormData({...formData, ip_publico: e.target.value})} placeholder="51.91.219.145" />
+                    <Input value={formData.ip_publico || ''} onChange={(e) => setFormData({...formData, ip_publico: e.target.value})} placeholder="127.0.0.1" />
                   </div>
                   <div className="space-y-2">
                     <Label>Porta TCP <span className="text-red-500">*</span></Label>
@@ -732,7 +732,7 @@ export default function Terminais() {
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 space-y-1">
                   <p className="font-semibold">📲 ADMS / Push — ZKTeco, Anviz, Hikvision</p>
                   <p>O terminal faz <strong>HTTP POST para o servidor ADMS</strong> a cada evento. Compatível com protocolo ZKTeco iClock/ADMS e Anviz CrossChex.</p>
-                  <p>Configure no terminal: <code className="bg-blue-100 px-1 rounded">Servidor = http://51.91.219.145:8080</code></p>
+                  <p>Configure no terminal: <code className="bg-blue-100 px-1 rounded">Servidor = http://127.0.0.1:8080</code></p>
                   <p className="text-blue-600">⚠️ O <strong>Número de Série (SN)</strong> do terminal é obrigatório — é usado para identificar o terminal no servidor ADMS.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -762,7 +762,7 @@ export default function Terminais() {
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono space-y-0.5">
                   <p className="font-sans text-slate-600 font-semibold mb-1">Configuração no terminal ZKTeco:</p>
                   <p className="text-slate-700">Comm → Cloud Server / ADMS</p>
-                  <p className="text-blue-700">Server Address: <strong>51.91.219.145</strong></p>
+                  <p className="text-blue-700">Server Address: <strong>127.0.0.1</strong></p>
                   <p className="text-blue-700">Server Port: <strong>8080</strong></p>
                   <p className="text-blue-700">HTTPS: <strong>Off</strong> | Push: <strong>On</strong></p>
                 </div>

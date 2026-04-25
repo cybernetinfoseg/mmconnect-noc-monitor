@@ -29,15 +29,22 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // 3. Filtrar terminais do dono — usa usuario_email (ownership real) com fallback para created_by
-        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
-        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
-        const seen = new Set();
-        const allTerminals = [...byUsuario, ...byCreated].filter(t => {
-            if (seen.has(t.id)) return false;
-            seen.add(t.id);
-            return true;
-        });
+        // is_admin está guardado diretamente na ApiKey — sem necessidade de consultar User
+        const isAdmin = match.is_admin === true;
+
+        // 3. Admin → todos os terminais; utilizador normal → apenas os seus
+        let allTerminals;
+        if (isAdmin) {
+            allTerminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
+        } else {
+            const [byCreator, byAssigned] = await Promise.all([
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
+            ]);
+            const map = new Map();
+            [...byCreator, ...byAssigned].forEach(t => map.set(t.id, t));
+            allTerminals = [...map.values()];
+        }
 
         const terminals = allTerminals.filter(t => AGENT_TYPES.includes(t.tipo_conexao));
 

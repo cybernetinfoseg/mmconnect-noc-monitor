@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Wrench, Calendar, Clock, Trash2, Pencil, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import { format, isAfter, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import MaintenanceModal from '@/components/manutencao/MaintenanceModal';
@@ -31,6 +32,7 @@ export default function Manutencao() {
     const queryClient = useQueryClient();
     const [modalOpen, setModalOpen] = useState(false);
     const [editItem, setEditItem] = useState(null);
+    const [userFilter, setUserFilter] = useState('all');
     const [currentUser, setCurrentUser] = useState(null);
 
     const logAudit = (acao, entidade_id, descricao) =>
@@ -41,37 +43,35 @@ export default function Manutencao() {
     }, []);
 
     const perms = resolvePermissions(currentUser);
-    const canSeeAll = perms.isAdmin;
+    const isAdmin = perms.isAdmin;
 
-    const { data: allJanelas = [], isLoading } = useQuery({
-        queryKey: ['maintenance-windows'],
+    const { data: janelas = [], isLoading } = useQuery({
+        queryKey: ['maintenance-windows', currentUser?.email],
         queryFn: () => base44.entities.MaintenanceWindow.list('-inicio', 100),
         refetchInterval: 30000,
         enabled: !!currentUser,
     });
 
-    const janelas = useMemo(() => {
-        if (!currentUser) return [];
-        if (canSeeAll) return allJanelas;
-        return allJanelas.filter(j => j.criado_por === currentUser.email);
-    }, [allJanelas, currentUser, canSeeAll]);
-
     const deleteMutation = useMutation({
         mutationFn: (id) => base44.entities.MaintenanceWindow.delete(id),
         onSuccess: (_, id) => {
-            const item = allJanelas.find(j => j.id === id);
+            const item = janelas.find(j => j.id === id);
             logAudit('manutencao_cancelada', id, `Manutenção "${item?.titulo || id}" do terminal "${item?.terminal_nome || ''}" removida`);
             queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
+            toast.success('Manutenção removida');
         },
+        onError: () => toast.error('Erro ao remover manutenção'),
     });
 
     const cancelMutation = useMutation({
         mutationFn: (id) => base44.entities.MaintenanceWindow.update(id, { ativo: false }),
         onSuccess: (_, id) => {
-            const item = allJanelas.find(j => j.id === id);
+            const item = janelas.find(j => j.id === id);
             logAudit('manutencao_cancelada', id, `Manutenção "${item?.titulo || id}" do terminal "${item?.terminal_nome || ''}" cancelada`);
             queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
+            toast.success('Manutenção cancelada');
         },
+        onError: () => toast.error('Erro ao cancelar manutenção'),
     });
 
     const handleSaved = (result) => {
@@ -83,9 +83,10 @@ export default function Manutencao() {
                 ? `Manutenção "${editItem?.titulo}" do terminal "${editItem?.terminal_nome}" editada`
                 : `Nova manutenção criada`
         );
+        queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
+        toast.success(isEdit ? 'Manutenção atualizada' : 'Manutenção criada');
         setModalOpen(false);
         setEditItem(null);
-        queryClient.invalidateQueries({ queryKey: ['maintenance-windows'] });
     };
 
     const handleEdit = (item) => {
@@ -93,9 +94,17 @@ export default function Manutencao() {
         setModalOpen(true);
     };
 
-    const ativas = janelas.filter(j => getStatus(j) === 'ativa');
-    const agendadas = janelas.filter(j => getStatus(j) === 'agendada');
-    const historico = janelas.filter(j => ['concluida', 'cancelada'].includes(getStatus(j)));
+    // Lista de utilizadores únicos para filtro admin
+    const usuarios = [...new Set(janelas.map(j => j.criado_por).filter(Boolean))].sort();
+
+    // Janelas filtradas por utilizador (admin only)
+    const janelasFiltradas = isAdmin && userFilter !== 'all'
+        ? janelas.filter(j => j.criado_por === userFilter)
+        : janelas;
+
+    const ativas = janelasFiltradas.filter(j => getStatus(j) === 'ativa');
+    const agendadas = janelasFiltradas.filter(j => getStatus(j) === 'agendada');
+    const historico = janelasFiltradas.filter(j => ['concluida', 'cancelada'].includes(getStatus(j)));
 
     const JanelaCard = ({ item }) => {
         const status = getStatus(item);
@@ -157,7 +166,7 @@ export default function Manutencao() {
     return (
         <div className="w-full px-3 sm:px-6 py-4 sm:py-6 space-y-6 max-w-4xl overflow-x-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-orange-100 rounded-xl">
                         <Wrench className="h-5 w-5 text-orange-600" />
@@ -167,12 +176,24 @@ export default function Manutencao() {
                         <p className="text-sm text-slate-500">Suspende alertas durante períodos de manutenção</p>
                     </div>
                 </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                    {isAdmin && usuarios.length > 0 && (
+                        <select
+                            value={userFilter}
+                            onChange={e => setUserFilter(e.target.value)}
+                            className="h-9 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                            <option value="all">Todos os utilizadores</option>
+                            {usuarios.map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                    )}
                 <Button onClick={() => { setEditItem(null); setModalOpen(true); }} className="gap-2">
                     <Plus className="h-4 w-4" />
                     <span className="hidden sm:inline">Nova Janela</span>
                     <span className="sm:hidden">Nova</span>
-                </Button>
-            </div>
+                    </Button>
+                    </div>
+                    </div>
 
             {/* Aviso informativo */}
             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">

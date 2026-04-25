@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const HEARTBEAT_CODE = `# heartbeat_server.py — Serviço Heartbeat NOC Monitor
-# Corre no Windows Server (ex: 51.91.219.145)
+# Corre no Windows Server (ex: 127.0.0.1)
 # Cada terminal usa uma porta diferente — escuta cada porta com uma thread dedicada.
 #
 # Instalacao:
@@ -22,6 +22,10 @@ const HEARTBEAT_CODE = `# heartbeat_server.py — Serviço Heartbeat NOC Monitor
 #   "APP_ID":  "697aa46c9998c30665e2e19a",
 #   "INTERVALO_REPORT": 30
 # }
+#
+# NOTA: O heartbeat_server.py é um servidor STANDALONE dedicado apenas a terminais
+# do tipo "Heartbeat TCP". Se já usa o noc_server.py (que inclui Heartbeat + ADMS + SDK),
+# NÃO precisa deste servidor separado — evite duplicação de portas TCP.
 #
 # Como funciona:
 #   1. O servico busca terminais do tipo "heartbeat" no NOC Monitor (heartbeatGetTerminals)
@@ -132,17 +136,19 @@ def _headers(api_key):
 
 
 def listar_terminais(session, app_id, api_key):
-    url = f"{BASE_URL.format(app_id=app_id)}/heartbeatGetTerminals"
+    url = f"{BASE_URL.format(app_id=app_id)}/nocServerGetTerminals"
     r   = session.post(url, headers=_headers(api_key), json={}, timeout=10)
     r.raise_for_status()
     data = r.json()
     if not data.get("success"):
-        raise ValueError(f"heartbeatGetTerminals erro: {data}")
-    return data.get("terminals", [])
+        raise ValueError(f"nocServerGetTerminals erro: {data}")
+    # Filtrar apenas terminais do tipo heartbeat
+    todos = data.get("terminals", [])
+    return [t for t in todos if t.get("tipo_conexao") == "heartbeat"]
 
 
 def reportar_status(session, app_id, api_key, terminal_id, status, latencia_ms=None, segundos_sem_ping=0):
-    url     = f"{BASE_URL.format(app_id=app_id)}/heartbeatReport"
+    url     = f"{BASE_URL.format(app_id=app_id)}/nocServerReport"
     payload = {
         "terminal_id":       terminal_id,
         "status":            status,
@@ -388,7 +394,7 @@ export default function HeartbeatServerCode() {
           Modo Heartbeat — Windows Server com IP Público
         </p>
         <div className="text-violet-700 space-y-1 text-xs">
-          <p>✅ <strong>Ideal para:</strong> terminais já apontados ao servidor Windows (<code className="bg-violet-100 px-1 rounded">51.91.219.145</code>) com portas diferentes</p>
+          <p>✅ <strong>Ideal para:</strong> terminais já apontados ao servidor Windows (<code className="bg-violet-100 px-1 rounded">127.0.0.1</code>) com portas diferentes</p>
           <p>🔌 <strong>Como funciona:</strong> o serviço abre um socket TCP em cada porta configurada → o terminal conecta → online. Se não conectar no timeout → offline.</p>
           <p>📡 <strong>Uma porta por terminal</strong> — as portas já abertas no firewall do servidor são usadas diretamente</p>
           <p>📊 <strong>Reporte automático</strong> ao painel NOC Monitor a cada ciclo (default 30s)</p>

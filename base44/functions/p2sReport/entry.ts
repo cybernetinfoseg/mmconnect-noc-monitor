@@ -31,14 +31,15 @@ Deno.serve(async (req) => {
             return Response.json({ error: "status deve ser 'online' ou 'offline'" }, { status: 400 });
         }
 
-        // Verificar que o terminal existe e pertence ao utilizador
+        // is_admin está guardado diretamente na ApiKey — sem necessidade de consultar User
+        const isAdmin = keyRecord.is_admin === true;
+
+        // Verificar que o terminal existe; admin pode reportar qualquer um
         const terminal = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
         if (!terminal) {
             return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
         }
-        // Verificar ownership — usa usuario_email (ownership real) com fallback para created_by
-        const terminalOwner = terminal.usuario_email || terminal.created_by;
-        if (terminalOwner !== ownerEmail) {
+        if (!isAdmin && terminal.created_by !== ownerEmail) {
             return Response.json({ error: 'Sem permissão para este terminal' }, { status: 403 });
         }
         if (terminal.tipo_conexao !== 'p2s') {
@@ -75,7 +76,10 @@ Deno.serve(async (req) => {
         const cacheResults = await base44.asServiceRole.entities.StatusCache.filter({ terminal_id });
         const cache = cacheResults.length > 0 ? cacheResults[0] : null;
         const statusAnterior = cache?.ultimo_status ?? null;
-        const mudouDeEstado = statusAnterior !== null && statusAnterior !== status;
+        // Se não há cache anterior, criar incidente apenas se chegar offline (evitar "restored" espúrio)
+        const mudouDeEstado = statusAnterior === null
+            ? status === 'offline'
+            : statusAnterior !== status;
 
         if (mudouDeEstado) {
             console.log(`[p2sReport] '${terminal.nome}' mudou: ${statusAnterior} → ${status}`);
@@ -118,7 +122,7 @@ Deno.serve(async (req) => {
                     terminal_nome: terminal.nome,
                     local: terminal.local || '',
                     cliente: terminal.cliente_nome || '',
-                    owner_email: terminal.usuario_email || terminal.created_by || '',
+                    owner_email: terminal.created_by || '',
                 }).catch(() => {});
 
             } else if (status === 'online') {

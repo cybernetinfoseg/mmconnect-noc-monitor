@@ -15,12 +15,12 @@ const AGENT_CODE = `# core_agent.py — Agente Local NOC Monitor
 # }
 #
 # RESPONSABILIDADE DO AGENTE LOCAL:
-#   ip_local  -> AGENTE LOCAL (unico capaz de aceder a rede interna)
+#   ip_local  → AGENTE LOCAL (unico capaz de aceder a rede interna)
 #
 # NENHUM OUTRO TIPO DEVE SER MONITORIZADO PELO AGENTE:
-#   ip_publico / dns / api -> monitorados diretamente pelo servidor cloud (monitorAllTerminals).
+#   ip_publico / dns / api → monitorados diretamente pelo servidor cloud (monitorAllTerminals).
 #                            Se o agente tambem os testar, causara conflito e falsos offline/online.
-#   heartbeat / adms_push / sdk_tcp / p2s / websocket_cloud -> push (nao sondaveis).
+#   heartbeat / adms_push / sdk_tcp / p2s / websocket_cloud → push (nao sondaveis).
 #
 # Para terminais P2S (conexao inversa), use o p2s_server.py dedicado.
 #
@@ -377,11 +377,11 @@ export default function AgentSourceCode() {
       </div>
 
       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 space-y-1">
-        <p><strong>Responsabilidade:</strong> monitoriza <strong>apenas</strong> terminais <code className="bg-emerald-100 px-1 rounded font-mono">ip_local</code> — únicos acessíveis a partir da rede interna.</p>
-        <p><strong>ip_publico · dns · api</strong> são monitorizados pelo servidor cloud (<em>monitorAllTerminals</em>). Se o agente também os testar causa conflito e falsos offline/online.</p>
-        <p><strong>⚡ Paralelo:</strong> todos os terminais ip_local são testados em simultâneo (até 20 threads).</p>
+        <p><strong>Responsabilidade do agente:</strong> apenas <code className="bg-emerald-100 px-1 rounded font-mono">ip_local</code> — terminais na rede interna que o servidor cloud não consegue alcançar.</p>
+        <p><strong>ip_publico · dns · api</strong> são monitorados diretamente pelo servidor cloud — <em>não instalar o agente para estes tipos</em>, caso contrário causará conflito e falsos offline/online.</p>
+        <p><strong>⚡ Paralelo:</strong> todos os terminais ip_local são testados simultaneamente (até 20 threads).</p>
         <p><strong>Segurança:</strong> autentica via <code className="bg-emerald-100 px-1 rounded font-mono">X-Api-Key</code> pessoal — cada agente acede apenas aos seus terminais.</p>
-        <p><strong>P2S / heartbeat / adms_push / sdk_tcp / websocket_cloud:</strong> use os servidores dedicados (NOC Server / P2S Server).</p>
+        <p><strong>P2S:</strong> use o <strong>p2s_server.py</strong> dedicado (disponível em Administração → P2S Server).</p>
       </div>
 
       {expanded && (

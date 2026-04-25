@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useEffect } from 'react';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
 import { motion } from 'framer-motion';
 import { 
@@ -284,7 +283,7 @@ export default function Configuracoes() {
         </motion.div>
 
         {/* Delete Account — todos os utilizadores */}
-        {currentUser && (
+         {currentUser && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="bg-white/80 backdrop-blur-sm border-red-200">
               <CardHeader>
@@ -323,8 +322,16 @@ export default function Configuracoes() {
                         <AlertDialogCancel className="select-none">Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                           className="bg-red-600 hover:bg-red-700 select-none"
-                          onClick={() => {
-                            toast.error('Funcionalidade disponível apenas via suporte. Contacte o administrador.');
+                          onClick={async () => {
+                            try {
+                              await base44.entities.Terminal.list().then(async (terminals) => {
+                                await Promise.all(terminals.map(t => base44.entities.Terminal.delete(t.id)));
+                              });
+                              await base44.auth.logout('/');
+                              toast.success('Conta e dados eliminados com sucesso.');
+                            } catch (e) {
+                              toast.error('Erro ao eliminar dados. Tente novamente ou contacte o suporte.');
+                            }
                             setDeleteConfirmOpen(false);
                           }}
                         >

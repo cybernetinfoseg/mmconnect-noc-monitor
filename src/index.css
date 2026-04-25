@@ -2,7 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  overscroll-behavior: none;
+  color-scheme: light !important;
+}
+
 @layer base {
+  button, [role="button"], nav, a, [role="tab"], svg,
+  .select-none {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Ensure data content stays selectable */
+  input, textarea, [data-selectable], p, span, td, th, li, code, pre {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
@@ -82,19 +99,8 @@
     @apply border-border outline-ring/50;
   }
 
-  html, body {
-    overscroll-behavior: auto;
+  body {
     @apply bg-background text-foreground;
-  }
-
-  button,
-  a,
-  [role="button"],
-  nav,
-  nav *,
-  svg {
-    user-select: none;
-    -webkit-user-select: none;
   }
 }
 

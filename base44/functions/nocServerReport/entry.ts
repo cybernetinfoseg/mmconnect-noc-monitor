@@ -33,24 +33,36 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'terminal_id e status são obrigatórios' }, { status: 400 });
         }
 
-        // Verificar ownership — usa usuario_email (ownership real) com fallback para created_by
-        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
-        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
-        const seen = new Set();
-        const terminaisDoUtilizador = [...byUsuario, ...byCreated].filter(t => {
-            if (seen.has(t.id)) return false;
-            seen.add(t.id);
-            return true;
-        });
+        // is_admin está guardado diretamente na ApiKey — sem necessidade de consultar User
+        const isAdmin = keyRecord.is_admin === true;
 
-        const terminal = terminaisDoUtilizador.find(t => t.id === terminal_id);
-
-        if (!terminal) {
-            const terminalExiste = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
-            if (!terminalExiste) {
+        // Admin pode reportar qualquer terminal; utilizador normal só os seus
+        let terminal;
+        if (isAdmin) {
+            terminal = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
+            if (!terminal) {
                 return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
             }
-            return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
+        } else {
+            // Verificar por created_by OU usuario_email (terminais podem ser criados via service role)
+            const [byCreator, byEmail] = await Promise.all([
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
+            ]);
+            const seen = new Set();
+            const terminaisDoUtilizador = [...byCreator, ...byEmail].filter(t => {
+                if (seen.has(t.id)) return false;
+                seen.add(t.id);
+                return true;
+            });
+            terminal = terminaisDoUtilizador.find(t => t.id === terminal_id);
+            if (!terminal) {
+                const terminalExiste = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
+                if (!terminalExiste) {
+                    return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
+                }
+                return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
+            }
         }
 
         // Validar tipo
@@ -60,11 +72,12 @@ Deno.serve(async (req) => {
 
         const agora = new Date().toISOString();
         const statusValido = ['online', 'offline', 'warning'].includes(status) ? status : 'offline';
+        // warning é tratado como online para incidentes/cache (apenas visual no terminal)
         const statusEfetivo = statusValido === 'warning' ? 'online' : statusValido;
 
         // Atualizar terminal
         await base44.asServiceRole.entities.Terminal.update(terminal_id, {
-            status: statusValido,
+            status: statusEfetivo,  // guardar estado efetivo (não warning) para consistência
             ultimo_check: agora,
             latencia_ms: latencia_ms ?? null,
             segundos_sem_ping: segundos_sem_ping ?? 0,
@@ -90,7 +103,11 @@ Deno.serve(async (req) => {
         const cacheResults = await base44.asServiceRole.entities.StatusCache.filter({ terminal_id });
         const cache = cacheResults.length > 0 ? cacheResults[0] : null;
         const statusAnterior = cache?.ultimo_status ?? null;
-        const mudouDeEstado = statusAnterior !== null && statusAnterior !== statusEfetivo;
+        // Se não há cache anterior, tratar como mudança apenas se chegar offline (para criar incidente inicial)
+        // Se chegar online sem histórico — apenas registar, sem criar "restored" espúrio
+        const mudouDeEstado = statusAnterior === null
+            ? statusEfetivo === 'offline'  // primeiro report offline = criar incidente
+            : statusAnterior !== statusEfetivo;
 
         if (mudouDeEstado) {
             console.log(`[nocServerReport] '${terminal.nome}' mudou: ${statusAnterior} → ${statusEfetivo}`);
@@ -187,8 +204,8 @@ Deno.serve(async (req) => {
             });
         }
 
-        console.log(`[nocServerReport] ${ownerEmail} → "${terminal.nome}" (${terminal.tipo_conexao}) → ${statusValido}`);
-        return Response.json({ success: true, terminal: terminal.nome, status: statusValido, mudou: mudouDeEstado });
+        console.log(`[nocServerReport] ${ownerEmail} → "${terminal.nome}" (${terminal.tipo_conexao}) → ${statusEfetivo}`);
+        return Response.json({ success: true, terminal: terminal.nome, status: statusEfetivo, mudou: mudouDeEstado });
 
     } catch (error) {
         console.error('nocServerReport erro:', error.message);

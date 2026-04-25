@@ -165,23 +165,27 @@ Deno.serve(async (req) => {
 /**
  * Envia Web Push para uma subscrição.
  * Retorna true se sucesso, false se endpoint inválido/expirado.
+ *
+ * NOTA: Push sem VAPID funciona apenas com alguns browsers (Firefox) em modo permissivo.
+ * Para produção com Chrome, é necessário configurar VAPID keys no servidor de push dedicado.
+ * Esta implementação é best-effort — o Telegram é o canal principal de notificações em tempo real.
  */
 async function sendWebPush(sub, payloadStr) {
     try {
         const res = await fetch(sub.endpoint, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/octet-stream',
                 'TTL': '86400',
             },
             body: payloadStr,
         });
-        if (res.status === 404 || res.status === 410) {
-            // Endpoint expirado ou removido pelo browser
-            console.warn(`[pushNotify] Subscrição expirada para ${sub.user_email}: ${res.status}`);
+        if (res.status === 404 || res.status === 410 || res.status === 400 || res.status === 401) {
+            // Endpoint expirado, removido ou inválido sem VAPID
+            console.warn(`[pushNotify] Subscrição inválida para ${sub.user_email}: HTTP ${res.status}`);
             return false;
         }
-        return true;
+        return res.ok || res.status === 201;
     } catch {
         return false;
     }

@@ -39,9 +39,6 @@ export default function KPICard({ title, value, icon: Icon, color, trend, trendV
     >
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1 sm:space-y-2 min-w-0">
-          <p className="text-[10px] sm:text-sm font-medium text-slate-500 uppercase tracking-wider leading-tight">
-            {title}
-          </p>
           <motion.p
             key={value}
             initial={{ scale: 0.8, opacity: 0 }}
@@ -53,6 +50,9 @@ export default function KPICard({ title, value, icon: Icon, color, trend, trendV
           >
             {value}
           </motion.p>
+          <p className="text-[10px] sm:text-sm font-medium text-slate-500 uppercase tracking-wider leading-tight">
+            {title}
+          </p>
           {trend && (
             <p className={cn(
               'text-[10px] sm:text-xs font-medium hidden sm:block',

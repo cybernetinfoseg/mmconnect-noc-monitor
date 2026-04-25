@@ -880,23 +880,6 @@ export default function Terminais() {
               <Label>Terminal ativo para monitoramento</Label>
             </div>
 
-            {['ip_publico', 'dns', 'api'].includes(formData.tipo_conexao) && (
-              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <Switch
-                  checked={formData.desativar_poll_agente === true}
-                  onCheckedChange={(checked) => setFormData({...formData, desativar_poll_agente: checked})}
-                  className="mt-0.5"
-                />
-                <div>
-                  <Label className="text-amber-800 cursor-pointer">Desativar polling do Agente Local</Label>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    Ative esta opção se o terminal <strong>não aceita ligações TCP de entrada</strong> (ex: apenas faz push/heartbeat para o servidor). 
-                    O agente local deixará de tentar conectar-se a este terminal e de reportá-lo como offline.
-                  </p>
-                </div>
-              </div>
-            )}
-
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">Cancelar</Button>
               <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending} className="flex-1 bg-blue-600 hover:bg-blue-700">

@@ -104,17 +104,22 @@ export default function Terminais() {
       if (isAdmin) {
         return await base44.entities.Terminal.list('-created_date');
       }
-      // Non-admins only see their own terminals
-      return await base44.entities.Terminal.filter(
-        { created_by: currentUser?.email },
-        '-created_date'
-      );
+      // Non-admins: terminais onde são o dono (usuario_email) OU criador (created_by)
+      const [byOwner, byCreated] = await Promise.all([
+        base44.entities.Terminal.filter({ usuario_email: currentUser?.email }, '-created_date'),
+        base44.entities.Terminal.filter({ created_by: currentUser?.email }, '-created_date'),
+      ]);
+      const seen = new Set();
+      return [...byOwner, ...byCreated].filter(t => {
+        if (seen.has(t.id)) return false;
+        seen.add(t.id);
+        return true;
+      });
     },
     enabled: !!currentUser, // Only run when user is loaded
     refetchInterval: refreshInterval,
   });
 
-  const terminalCount = terminals.length;
   const atLimit = !isAdmin && (limiteTerminais === 0 || (limiteTerminais > 0 && terminalCount >= limiteTerminais));
 
 
@@ -255,6 +260,12 @@ export default function Terminais() {
   const usuarios = useMemo(() =>
     [...new Set(terminals.map(t => t.usuario_email || t.created_by).filter(Boolean))].sort(),
     [terminals]
+  );
+
+  // Contagem de terminais do utilizador atual (para limite) — usa usuario_email como ownership real
+  const terminalCount = useMemo(() =>
+    terminals.filter(t => (t.usuario_email || t.created_by) === currentUser?.email).length,
+    [terminals, currentUser]
   );
 
   const filteredTerminals = useMemo(() => {

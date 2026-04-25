@@ -23,10 +23,14 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // Buscar terminais dos tipos suportados pelo NOC Server
-        const allTerminals = await base44.asServiceRole.entities.Terminal.filter({
-            ativo: true,
-            created_by: ownerEmail,
+        // Buscar terminais — usa usuario_email (ownership real) com fallback para created_by
+        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
+        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
+        const seen = new Set();
+        const allTerminals = [...byUsuario, ...byCreated].filter(t => {
+            if (seen.has(t.id)) return false;
+            seen.add(t.id);
+            return true;
         });
 
         const supported = ['heartbeat', 'adms_push', 'sdk_tcp', 'websocket_cloud'];

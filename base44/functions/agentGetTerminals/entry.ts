@@ -29,10 +29,14 @@ Deno.serve(async (req) => {
 
         const ownerEmail = match.user_email;
 
-        // 3. Filtrar terminais do dono — apenas tipos geridos pelo agente local
-        const allTerminals = await base44.asServiceRole.entities.Terminal.filter({
-            ativo: true,
-            created_by: ownerEmail,
+        // 3. Filtrar terminais do dono — usa usuario_email (ownership real) com fallback para created_by
+        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
+        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
+        const seen = new Set();
+        const allTerminals = [...byUsuario, ...byCreated].filter(t => {
+            if (seen.has(t.id)) return false;
+            seen.add(t.id);
+            return true;
         });
 
         const terminals = allTerminals.filter(t => AGENT_TYPES.includes(t.tipo_conexao));

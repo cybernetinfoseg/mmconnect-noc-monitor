@@ -33,10 +33,14 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'terminal_id e status são obrigatórios' }, { status: 400 });
         }
 
-        // Verificar ownership
-        const terminaisDoUtilizador = await base44.asServiceRole.entities.Terminal.filter({
-            ativo: true,
-            created_by: ownerEmail,
+        // Verificar ownership — usa usuario_email (ownership real) com fallback para created_by
+        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
+        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
+        const seen = new Set();
+        const terminaisDoUtilizador = [...byUsuario, ...byCreated].filter(t => {
+            if (seen.has(t.id)) return false;
+            seen.add(t.id);
+            return true;
         });
 
         const terminal = terminaisDoUtilizador.find(t => t.id === terminal_id);

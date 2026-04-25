@@ -36,7 +36,9 @@ Deno.serve(async (req) => {
         if (!terminal) {
             return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
         }
-        if (terminal.created_by !== ownerEmail) {
+        // Verificar ownership — usa usuario_email (ownership real) com fallback para created_by
+        const terminalOwner = terminal.usuario_email || terminal.created_by;
+        if (terminalOwner !== ownerEmail) {
             return Response.json({ error: 'Sem permissão para este terminal' }, { status: 403 });
         }
         if (terminal.tipo_conexao !== 'p2s') {
@@ -116,7 +118,7 @@ Deno.serve(async (req) => {
                     terminal_nome: terminal.nome,
                     local: terminal.local || '',
                     cliente: terminal.cliente_nome || '',
-                    owner_email: terminal.created_by || '',
+                    owner_email: terminal.usuario_email || terminal.created_by || '',
                 }).catch(() => {});
 
             } else if (status === 'online') {

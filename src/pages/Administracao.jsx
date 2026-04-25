@@ -139,8 +139,10 @@ export default function Administracao() {
     queryFn: () => base44.entities.Terminal.list(),
   });
 
+  // Conta por usuario_email (ownership real definido pelo admin) com fallback para created_by
   const terminalCountByUser = terminals.reduce((acc, t) => {
-    if (t.created_by) acc[t.created_by] = (acc[t.created_by] || 0) + 1;
+    const owner = t.usuario_email || t.created_by;
+    if (owner) acc[owner] = (acc[owner] || 0) + 1;
     return acc;
   }, {});
 

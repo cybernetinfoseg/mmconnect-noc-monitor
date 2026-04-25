@@ -46,6 +46,7 @@ export default function MapaTerminais() {
   const [positions, setPositions] = useState({});
   const [showNewPlanDialog, setShowNewPlanDialog] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
+  const [newPlanOwner, setNewPlanOwner] = useState('');
   const [uploading, setUploading] = useState(false);
   const [userFilter, setUserFilter] = useState('all');
 
@@ -86,13 +87,18 @@ export default function MapaTerminais() {
     enabled: !!currentUser,
   });
 
-  // Lista de utilizadores para filtro admin
+  // Todos os utilizadores (admin) — para seletor no dialog e filtro
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users-for-plans'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: !!currentUser && isAdmin,
+  });
+
+  // Lista de utilizadores para filtro admin (baseado nos utilizadores existentes)
   const usuarios = useMemo(() => {
     if (!isAdmin) return [];
-    return [...new Set(
-      floorPlans.map(p => p.owner_email).filter(Boolean)
-    )].sort();
-  }, [floorPlans, isAdmin]);
+    return allUsers.map(u => u.email).filter(Boolean).sort();
+  }, [allUsers, isAdmin]);
 
   // Plantas filtradas por utilizador (admin) ou do próprio utilizador
   const visiblePlans = useMemo(() => {
@@ -180,10 +186,10 @@ export default function MapaTerminais() {
 
   // Criar nova planta
   const createMutation = useMutation({
-    mutationFn: ({ nome }) =>
+    mutationFn: ({ nome, owner_email }) =>
       base44.entities.FloorPlan.create({
         nome,
-        owner_email: currentUser?.email,
+        owner_email: owner_email || currentUser?.email,
         terminais_posicoes: '[]',
         ativo: true,
       }),
@@ -192,6 +198,7 @@ export default function MapaTerminais() {
       setSelectedPlanId(plan.id);
       setShowNewPlanDialog(false);
       setNewPlanName('');
+      setNewPlanOwner('');
       toast.success('Planta criada!');
     },
     onError: () => toast.error('Erro ao criar planta'),
@@ -488,7 +495,7 @@ export default function MapaTerminais() {
       </div>
 
       {/* Dialog nova planta */}
-      <Dialog open={showNewPlanDialog} onOpenChange={setShowNewPlanDialog}>
+      <Dialog open={showNewPlanDialog} onOpenChange={(open) => { setShowNewPlanDialog(open); if (!open) { setNewPlanName(''); setNewPlanOwner(''); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Nova Planta Baixa</DialogTitle>
@@ -500,14 +507,30 @@ export default function MapaTerminais() {
                 value={newPlanName}
                 onChange={e => setNewPlanName(e.target.value)}
                 placeholder="Ex: Piso 1 — Entrada Principal"
-                onKeyDown={e => e.key === 'Enter' && newPlanName.trim() && createMutation.mutate({ nome: newPlanName.trim() })}
               />
             </div>
+            {isAdmin && (
+              <div className="space-y-2">
+                <Label>Utilizador *</Label>
+                <Select value={newPlanOwner} onValueChange={setNewPlanOwner}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar utilizador..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allUsers.map(u => (
+                      <SelectItem key={u.id} value={u.email}>
+                        {u.full_name ? `${u.full_name} (${u.email})` : u.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowNewPlanDialog(false)} className="flex-1">Cancelar</Button>
               <Button
-                onClick={() => createMutation.mutate({ nome: newPlanName.trim() })}
-                disabled={!newPlanName.trim() || createMutation.isPending}
+                onClick={() => createMutation.mutate({ nome: newPlanName.trim(), owner_email: newPlanOwner || currentUser?.email })}
+                disabled={!newPlanName.trim() || (isAdmin && !newPlanOwner) || createMutation.isPending}
                 className="flex-1 bg-violet-600 hover:bg-violet-700"
               >
                 {createMutation.isPending ? 'A criar...' : 'Criar'}

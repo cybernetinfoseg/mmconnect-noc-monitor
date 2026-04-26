@@ -343,16 +343,16 @@ export default function Terminais() {
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gestão de Terminais</h1>
               <p className="text-xs sm:text-sm text-emerald-600 flex items-center gap-1">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0 inline-block"></span>
-                Auto-refresh {refreshInterval >= 60000 ? (refreshInterval / 60000).toFixed(0) + 'm' : (refreshInterval / 1000).toFixed(0) + 's'}
-                <span className="ml-2 font-semibold text-slate-600">
-                  • {filteredTerminals.length !== terminalCount ? `${filteredTerminals.length} de ` : ''}{terminalCount} terminal{terminalCount !== 1 ? 'is' : ''}
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0 inline-block"></span>
+              Auto-refresh {refreshInterval >= 60000 ? (refreshInterval / 60000).toFixed(0) + 'm' : (refreshInterval / 1000).toFixed(0) + 's'}
+              <span className="ml-2 font-semibold text-slate-600">
+                • {filteredTerminals.length !== terminals.length ? `${filteredTerminals.length} de ` : ''}{terminals.length} terminal{terminals.length !== 1 ? 'is' : ''}
+              </span>
+              {!isAdmin && (
+                <span className={cn("ml-2 font-semibold", atLimit ? "text-red-600" : "text-slate-500")}>
+                  • {terminalCount}/{limiteTerminais} terminais
                 </span>
-                {!isAdmin && (
-                  <span className={cn("ml-2 font-semibold", atLimit ? "text-red-600" : "text-slate-500")}>
-                    • {terminalCount}/{limiteTerminais} terminais
-                  </span>
-                )}
+              )}
               </p>
             </div>
           </div>

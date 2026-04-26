@@ -26,18 +26,30 @@ Deno.serve(async (req) => {
         const ownerEmail = match.user_email;
         console.log(`nocServerGetTerminals: autenticado como ${ownerEmail}`);
 
-        // Buscar terminais ativos — por usuario_email (ownership real) e created_by
-        const [byUsuario, byCreated] = await Promise.all([
-            base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
-            base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
-        ]);
+        // Verificar se o utilizador é admin
+        const allUsers = await base44.asServiceRole.entities.User.filter({ email: ownerEmail });
+        const ownerUser = allUsers[0];
+        const isAdmin = ownerUser?.role === 'admin';
 
-        const seen = new Set();
-        const allTerminals = [...byUsuario, ...byCreated].filter(t => {
-            if (seen.has(t.id)) return false;
-            seen.add(t.id);
-            return true;
-        });
+        let allTerminals = [];
+
+        if (isAdmin) {
+            // Admin vê TODOS os terminais ativos de todos os utilizadores
+            allTerminals = await base44.asServiceRole.entities.Terminal.filter({ ativo: true });
+            console.log(`nocServerGetTerminals: ADMIN ${ownerEmail} → todos os terminais (${allTerminals.length})`);
+        } else {
+            // Utilizador normal vê apenas os seus terminais
+            const [byUsuario, byCreated] = await Promise.all([
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
+                base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
+            ]);
+            const seen = new Set();
+            allTerminals = [...byUsuario, ...byCreated].filter(t => {
+                if (seen.has(t.id)) return false;
+                seen.add(t.id);
+                return true;
+            });
+        }
 
         console.log(`nocServerGetTerminals: ${ownerEmail} tem ${allTerminals.length} terminais ativos total`);
 

@@ -27,7 +27,7 @@ const PASSIVE_TIMEOUT = {
     sdk_tcp:          150,  // noc_server SDK polling
     p2s:              150,  // p2s_server conexão inversa
     adms_push:        300,  // ADMS ciclo mais lento (pode ser até 2min)
-    websocket_cloud:  150,  // timmy_ws_server reporta via WS heartbeat
+    websocket_cloud:  300,  // timmy_ws_server: heartbeat pode ser 60-90s → 5× margem
 };
 
 const PASSIVE_TYPES = new Set(['ip_local', 'heartbeat', 'adms_push', 'sdk_tcp', 'p2s', 'websocket_cloud']);

@@ -11,7 +11,7 @@ export const ROLE_COLORS = {
 };
 
 const ALL_PAGES = [
-  'Dashboard', 'TVMode', 'Terminais', 'History',
+  'Dashboard', 'TVMode', 'Terminais', 'MapaTerminais', 'History',
   'Incidents', 'Alertas', 'Manutencao', 'Agendamentos', 'Relatorios',
   'Auditoria', 'Configuracoes', 'Administracao',
 ];

@@ -5,7 +5,7 @@ import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarClock, Plus, Pencil, Trash2, Play, Pause,
-  CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw
+  CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw, User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +62,7 @@ function formatFrequencia(sched) {
 export default function Agendamentos() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [userFilter, setUserFilter] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
   const [runningId, setRunningId] = useState(null);
   const queryClient = useQueryClient();
@@ -80,11 +81,19 @@ export default function Agendamentos() {
     enabled: !!currentUser,
   });
 
+  const allUsersSchedules = useMemo(() =>
+    [...new Set(allSchedules.map(s => s.criado_por).filter(Boolean))].sort(),
+    [allSchedules]
+  );
+
   const schedules = useMemo(() => {
     if (!currentUser) return [];
-    if (canSeeAll) return allSchedules;
+    if (canSeeAll) {
+      if (userFilter !== 'all') return allSchedules.filter(s => s.criado_por === userFilter);
+      return allSchedules;
+    }
     return allSchedules.filter(s => s.criado_por === currentUser.email);
-  }, [allSchedules, currentUser, canSeeAll]);
+  }, [allSchedules, currentUser, canSeeAll, userFilter]);
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, ativo }) => base44.entities.ScheduledAction.update(id, { ativo }),
@@ -250,6 +259,24 @@ export default function Agendamentos() {
           <span className="sm:hidden">Novo</span>
         </Button>
       </div>
+
+      {/* Filtro por utilizador (admin only) */}
+      {canSeeAll && allUsersSchedules.length > 0 && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+            <User className="h-3.5 w-3.5" />
+            Utilizador
+          </label>
+          <select
+            value={userFilter}
+            onChange={e => setUserFilter(e.target.value)}
+            className="h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          >
+            <option value="all">Todos os utilizadores</option>
+            {allUsersSchedules.map(u => <option key={u} value={u}>{u}</option>)}
+          </select>
+        </div>
+      )}
 
       {/* Info */}
       <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">

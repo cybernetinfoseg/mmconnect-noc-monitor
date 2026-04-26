@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resolvePermissions } from '@/components/auth/usePermissions.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Plus, Trash2, ToggleLeft, ToggleRight, Mail, Zap, Clock, AlertTriangle, CheckCircle, Edit2 } from 'lucide-react';
+import { Bell, Plus, Trash2, ToggleLeft, ToggleRight, Mail, Zap, Clock, AlertTriangle, CheckCircle, Edit2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,7 @@ const GATILHO_ICONS = {
 export default function Alertas() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
+  const [userFilter, setUserFilter] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
 
@@ -49,11 +50,19 @@ export default function Alertas() {
     enabled: !!currentUser,
   });
 
+  const allUsersAlerts = useMemo(() =>
+    [...new Set(allRules.map(r => r.created_by).filter(Boolean))].sort(),
+    [allRules]
+  );
+
   const rules = useMemo(() => {
     if (!currentUser) return [];
-    if (canSeeAll) return allRules;
+    if (canSeeAll) {
+      if (userFilter !== 'all') return allRules.filter(r => r.created_by === userFilter);
+      return allRules;
+    }
     return allRules.filter(r => r.created_by === currentUser.email);
-  }, [allRules, currentUser, canSeeAll]);
+  }, [allRules, currentUser, canSeeAll, userFilter]);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.AlertRule.delete(id),
@@ -99,7 +108,17 @@ export default function Alertas() {
               <p className="text-sm text-slate-500">{activeRules} regra(s) ativa(s)</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {canSeeAll && allUsersAlerts.length > 0 && (
+              <select
+                value={userFilter}
+                onChange={e => setUserFilter(e.target.value)}
+                className="h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+              >
+                <option value="all">Todos os utilizadores</option>
+                {allUsersAlerts.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            )}
             <BrowserNotificationToggle />
             {perms.pode_configurar_alertas && (
               <Button onClick={handleNew} className="bg-slate-900 hover:bg-slate-800 text-white gap-2">

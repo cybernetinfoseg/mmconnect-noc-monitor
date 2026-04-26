@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Wrench, Calendar, Clock, Trash2, Pencil, AlertTriangle } from 'lucide-react';
+import { Plus, Wrench, Calendar, Clock, Trash2, Pencil, AlertTriangle, User } from 'lucide-react';
 import { format, isAfter, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import MaintenanceModal from '@/components/manutencao/MaintenanceModal';
@@ -31,6 +31,7 @@ export default function Manutencao() {
     const queryClient = useQueryClient();
     const [modalOpen, setModalOpen] = useState(false);
     const [editItem, setEditItem] = useState(null);
+    const [userFilter, setUserFilter] = useState('all');
     const [currentUser, setCurrentUser] = useState(null);
 
     const logAudit = (acao, entidade_id, descricao) =>
@@ -50,11 +51,19 @@ export default function Manutencao() {
         enabled: !!currentUser,
     });
 
+    const allUsersMaint = useMemo(() =>
+        [...new Set(allJanelas.map(j => j.criado_por).filter(Boolean))].sort(),
+        [allJanelas]
+    );
+
     const janelas = useMemo(() => {
         if (!currentUser) return [];
-        if (canSeeAll) return allJanelas;
+        if (canSeeAll) {
+            if (userFilter !== 'all') return allJanelas.filter(j => j.criado_por === userFilter);
+            return allJanelas;
+        }
         return allJanelas.filter(j => j.criado_por === currentUser.email);
-    }, [allJanelas, currentUser, canSeeAll]);
+    }, [allJanelas, currentUser, canSeeAll, userFilter]);
 
     const deleteMutation = useMutation({
         mutationFn: (id) => base44.entities.MaintenanceWindow.delete(id),
@@ -173,6 +182,24 @@ export default function Manutencao() {
                     <span className="sm:hidden">Nova</span>
                 </Button>
             </div>
+
+            {/* Filtro por utilizador (admin only) */}
+            {canSeeAll && allUsersMaint.length > 0 && (
+                <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+                        <User className="h-3.5 w-3.5" />
+                        Utilizador
+                    </label>
+                    <select
+                        value={userFilter}
+                        onChange={e => setUserFilter(e.target.value)}
+                        className="h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    >
+                        <option value="all">Todos os utilizadores</option>
+                        {allUsersMaint.map(u => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                </div>
+            )}
 
             {/* Aviso informativo */}
             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">

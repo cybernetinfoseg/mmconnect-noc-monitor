@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
     FileBarChart2, Download, TrendingUp, Activity,
-    CheckCircle2, XCircle, Calendar, Printer, Loader2, X
+    CheckCircle2, XCircle, Calendar, Printer, Loader2, X, User
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import {
@@ -28,6 +28,7 @@ export default function Relatorios() {
 
     const [dataInicio, setDataInicio] = useState(sevenDaysAgo);
     const [dataFim, setDataFim] = useState(today);
+    const [userFilter, setUserFilter] = useState('all');
     const [currentUser, setCurrentUser] = useState(null);
     const [printing, setPrinting] = useState(false);
     const printRef = useRef();
@@ -57,11 +58,19 @@ export default function Relatorios() {
         enabled: !!currentUser,
     });
 
+    const allUsersRelatorios = useMemo(() =>
+        [...new Set(allTerminals.map(t => t.created_by).filter(Boolean))].sort(),
+        [allTerminals]
+    );
+
     const terminals = useMemo(() => {
         if (!currentUser) return [];
-        if (canSeeAll) return allTerminals;
+        if (canSeeAll) {
+            if (userFilter !== 'all') return allTerminals.filter(t => t.created_by === userFilter);
+            return allTerminals;
+        }
         return allTerminals.filter(t => t.created_by === currentUser.email);
-    }, [allTerminals, currentUser, canSeeAll]);
+    }, [allTerminals, currentUser, canSeeAll, userFilter]);
 
     // Computed date range
     const { cutoff, cutoffEnd } = useMemo(() => {
@@ -334,7 +343,17 @@ export default function Relatorios() {
                         )}
                     </div>
                     {/* Action buttons */}
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0 flex-wrap items-center">
+                        {canSeeAll && allUsersRelatorios.length > 0 && (
+                            <select
+                                value={userFilter}
+                                onChange={e => setUserFilter(e.target.value)}
+                                className="h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                            >
+                                <option value="all">Todos os utilizadores</option>
+                                {allUsersRelatorios.map(u => <option key={u} value={u}>{u}</option>)}
+                            </select>
+                        )}
                         <Button onClick={handlePrint} variant="outline" size="sm" className="gap-2 h-9" disabled={printing}>
                             {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
                             <span className="hidden sm:inline">{printing ? 'A preparar...' : 'Imprimir'}</span>

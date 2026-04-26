@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Bell,
   BellOff,
-  FileDown
+  FileDown,
+  User
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,7 @@ import { formatDateTimePT } from '@/lib/localization';
 export default function Incidents() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [tipoFilter, setTipoFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -42,8 +44,20 @@ export default function Incidents() {
   const logAudit = (acao, entidade_id, descricao) =>
     base44.functions.invoke('auditLog', { acao, entidade: 'AlertIncident', entidade_id, descricao }).catch(() => {});
 
+  // Fetch all terminals for user filter (admin only)
+  const { data: allTerminals = [] } = useQuery({
+    queryKey: ['terminals-for-incidents', currentUser?.email],
+    queryFn: () => base44.entities.Terminal.list(),
+    enabled: !!currentUser && canSeeAll,
+  });
+
+  const allUsersInTerminals = useMemo(() =>
+    [...new Set(allTerminals.map(t => t.created_by).filter(Boolean))].sort(),
+    [allTerminals]
+  );
+
   // Fetch incidents with server-side filtering for security
-  const { data: incidents = [], isLoading, refetch } = useQuery({
+  const { data: allIncidentsRaw = [], isLoading, refetch } = useQuery({
     queryKey: ['incidents', currentUser?.email, canSeeAll],
     queryFn: async () => {
       if (canSeeAll) {
@@ -55,13 +69,20 @@ export default function Incidents() {
       );
       const myTerminalIds = myTerminals.map(t => t.id);
       if (myTerminalIds.length === 0) return [];
-      // Fetch all incidents and filter by owned terminals
       const allIncidents = await base44.entities.AlertIncident.list('-created_date', 200);
       return allIncidents.filter(i => myTerminalIds.includes(i.terminal_id));
     },
     refetchInterval: 30000,
     enabled: !!currentUser,
   });
+
+  const incidents = useMemo(() => {
+    if (!canSeeAll || userFilter === 'all') return allIncidentsRaw;
+    const filteredTerminalIds = new Set(
+      allTerminals.filter(t => t.created_by === userFilter).map(t => t.id)
+    );
+    return allIncidentsRaw.filter(i => filteredTerminalIds.has(i.terminal_id));
+  }, [allIncidentsRaw, canSeeAll, userFilter, allTerminals]);
 
   const [checkingId, setCheckingId] = useState(null);
   const [checkError, setCheckError] = useState(null);
@@ -423,6 +444,22 @@ export default function Incidents() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3">
+          {canSeeAll && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                Utilizador
+              </label>
+              <select
+                value={userFilter}
+                onChange={e => setUserFilter(e.target.value)}
+                className="h-9 px-3 rounded-md border border-slate-200 bg-white text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 w-full sm:w-auto"
+              >
+                <option value="all">Todos os utilizadores</option>
+                {allUsersInTerminals.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+          )}
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="bg-white shadow-sm">
               <TabsTrigger value="all">Todos</TabsTrigger>

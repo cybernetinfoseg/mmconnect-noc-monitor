@@ -12,7 +12,8 @@ import {
   Monitor,
   MapPin,
   Filter,
-  X
+  X,
+  User
 } from 'lucide-react';
 import {
   Select,
@@ -31,7 +32,7 @@ import { format, subHours, parseISO, startOfDay, endOfDay } from 'date-fns';
 export default function History() {
   const [terminalFilter, setTerminalFilter] = useState('all');
   const [localFilter, setLocalFilter] = useState('all');
-
+  const [userFilter, setUserFilter] = useState('all');
   const [uptimeFilter, setUptimeFilter] = useState('all');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
@@ -51,11 +52,19 @@ export default function History() {
     enabled: !!currentUser,
   });
 
+  const allUsersInTerminals = useMemo(() =>
+    [...new Set(allTerminals.map(t => t.created_by).filter(Boolean))].sort(),
+    [allTerminals]
+  );
+
   const terminals = useMemo(() => {
     if (!currentUser) return [];
-    if (canSeeAll) return allTerminals;
+    if (canSeeAll) {
+      if (userFilter !== 'all') return allTerminals.filter(t => t.created_by === userFilter);
+      return allTerminals;
+    }
     return allTerminals.filter(t => t.created_by === currentUser.email);
-  }, [allTerminals, currentUser, canSeeAll]);
+  }, [allTerminals, currentUser, canSeeAll, userFilter]);
 
   // Fetch status history
   const { data: allHistory = [], isLoading: historyLoading } = useQuery({
@@ -169,6 +178,18 @@ export default function History() {
             </div>
             {/* Other filters */}
             <div className="flex flex-wrap gap-2">
+              {canSeeAll && (
+                <Select value={userFilter} onValueChange={setUserFilter}>
+                  <SelectTrigger className="w-full sm:w-[160px] bg-white shadow-sm text-xs h-8">
+                    <User className="h-3 w-3 mr-1 text-slate-400 shrink-0" />
+                    <SelectValue placeholder="Utilizador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os utilizadores</SelectItem>
+                    {allUsersInTerminals.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
               <Select value={terminalFilter} onValueChange={setTerminalFilter}>
                 <SelectTrigger className="w-full sm:w-[150px] bg-white shadow-sm text-xs h-8">
                   <Monitor className="h-3 w-3 mr-1 text-slate-400 shrink-0" />

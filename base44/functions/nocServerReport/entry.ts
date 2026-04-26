@@ -33,24 +33,23 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'terminal_id e status são obrigatórios' }, { status: 400 });
         }
 
-        // Verificar ownership — usa usuario_email (ownership real) com fallback para created_by
-        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
-        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
-        const seen = new Set();
-        const terminaisDoUtilizador = [...byUsuario, ...byCreated].filter(t => {
-            if (seen.has(t.id)) return false;
-            seen.add(t.id);
-            return true;
-        });
+        // Verificar se o utilizador é admin
+        const allUsers = await base44.asServiceRole.entities.User.filter({ email: ownerEmail });
+        const isAdmin = allUsers[0]?.role === 'admin';
 
-        const terminal = terminaisDoUtilizador.find(t => t.id === terminal_id);
+        // Buscar o terminal diretamente
+        const terminal = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
 
         if (!terminal) {
-            const terminalExiste = await base44.asServiceRole.entities.Terminal.get(terminal_id).catch(() => null);
-            if (!terminalExiste) {
-                return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
+            return Response.json({ error: 'Terminal não encontrado' }, { status: 404 });
+        }
+
+        // Admin pode reportar qualquer terminal; utilizador normal só os seus
+        if (!isAdmin) {
+            const isOwner = terminal.usuario_email === ownerEmail || terminal.created_by === ownerEmail;
+            if (!isOwner) {
+                return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
             }
-            return Response.json({ error: 'Sem permissão para reportar este terminal' }, { status: 403 });
         }
 
         // Validar tipo

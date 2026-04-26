@@ -1,7 +1,7 @@
 /**
  * nocServerGetTerminals — retorna terminais para o NOC Server Windows
- * Tipos suportados: heartbeat, adms_push, sdk_tcp
- * Autenticação: X-Api-Key pessoal
+ * Tipos suportados: heartbeat, adms_push, sdk_tcp, websocket_cloud
+ * Autenticação: X-Api-Key pessoal (no header)
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -13,25 +13,33 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'API Key ausente ou inválida' }, { status: 401 });
         }
 
+        // Usar asServiceRole para validar a key — não depende de sessão do utilizador
         const base44 = createClientFromRequest(req);
         const allKeys = await base44.asServiceRole.entities.ApiKey.filter({ ativo: true });
         const match = allKeys.find(k => k.key === apiKey);
 
         if (!match) {
+            console.error(`nocServerGetTerminals: API Key não encontrada (key=${apiKey.substring(0,8)}...)`);
             return Response.json({ error: 'API Key inválida' }, { status: 401 });
         }
 
         const ownerEmail = match.user_email;
+        console.log(`nocServerGetTerminals: autenticado como ${ownerEmail}`);
 
-        // Buscar terminais — usa usuario_email (ownership real) com fallback para created_by
-        const byUsuario = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail });
-        const byCreated = await base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail });
+        // Buscar terminais ativos — por usuario_email (ownership real) e created_by
+        const [byUsuario, byCreated] = await Promise.all([
+            base44.asServiceRole.entities.Terminal.filter({ ativo: true, usuario_email: ownerEmail }),
+            base44.asServiceRole.entities.Terminal.filter({ ativo: true, created_by: ownerEmail }),
+        ]);
+
         const seen = new Set();
         const allTerminals = [...byUsuario, ...byCreated].filter(t => {
             if (seen.has(t.id)) return false;
             seen.add(t.id);
             return true;
         });
+
+        console.log(`nocServerGetTerminals: ${ownerEmail} tem ${allTerminals.length} terminais ativos total`);
 
         const supported = ['heartbeat', 'adms_push', 'sdk_tcp', 'websocket_cloud'];
         const terminals = allTerminals.filter(t => supported.includes(t.tipo_conexao));
@@ -50,7 +58,7 @@ Deno.serve(async (req) => {
             ativo: t.ativo,
         }));
 
-        console.log(`nocServerGetTerminals OK: ${ownerEmail} → ${result.length} terminais (${terminals.map(t=>t.tipo_conexao).join(', ')})`);
+        console.log(`nocServerGetTerminals OK: ${ownerEmail} → ${result.length} terminais (${terminals.map(t => t.tipo_conexao).join(', ')})`);
         return Response.json({ success: true, terminals: result, owner: ownerEmail });
 
     } catch (error) {

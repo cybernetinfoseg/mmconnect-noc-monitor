@@ -1,0 +1,60 @@
+{
+  "name": "TerminalUser",
+  "type": "object",
+  "properties": {
+    "enrollid": {
+      "type": "number",
+      "description": "ID de inscri\u00e7\u00e3o no terminal (n\u00famero \u00fanico)"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome completo do utilizador"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email do utilizador (opcional)"
+    },
+    "departamento": {
+      "type": "string",
+      "description": "Departamento ou setor"
+    },
+    "cargo": {
+      "type": "string",
+      "description": "Cargo ou fun\u00e7\u00e3o"
+    },
+    "card": {
+      "type": "string",
+      "description": "N\u00famero do cart\u00e3o RFID (opcional)"
+    },
+    "password": {
+      "type": "string",
+      "description": "Senha num\u00e9rica (opcional)"
+    },
+    "privilege": {
+      "type": "number",
+      "default": 0,
+      "description": "Privil\u00e9gio: 0=utilizador, 14=administrador"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se o utilizador est\u00e1 ativo"
+    },
+    "terminais_ids": {
+      "type": "string",
+      "description": "JSON array com IDs dos terminais onde este utilizador est\u00e1 inscrito"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email do respons\u00e1vel/dono deste registo"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es adicionais"
+    }
+  },
+  "required": [
+    "enrollid",
+    "nome"
+  ]
+}

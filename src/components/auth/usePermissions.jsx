@@ -14,6 +14,7 @@ const ALL_PAGES = [
   'Dashboard', 'TVMode', 'Terminais', 'Mapa', 'History',
   'Incidents', 'Alertas', 'Manutencao', 'Agendamentos', 'Relatorios',
   'Auditoria', 'Configuracoes', 'Administracao',
+  'Utilizadores', 'Marcacoes', 'ExportacaoMarcacoes',
 ];
 
 const ADMIN_ONLY_PAGES = ['Administracao', 'Configuracoes'];

@@ -9,6 +9,9 @@ import Mapa from './pages/Mapa';
 import Agendamentos from './pages/Agendamentos';
 import Relatorios from './pages/Relatorios';
 import CompletarPerfil from './pages/CompletarPerfil';
+import Utilizadores from './pages/Utilizadores';
+import Marcacoes from './pages/Marcacoes';
+import ExportacaoMarcacoes from './pages/ExportacaoMarcacoes';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -68,6 +71,9 @@ const AuthenticatedApp = () => {
       <Route path="/Agendamentos" element={<LayoutWrapper currentPageName="Agendamentos"><Agendamentos /></LayoutWrapper>} />
       <Route path="/CompletarPerfil" element={<LayoutWrapper currentPageName="CompletarPerfil"><CompletarPerfil /></LayoutWrapper>} />
       <Route path="/Mapa" element={<LayoutWrapper currentPageName="Mapa"><Mapa /></LayoutWrapper>} />
+      <Route path="/Utilizadores" element={<LayoutWrapper currentPageName="Utilizadores"><Utilizadores /></LayoutWrapper>} />
+      <Route path="/Marcacoes" element={<LayoutWrapper currentPageName="Marcacoes"><Marcacoes /></LayoutWrapper>} />
+      <Route path="/ExportacaoMarcacoes" element={<LayoutWrapper currentPageName="ExportacaoMarcacoes"><ExportacaoMarcacoes /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

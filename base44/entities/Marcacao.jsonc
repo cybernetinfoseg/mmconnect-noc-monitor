@@ -1,0 +1,64 @@
+{
+  "name": "Marcacao",
+  "type": "object",
+  "properties": {
+    "terminal_id": {
+      "type": "string",
+      "description": "ID do terminal onde a marca\u00e7\u00e3o foi registada"
+    },
+    "terminal_nome": {
+      "type": "string",
+      "description": "Nome do terminal (cache)"
+    },
+    "enrollid": {
+      "type": "number",
+      "description": "ID do utilizador no terminal"
+    },
+    "utilizador_nome": {
+      "type": "string",
+      "description": "Nome do utilizador (cache, se conhecido)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora da marca\u00e7\u00e3o"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "entrada",
+        "saida",
+        "desconhecido"
+      ],
+      "default": "desconhecido",
+      "description": "Tipo de marca\u00e7\u00e3o"
+    },
+    "modo": {
+      "type": "string",
+      "description": "Modo de verifica\u00e7\u00e3o: fp=impress\u00e3o digital, face=facial, card=cart\u00e3o, pw=senha"
+    },
+    "local": {
+      "type": "string",
+      "description": "Local do terminal"
+    },
+    "raw_mode": {
+      "type": "number",
+      "description": "C\u00f3digo de modo original do terminal"
+    },
+    "exportado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se esta marca\u00e7\u00e3o j\u00e1 foi exportada para sistema externo"
+    },
+    "exportado_em": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora da exporta\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "terminal_id",
+    "enrollid",
+    "timestamp"
+  ]
+}

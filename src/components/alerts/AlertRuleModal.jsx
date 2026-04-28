@@ -16,15 +16,18 @@ const GATILHOS = [
   { value: 'multiplos_offline', label: 'Múltiplos terminais offline (quantidade)' },
 ];
 
-export default function AlertRuleModal({ rule, onClose, onSaved }) {
+export default function AlertRuleModal({ rule, currentUser, onClose, onSaved }) {
   const isEdit = !!rule;
+  const isAdmin = currentUser?.role === 'admin';
   const [saving, setSaving] = useState(false);
+  const [filterUser, setFilterUser] = useState('');
   const [form, setForm] = useState({
     nome: '',
     ativo: true,
     gatilho: 'terminal_offline',
     condicao_valor: '',
     filtro_local: '',
+    filtro_terminal_id: '',
     canal: 'email',
     destinatarios_email: '',
     slack_webhook_url: '',
@@ -39,6 +42,7 @@ export default function AlertRuleModal({ rule, onClose, onSaved }) {
         gatilho: rule.gatilho || 'terminal_offline',
         condicao_valor: rule.condicao_valor || '',
         filtro_local: rule.filtro_local || '',
+        filtro_terminal_id: rule.filtro_terminal_id || '',
         canal: rule.canal || 'email',
         destinatarios_email: rule.destinatarios_email || '',
         slack_webhook_url: rule.slack_webhook_url || '',
@@ -47,12 +51,28 @@ export default function AlertRuleModal({ rule, onClose, onSaved }) {
     }
   }, [rule]);
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users-alert-modal'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
+  });
+
   const { data: terminals = [] } = useQuery({
     queryKey: ['terminals-for-filter'],
     queryFn: () => base44.entities.Terminal.list(),
   });
 
-  const locais = [...new Set(terminals.map(t => t.local).filter(Boolean))].sort();
+  // Terminals filtered by selected user (admin) or own terminals (non-admin)
+  const filteredTerminals = isAdmin && filterUser
+    ? terminals.filter(t => t.usuario_email === filterUser || t.created_by === filterUser)
+    : terminals;
+
+  // Locais with owner email shown
+  const locaisComOwner = [...new Map(
+    filteredTerminals
+      .filter(t => t.local)
+      .map(t => [t.local, { local: t.local, email: t.usuario_email || t.created_by }])
+  ).values()].sort((a, b) => a.local.localeCompare(b.local));
 
   const needsValue = form.gatilho === 'sem_ping_minutos' || form.gatilho === 'multiplos_offline';
   const needsEmail = form.canal === 'email' || form.canal === 'ambos';
@@ -149,14 +169,66 @@ export default function AlertRuleModal({ rule, onClose, onSaved }) {
           )}
 
           {/* Filtros */}
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
+            {/* Filtro por utilizador (admin only) */}
+            {isAdmin && (
+              <div className="space-y-1.5">
+                <Label>Filtrar por utilizador</Label>
+                <select
+                  value={filterUser}
+                  onChange={e => {
+                    setFilterUser(e.target.value);
+                    set('filtro_local', '');
+                    set('filtro_terminal_id', '');
+                  }}
+                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">Todos os utilizadores</option>
+                  {allUsers.map(u => (
+                    <option key={u.email} value={u.email}>
+                      {u.full_name ? `${u.full_name} (${u.email})` : u.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Filtrar por local */}
             <div className="space-y-1.5">
               <Label>Filtrar por local</Label>
-              <Select value={form.filtro_local || 'todos'} onValueChange={v => set('filtro_local', v === 'todos' ? '' : v)}>
+              <Select value={form.filtro_local || 'todos'} onValueChange={v => { set('filtro_local', v === 'todos' ? '' : v); set('filtro_terminal_id', ''); }}>
                 <SelectTrigger><SelectValue placeholder="Todos os locais" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos os locais</SelectItem>
-                  {locais.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                  {locaisComOwner.map(({ local, email }) => (
+                    <SelectItem key={local} value={local}>
+                      <div className="flex flex-col leading-tight">
+                        <span>{local}</span>
+                        {email && <span className="text-xs text-slate-400">{email}</span>}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtrar por terminal */}
+            <div className="space-y-1.5">
+              <Label>Filtrar por terminal (opcional)</Label>
+              <Select value={form.filtro_terminal_id || 'todos'} onValueChange={v => { set('filtro_terminal_id', v === 'todos' ? '' : v); set('filtro_local', ''); }}>
+                <SelectTrigger><SelectValue placeholder="Todos os terminais" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os terminais</SelectItem>
+                  {filteredTerminals.map(t => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <div className="flex flex-col leading-tight">
+                        <span>{t.nome}</span>
+                        {(t.usuario_email || t.created_by) && (
+                          <span className="text-xs text-slate-400">{t.usuario_email || t.created_by}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -254,6 +254,7 @@ export default function Alertas() {
       {modalOpen && (
         <AlertRuleModal
           rule={editingRule}
+          currentUser={currentUser}
           onClose={() => { setModalOpen(false); setEditingRule(null); }}
           onSaved={(result) => {
             const isEdit = !!editingRule;

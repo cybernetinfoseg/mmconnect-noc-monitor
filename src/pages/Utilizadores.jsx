@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Pencil, Trash2, Search, Upload, Download,
   CheckCircle2, XCircle, Loader2, Send, ChevronDown, ChevronUp,
-  FileDown, FileUp, Zap, UserCheck, UserX
-} from 'lucide-react';
+  FileDown, FileUp, Zap, UserCheck, UserX } from
+'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +55,7 @@ export default function Utilizadores() {
   const { data: appUsers = [] } = useQuery({
     queryKey: ['app-users-list'],
     queryFn: () => base44.entities.User.list(),
-    enabled: !!currentUser && isAdmin,
+    enabled: !!currentUser && isAdmin
   });
 
   const { data: allUsers = [], isLoading } = useQuery({
@@ -64,7 +64,7 @@ export default function Utilizadores() {
       if (isAdmin) return base44.entities.TerminalUser.list('-created_date', 500);
       return base44.entities.TerminalUser.filter({ owner_email: currentUser?.email }, '-created_date', 500);
     },
-    enabled: !!currentUser,
+    enabled: !!currentUser
   });
 
   const { data: terminals = [] } = useQuery({
@@ -72,18 +72,18 @@ export default function Utilizadores() {
     queryFn: async () => {
       if (isAdmin) return base44.entities.Terminal.list('nome');
       const [a, b] = await Promise.all([
-        base44.entities.Terminal.filter({ usuario_email: currentUser?.email }, 'nome'),
-        base44.entities.Terminal.filter({ created_by: currentUser?.email }, 'nome'),
-      ]);
+      base44.entities.Terminal.filter({ usuario_email: currentUser?.email }, 'nome'),
+      base44.entities.Terminal.filter({ created_by: currentUser?.email }, 'nome')]
+      );
       const seen = new Set();
-      return [...a, ...b].filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
+      return [...a, ...b].filter((t) => {if (seen.has(t.id)) return false;seen.add(t.id);return true;});
     },
-    enabled: !!currentUser,
+    enabled: !!currentUser
   });
 
   const allOwners = useMemo(() =>
-    [...new Set(allUsers.map(u => u.owner_email).filter(Boolean))].sort(),
-    [allUsers]
+  [...new Set(allUsers.map((u) => u.owner_email).filter(Boolean))].sort(),
+  [allUsers]
   );
 
   const saveMutation = useMutation({
@@ -94,16 +94,16 @@ export default function Utilizadores() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['terminal-users']);
-      setDialogOpen(false); setEditingUser(null); setFormData({}); setSelectedTerminals([]);
+      setDialogOpen(false);setEditingUser(null);setFormData({});setSelectedTerminals([]);
       toast.success(editingUser ? 'Utilizador atualizado' : 'Utilizador criado');
     },
-    onError: (e) => toast.error(`Erro: ${e.message}`),
+    onError: (e) => toast.error(`Erro: ${e.message}`)
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.TerminalUser.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries(['terminal-users']); toast.success('Eliminado'); },
-    onError: (e) => toast.error(`Erro: ${e.message}`),
+    onSuccess: () => {queryClient.invalidateQueries(['terminal-users']);toast.success('Eliminado');},
+    onError: (e) => toast.error(`Erro: ${e.message}`)
   });
 
   const sendUserToTerminals = async (user, terminalIds) => {
@@ -113,7 +113,7 @@ export default function Utilizadores() {
       try {
         const resp = await base44.functions.invoke('terminalControl', {
           terminal_id: tid, action: 'adduser',
-          params: { enrollid: user.enrollid, name: user.nome, password: user.password || '', card: user.card || '', privilege: user.privilege || 0 },
+          params: { enrollid: user.enrollid, name: user.nome, password: user.password || '', card: user.card || '', privilege: user.privilege || 0 }
         });
         results[tid] = { success: resp.data?.success, message: resp.data?.message || resp.data?.error };
       } catch (e) {
@@ -128,7 +128,7 @@ export default function Utilizadores() {
     try {
       const resp = await base44.functions.invoke('terminalControl', {
         terminal_id: terminalId, action: 'deleteuser',
-        params: { enrollid: user.enrollid },
+        params: { enrollid: user.enrollid }
       });
       const ok = resp.data?.success;
       ok ? toast.success(`Utilizador removido do terminal`) : toast.error(resp.data?.error || 'Erro ao remover');
@@ -141,15 +141,15 @@ export default function Utilizadores() {
   const handleDeleteFromAll = async (user, terminalList) => {
     const list = terminalList || terminals;
     setDeletingFromAll(user.id);
-    let ok = 0, fail = 0;
+    let ok = 0,fail = 0;
     for (const t of list) {
       try {
         const resp = await base44.functions.invoke('terminalControl', {
           terminal_id: t.id, action: 'deleteuser',
-          params: { enrollid: user.enrollid },
+          params: { enrollid: user.enrollid }
         });
         resp.data?.success ? ok++ : fail++;
-      } catch { fail++; }
+      } catch {fail++;}
     }
     setDeletingFromAll(null);
     fail === 0 ? toast.success(`Utilizador removido de ${ok} terminal(is)`) : toast.error(`${ok} OK / ${fail} erros`);
@@ -158,39 +158,39 @@ export default function Utilizadores() {
   const handleSendOne = async (user, terminalIds) => {
     setSendingTo(user.id);
     const results = await sendUserToTerminals(user, terminalIds);
-    setSendResults(prev => ({ ...prev, [user.id]: results }));
+    setSendResults((prev) => ({ ...prev, [user.id]: results }));
     setSendingTo(null);
-    const ok = Object.values(results).filter(r => r.success).length;
-    const fail = Object.values(results).filter(r => !r.success).length;
+    const ok = Object.values(results).filter((r) => r.success).length;
+    const fail = Object.values(results).filter((r) => !r.success).length;
     fail === 0 ? toast.success(`Enviado para ${ok} terminal(is)`) : toast.error(`${ok} OK / ${fail} erro(s)`);
   };
 
   // Enviar TODOS os utilizadores para TODOS os terminais
   const handleSendAllToAll = async () => {
-    if (!terminals.length) { toast.error('Sem terminais disponíveis'); return; }
-    if (!filtered.length) { toast.error('Sem utilizadores para enviar'); return; }
+    if (!terminals.length) {toast.error('Sem terminais disponíveis');return;}
+    if (!filtered.length) {toast.error('Sem utilizadores para enviar');return;}
     setSendingAll(true);
-    let totalOk = 0, totalFail = 0;
-    const terminalIds = terminals.map(t => t.id);
+    let totalOk = 0,totalFail = 0;
+    const terminalIds = terminals.map((t) => t.id);
     for (const user of filtered) {
       const results = await sendUserToTerminals(user, terminalIds);
-      totalOk += Object.values(results).filter(r => r.success).length;
-      totalFail += Object.values(results).filter(r => !r.success).length;
+      totalOk += Object.values(results).filter((r) => r.success).length;
+      totalFail += Object.values(results).filter((r) => !r.success).length;
     }
     setSendingAll(false);
-    totalFail === 0
-      ? toast.success(`Todos os utilizadores enviados! ${totalOk} operações OK`)
-      : toast.error(`${totalOk} OK / ${totalFail} erros`);
+    totalFail === 0 ?
+    toast.success(`Todos os utilizadores enviados! ${totalOk} operações OK`) :
+    toast.error(`${totalOk} OK / ${totalFail} erros`);
   };
 
   // Exportar CSV
   const handleExportCSV = () => {
     const headers = ['enrollid', 'nome', 'email', 'departamento', 'cargo', 'card', 'privilege', 'ativo', 'observacoes', 'owner_email'];
-    const rows = filtered.map(u => headers.map(h => u[h] ?? ''));
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+    const rows = filtered.map((u) => headers.map((h) => u[h] ?? ''));
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'utilizadores.csv'; a.click();
+    const a = document.createElement('a');a.href = url;a.download = 'utilizadores.csv';a.click();
     URL.revokeObjectURL(url);
     toast.success('CSV exportado!');
   };
@@ -201,14 +201,14 @@ export default function Utilizadores() {
     if (!file) return;
     e.target.value = '';
     const text = await file.text();
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length < 2) { toast.error('Ficheiro vazio ou inválido'); return; }
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) {toast.error('Ficheiro vazio ou inválido');return;}
     const sep = lines[0].includes(';') ? ';' : ',';
-    const headers = lines[0].split(sep).map(h => h.replace(/"/g, '').trim());
-    const rows = lines.slice(1).map(line => {
+    const headers = lines[0].split(sep).map((h) => h.replace(/"/g, '').trim());
+    const rows = lines.slice(1).map((line) => {
       const vals = line.split(sep);
       const obj = {};
-      headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
+      headers.forEach((h, i) => {obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim();});
       return obj;
     });
     setImportProgress({ total: rows.length, done: 0 });
@@ -227,11 +227,11 @@ export default function Utilizadores() {
           ativo: row.ativo === 'false' ? false : true,
           observacoes: row.observacoes || '',
           owner_email: row.owner_email || currentUser?.email,
-          terminais_ids: '[]',
+          terminais_ids: '[]'
         });
         ok++;
       } catch {}
-      setImportProgress(prev => ({ ...prev, done: prev.done + 1 }));
+      setImportProgress((prev) => ({ ...prev, done: prev.done + 1 }));
     }
     setImportProgress(null);
     queryClient.invalidateQueries(['terminal-users']);
@@ -240,12 +240,12 @@ export default function Utilizadores() {
 
   const filtered = useMemo(() => {
     let list = allUsers;
-    if (isAdmin && ownerFilter !== 'all') list = list.filter(u => u.owner_email === ownerFilter);
-    if (search) list = list.filter(u =>
-      u.nome?.toLowerCase().includes(search.toLowerCase()) ||
-      String(u.enrollid).includes(search) ||
-      u.departamento?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase())
+    if (isAdmin && ownerFilter !== 'all') list = list.filter((u) => u.owner_email === ownerFilter);
+    if (search) list = list.filter((u) =>
+    u.nome?.toLowerCase().includes(search.toLowerCase()) ||
+    String(u.enrollid).includes(search) ||
+    u.departamento?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase())
     );
     return list;
   }, [allUsers, search, ownerFilter, isAdmin]);
@@ -253,31 +253,31 @@ export default function Utilizadores() {
   // Terminais do dono selecionado para bulk
   const bulkOwnerTerminals = useMemo(() => {
     if (!bulkOwner) return [];
-    return terminals.filter(t => t.usuario_email === bulkOwner || t.created_by === bulkOwner);
+    return terminals.filter((t) => t.usuario_email === bulkOwner || t.created_by === bulkOwner);
   }, [terminals, bulkOwner]);
 
   const bulkOwnerUsers = useMemo(() => {
     if (!bulkOwner) return [];
-    return allUsers.filter(u => u.owner_email === bulkOwner);
+    return allUsers.filter((u) => u.owner_email === bulkOwner);
   }, [allUsers, bulkOwner]);
 
   const handleBulkSendByOwner = async () => {
     if (!bulkOwner || !bulkOwnerUsers.length || !bulkOwnerTerminals.length) return;
-    const terminalIds = bulkOwnerTerminals.map(t => t.id);
+    const terminalIds = bulkOwnerTerminals.map((t) => t.id);
     const total = bulkOwnerUsers.length * terminalIds.length;
     setBulkSending(true);
     setBulkProgress({ done: 0, total, label: 'A enviar' });
-    let ok = 0, fail = 0;
+    let ok = 0,fail = 0;
     for (const user of bulkOwnerUsers) {
       for (const tid of terminalIds) {
         try {
           const resp = await base44.functions.invoke('terminalControl', {
             terminal_id: tid, action: 'adduser',
-            params: { enrollid: user.enrollid, name: user.nome, password: user.password || '', card: user.card || '', privilege: user.privilege || 0 },
+            params: { enrollid: user.enrollid, name: user.nome, password: user.password || '', card: user.card || '', privilege: user.privilege || 0 }
           });
           resp.data?.success ? ok++ : fail++;
-        } catch { fail++; }
-        setBulkProgress(prev => ({ ...prev, done: prev.done + 1 }));
+        } catch {fail++;}
+        setBulkProgress((prev) => ({ ...prev, done: prev.done + 1 }));
       }
     }
     setBulkSending(false);
@@ -287,21 +287,21 @@ export default function Utilizadores() {
 
   const handleBulkRemoveByOwner = async () => {
     if (!bulkOwner || !bulkOwnerUsers.length || !bulkOwnerTerminals.length) return;
-    const terminalIds = bulkOwnerTerminals.map(t => t.id);
+    const terminalIds = bulkOwnerTerminals.map((t) => t.id);
     const total = bulkOwnerUsers.length * terminalIds.length;
     setBulkRemoving(true);
     setBulkProgress({ done: 0, total, label: 'A remover' });
-    let ok = 0, fail = 0;
+    let ok = 0,fail = 0;
     for (const user of bulkOwnerUsers) {
       for (const tid of terminalIds) {
         try {
           const resp = await base44.functions.invoke('terminalControl', {
             terminal_id: tid, action: 'deleteuser',
-            params: { enrollid: user.enrollid },
+            params: { enrollid: user.enrollid }
           });
           resp.data?.success ? ok++ : fail++;
-        } catch { fail++; }
-        setBulkProgress(prev => ({ ...prev, done: prev.done + 1 }));
+        } catch {fail++;}
+        setBulkProgress((prev) => ({ ...prev, done: prev.done + 1 }));
       }
     }
     setBulkRemoving(false);
@@ -309,13 +309,13 @@ export default function Utilizadores() {
     fail === 0 ? toast.success(`${ok} remoções concluídas!`) : toast.error(`${ok} OK / ${fail} erros`);
   };
 
-  const filteredDialogTerminals = isAdmin && filterTerminalUser
-    ? terminals.filter(t => t.usuario_email === filterTerminalUser || t.created_by === filterTerminalUser)
-    : terminals;
+  const filteredDialogTerminals = isAdmin && filterTerminalUser ?
+  terminals.filter((t) => t.usuario_email === filterTerminalUser || t.created_by === filterTerminalUser) :
+  terminals;
 
-  const handleNew = () => { setEditingUser(null); setFormData({ privilege: 0, ativo: true }); setSelectedTerminals([]); setFilterTerminalUser(''); setDialogOpen(true); };
-  const handleEdit = (u) => { setEditingUser(u); setFormData(u); setFilterTerminalUser(''); try { setSelectedTerminals(JSON.parse(u.terminais_ids || '[]')); } catch { setSelectedTerminals([]); } setDialogOpen(true); };
-  const toggleTerminal = (tid) => setSelectedTerminals(prev => prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]);
+  const handleNew = () => {setEditingUser(null);setFormData({ privilege: 0, ativo: true });setSelectedTerminals([]);setFilterTerminalUser('');setDialogOpen(true);};
+  const handleEdit = (u) => {setEditingUser(u);setFormData(u);setFilterTerminalUser('');try {setSelectedTerminals(JSON.parse(u.terminais_ids || '[]'));} catch {setSelectedTerminals([]);}setDialogOpen(true);};
+  const toggleTerminal = (tid) => setSelectedTerminals((prev) => prev.includes(tid) ? prev.filter((id) => id !== tid) : [...prev, tid]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 w-full">
@@ -343,8 +343,8 @@ export default function Utilizadores() {
               variant="outline" size="sm"
               onClick={handleSendAllToAll}
               disabled={sendingAll || !terminals.length || !filtered.length}
-              className="gap-1.5 text-xs border-teal-300 text-teal-700 hover:bg-teal-50"
-            >
+              className="gap-1.5 text-xs border-teal-300 text-teal-700 hover:bg-teal-50">
+              
               {sendingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               <span className="hidden sm:inline">Enviar Todos</span>
             </Button>
@@ -356,37 +356,37 @@ export default function Utilizadores() {
         </div>
 
         {/* Import progress */}
-        {importProgress && (
-          <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg flex items-center gap-3">
+        {importProgress &&
+        <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg flex items-center gap-3">
             <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
             <p className="text-sm text-teal-700">A importar... {importProgress.done}/{importProgress.total}</p>
             <div className="flex-1 bg-teal-100 rounded-full h-2">
-              <div className="bg-teal-600 h-2 rounded-full transition-all" style={{ width: `${(importProgress.done / importProgress.total) * 100}%` }} />
+              <div className="bg-teal-600 h-2 rounded-full transition-all" style={{ width: `${importProgress.done / importProgress.total * 100}%` }} />
             </div>
           </div>
-        )}
+        }
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input placeholder="Pesquisar por nome, ID, departamento..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 bg-white" />
+            <Input placeholder="Pesquisar por nome, ID, departamento..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-white" />
           </div>
-          {isAdmin && allOwners.length > 0 && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+          {isAdmin && allOwners.length > 0 &&
+          <div className="flex items-center gap-2 w-full sm:w-auto">
               <label className="text-xs text-slate-500 whitespace-nowrap font-medium">Filtrar Por:</label>
-              <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}
-                className="h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-300 flex-1 sm:w-auto">
+              <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}
+            className="h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-300 flex-1 sm:w-auto">
                 <option value="all">Todos</option>
-                {appUsers.map(u => <option key={u.email} value={u.email}>{u.email}</option>)}
+                {appUsers.map((u) => <option key={u.email} value={u.email}>{u.email}</option>)}
               </select>
             </div>
-          )}
+          }
         </div>
 
         {/* Bulk Operations by Owner (admin only) */}
-        {isAdmin && allOwners.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+        {isAdmin && allOwners.length > 0 &&
+        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-amber-500" />
               <span className="text-sm font-semibold text-slate-700">Operações em Massa por Dono</span>
@@ -395,81 +395,81 @@ export default function Utilizadores() {
               <div className="flex-1 min-w-0">
                 <label className="text-xs text-slate-500 mb-1 block">Selecionar Dono</label>
                 <select
-                  value={bulkOwner}
-                  onChange={e => setBulkOwner(e.target.value)}
-                  className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm text-slate-700 px-3 focus:outline-none focus:ring-1 focus:ring-slate-300"
-                  disabled={bulkSending || bulkRemoving}
-                >
+                value={bulkOwner}
+                onChange={(e) => setBulkOwner(e.target.value)}
+                className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm text-slate-700 px-3 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                disabled={bulkSending || bulkRemoving}>
+                
                   <option value="">— Escolher dono —</option>
-                  {appUsers.map(u => {
-                    const uTerminals = terminals.filter(t => t.usuario_email === u.email || t.created_by === u.email);
-                    const uUsers = allUsers.filter(x => x.owner_email === u.email);
-                    return (
-                      <option key={u.email} value={u.email}>
+                  {appUsers.map((u) => {
+                  const uTerminals = terminals.filter((t) => t.usuario_email === u.email || t.created_by === u.email);
+                  const uUsers = allUsers.filter((x) => x.owner_email === u.email);
+                  return (
+                    <option key={u.email} value={u.email}>
                         {u.full_name || u.email} ({uUsers.length} utilizadores, {uTerminals.length} terminais)
-                      </option>
-                    );
-                  })}
+                      </option>);
+
+                })}
                 </select>
               </div>
-              {bulkOwner && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 shrink-0">
+              {bulkOwner &&
+            <div className="flex items-center gap-2 text-xs text-slate-500 shrink-0">
                   <span className="bg-teal-50 text-teal-700 border border-teal-200 rounded px-2 py-1">{bulkOwnerUsers.length} utilizadores</span>
                   <span className="bg-slate-50 text-slate-600 border border-slate-200 rounded px-2 py-1">{bulkOwnerTerminals.length} terminais</span>
                 </div>
-              )}
+            }
               <div className="flex gap-2 shrink-0">
                 <Button
-                  size="sm"
-                  className="bg-teal-600 hover:bg-teal-700 gap-1.5 text-xs"
-                  disabled={!bulkOwner || !bulkOwnerUsers.length || !bulkOwnerTerminals.length || bulkSending || bulkRemoving}
-                  onClick={handleBulkSendByOwner}
-                >
+                size="sm"
+                className="bg-teal-600 hover:bg-teal-700 gap-1.5 text-xs"
+                disabled={!bulkOwner || !bulkOwnerUsers.length || !bulkOwnerTerminals.length || bulkSending || bulkRemoving}
+                onClick={handleBulkSendByOwner}>
+                
                   {bulkSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />}
                   Enviar Todos
                 </Button>
                 <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-red-600 border-red-300 hover:bg-red-50 gap-1.5 text-xs"
-                  disabled={!bulkOwner || !bulkOwnerUsers.length || !bulkOwnerTerminals.length || bulkSending || bulkRemoving}
-                  onClick={handleBulkRemoveByOwner}
-                >
+                size="sm"
+                variant="outline"
+                className="text-red-600 border-red-300 hover:bg-red-50 gap-1.5 text-xs"
+                disabled={!bulkOwner || !bulkOwnerUsers.length || !bulkOwnerTerminals.length || bulkSending || bulkRemoving}
+                onClick={handleBulkRemoveByOwner}>
+                
                   {bulkRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserX className="h-3.5 w-3.5" />}
                   Remover Todos
                 </Button>
               </div>
             </div>
-            {bulkProgress && (
-              <div className="space-y-1.5">
+            {bulkProgress &&
+          <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span>{bulkProgress.label}... {bulkProgress.done}/{bulkProgress.total}</span>
-                  <span>{Math.round((bulkProgress.done / bulkProgress.total) * 100)}%</span>
+                  <span>{Math.round(bulkProgress.done / bulkProgress.total * 100)}%</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-1.5">
                   <div
-                    className={cn('h-1.5 rounded-full transition-all', bulkSending ? 'bg-teal-500' : 'bg-red-400')}
-                    style={{ width: `${(bulkProgress.done / bulkProgress.total) * 100}%` }}
-                  />
+                className={cn('h-1.5 rounded-full transition-all', bulkSending ? 'bg-teal-500' : 'bg-red-400')}
+                style={{ width: `${bulkProgress.done / bulkProgress.total * 100}%` }} />
+              
                 </div>
               </div>
-            )}
+          }
           </div>
-        )}
+        }
 
         {/* Users Table (desktop) + Cards (mobile) */}
-        {isLoading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
-        ) : filtered.length === 0 ? (
-          <Card className="bg-white border-slate-200">
+        {isLoading ?
+        <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div> :
+        filtered.length === 0 ?
+        <Card className="bg-white border-slate-200">
             <CardContent className="py-16 text-center text-slate-400">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
               <p className="font-medium">Nenhum utilizador encontrado</p>
               <Button onClick={handleNew} className="mt-4 bg-teal-600 hover:bg-teal-700 text-sm"><Plus className="h-4 w-4 mr-2" /> Criar primeiro utilizador</Button>
             </CardContent>
-          </Card>
-        ) : (
-          <>
+          </Card> :
+
+        <>
             {/* Desktop table */}
             <Card className="bg-white border-slate-200 hidden lg:block overflow-hidden">
               <table className="w-full text-sm">
@@ -485,13 +485,13 @@ export default function Utilizadores() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map(u => {
-                    const termIds = (() => { try { return JSON.parse(u.terminais_ids || '[]'); } catch { return []; } })();
-                    const userTerminals = terminals.filter(t => termIds.includes(t.id));
-                    const isExpanded = expandedUser === u.id;
-                    const sendResult = sendResults[u.id];
-                    return (
-                      <React.Fragment key={u.id}>
+                  {filtered.map((u) => {
+                  const termIds = (() => {try {return JSON.parse(u.terminais_ids || '[]');} catch {return [];}})();
+                  const userTerminals = terminals.filter((t) => termIds.includes(t.id));
+                  const isExpanded = expandedUser === u.id;
+                  const sendResult = sendResults[u.id];
+                  return (
+                    <React.Fragment key={u.id}>
                         <tr className={cn('hover:bg-slate-50 transition-colors', !u.ativo && 'opacity-50')}>
                           <td className="px-4 py-3">
                             <span className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 font-bold text-xs flex items-center justify-center">{u.enrollid}</span>
@@ -527,36 +527,36 @@ export default function Utilizadores() {
                           </td>
                         </tr>
                         {isExpanded && (() => {
-                          const ownerFilter = expandedTerminalOwner[u.id] || '';
-                          const visibleTerminals = ownerFilter
-                            ? terminals.filter(t => t.usuario_email === ownerFilter || t.created_by === ownerFilter)
-                            : terminals;
-                          return (
+                        const ownerFilter = expandedTerminalOwner[u.id] || '';
+                        const visibleTerminals = ownerFilter ?
+                        terminals.filter((t) => t.usuario_email === ownerFilter || t.created_by === ownerFilter) :
+                        terminals;
+                        return (
                           <tr key={`exp-${u.id}`}>
                             <td colSpan={isAdmin ? 7 : 6} className="px-4 pb-4 bg-slate-50 border-b border-slate-200">
                               <div className="pt-3 space-y-2">
                                 <div className="flex items-center gap-3 flex-wrap">
                                   <p className="text-xs font-semibold text-slate-600">Enviar para terminal:</p>
-                                  {isAdmin && (
-                                    <div className="flex items-center gap-1.5">
-                                      <label className="text-xs text-slate-400 whitespace-nowrap">Filtrar Por:</label>
+                                  {isAdmin &&
+                                  <div className="flex items-center gap-1.5">
+                                      <label className="text-xs text-slate-400 whitespace-nowrap hidden">Filtrar Por:</label>
                                       <select
-                                        value={ownerFilter}
-                                        onChange={e => setExpandedTerminalOwner(prev => ({ ...prev, [u.id]: e.target.value }))}
-                                        className="h-7 px-2 rounded-md border border-slate-200 bg-white text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-300"
-                                      >
+                                      value={ownerFilter}
+                                      onChange={(e) => setExpandedTerminalOwner((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                                      className="h-7 px-2 rounded-md border border-slate-200 bg-white text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-300">
+                                      
                                         <option value="">Todos</option>
-                                        {appUsers.map(au => <option key={au.email} value={au.email}>{au.email}</option>)}
+                                        {appUsers.map((au) => <option key={au.email} value={au.email}>{au.email}</option>)}
                                       </select>
                                     </div>
-                                  )}
+                                  }
                                 </div>
                                 <div className="grid grid-cols-3 xl:grid-cols-4 gap-2">
-                                  {visibleTerminals.map(t => {
-                                   const res = sendResult?.[t.id];
-                                   const isDeletingThis = deletingFromTerminal?.userId === u.id && deletingFromTerminal?.terminalId === t.id;
-                                   return (
-                                     <div key={t.id} className="flex items-center justify-between p-2 rounded-lg border border-slate-200 bg-white">
+                                  {visibleTerminals.map((t) => {
+                                    const res = sendResult?.[t.id];
+                                    const isDeletingThis = deletingFromTerminal?.userId === u.id && deletingFromTerminal?.terminalId === t.id;
+                                    return (
+                                      <div key={t.id} className="flex items-center justify-between p-2 rounded-lg border border-slate-200 bg-white">
                                        <div className="min-w-0 flex-1">
                                          <p className="text-xs font-medium truncate">{t.nome}</p>
                                          <p className="text-xs text-slate-400 truncate">{t.local}</p>
@@ -570,12 +570,12 @@ export default function Utilizadores() {
                                            {isDeletingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                                          </Button>
                                        </div>
-                                     </div>
-                                   );
+                                     </div>);
+
                                   })}
                                   </div>
                                   <div className="flex gap-2">
-                                  <Button size="sm" className="flex-1 bg-teal-600 hover:bg-teal-700 gap-2 text-xs" disabled={sendingTo === u.id} onClick={() => handleSendOne(u, visibleTerminals.map(t => t.id))}>
+                                  <Button size="sm" className="flex-1 bg-teal-600 hover:bg-teal-700 gap-2 text-xs" disabled={sendingTo === u.id} onClick={() => handleSendOne(u, visibleTerminals.map((t) => t.id))}>
                                    {sendingTo === u.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                                    Enviar para Todos
                                   </Button>
@@ -586,12 +586,12 @@ export default function Utilizadores() {
                                   </div>
                               </div>
                             </td>
-                          </tr>
-                          );
-                        })()}
-                      </React.Fragment>
-                    );
-                  })}
+                          </tr>);
+
+                      })()}
+                      </React.Fragment>);
+
+                })}
                 </tbody>
               </table>
             </Card>
@@ -599,13 +599,13 @@ export default function Utilizadores() {
             {/* Mobile cards */}
             <div className="space-y-3 lg:hidden">
               <AnimatePresence>
-                {filtered.map(u => {
-                  const termIds = (() => { try { return JSON.parse(u.terminais_ids || '[]'); } catch { return []; } })();
-                  const userTerminals = terminals.filter(t => termIds.includes(t.id));
-                  const isExpanded = expandedUser === u.id;
-                  const sendResult = sendResults[u.id];
-                  return (
-                    <motion.div key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                {filtered.map((u) => {
+                const termIds = (() => {try {return JSON.parse(u.terminais_ids || '[]');} catch {return [];}})();
+                const userTerminals = terminals.filter((t) => termIds.includes(t.id));
+                const isExpanded = expandedUser === u.id;
+                const sendResult = sendResults[u.id];
+                return (
+                  <motion.div key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                       <Card className={cn('bg-white border-slate-200', !u.ativo && 'opacity-60')}>
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-3">
@@ -633,27 +633,27 @@ export default function Utilizadores() {
                             </div>
                           </div>
                           {isExpanded && (() => {
-                            const ownerFilter = expandedTerminalOwner[u.id] || '';
-                            const visibleTerminals = ownerFilter
-                              ? terminals.filter(t => t.usuario_email === ownerFilter || t.created_by === ownerFilter)
-                              : terminals;
-                            return (
+                          const ownerFilter = expandedTerminalOwner[u.id] || '';
+                          const visibleTerminals = ownerFilter ?
+                          terminals.filter((t) => t.usuario_email === ownerFilter || t.created_by === ownerFilter) :
+                          terminals;
+                          return (
                             <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
-                              {isAdmin && (
-                                <div className="flex items-center gap-1.5">
+                              {isAdmin &&
+                              <div className="flex items-center gap-1.5">
                                   <label className="text-xs text-slate-400 whitespace-nowrap">Filtrar Por:</label>
                                   <select
-                                    value={ownerFilter}
-                                    onChange={e => setExpandedTerminalOwner(prev => ({ ...prev, [u.id]: e.target.value }))}
-                                    className="h-8 flex-1 px-2 rounded-md border border-slate-200 bg-white text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-300"
-                                  >
+                                  value={ownerFilter}
+                                  onChange={(e) => setExpandedTerminalOwner((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                                  className="h-8 flex-1 px-2 rounded-md border border-slate-200 bg-white text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-300">
+                                  
                                     <option value="">Todos</option>
-                                    {appUsers.map(au => <option key={au.email} value={au.email}>{au.email}</option>)}
+                                    {appUsers.map((au) => <option key={au.email} value={au.email}>{au.email}</option>)}
                                   </select>
                                 </div>
-                              )}
+                              }
                               <div className="grid grid-cols-1 gap-2">
-                                {visibleTerminals.map(t => {
+                                {visibleTerminals.map((t) => {
                                   const res = sendResult?.[t.id];
                                   const isDeletingThis = deletingFromTerminal?.userId === u.id && deletingFromTerminal?.terminalId === t.id;
                                   return (
@@ -671,12 +671,12 @@ export default function Utilizadores() {
                                           {isDeletingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                                         </Button>
                                       </div>
-                                    </div>
-                                  );
+                                    </div>);
+
                                 })}
                               </div>
                               <div className="flex gap-2">
-                                <Button size="sm" className="flex-1 bg-teal-600 hover:bg-teal-700 gap-2 text-xs" disabled={sendingTo === u.id} onClick={() => handleSendOne(u, visibleTerminals.map(t => t.id))}>
+                                <Button size="sm" className="flex-1 bg-teal-600 hover:bg-teal-700 gap-2 text-xs" disabled={sendingTo === u.id} onClick={() => handleSendOne(u, visibleTerminals.map((t) => t.id))}>
                                   {sendingTo === u.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                                   Enviar para Todos
                                 </Button>
@@ -685,18 +685,18 @@ export default function Utilizadores() {
                                   Eliminar de Todos
                                 </Button>
                               </div>
-                            </div>
-                            );
-                          })()}
+                            </div>);
+
+                        })()}
                         </CardContent>
                       </Card>
-                    </motion.div>
-                  );
-                })}
+                    </motion.div>);
+
+              })}
               </AnimatePresence>
             </div>
           </>
-        )}
+        }
       </div>
 
       {/* Dialog */}
@@ -707,60 +707,60 @@ export default function Utilizadores() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>ID de Inscrição *</Label>
-                <Input type="number" placeholder="Ex: 1001" value={formData.enrollid || ''} onChange={e => setFormData(f => ({ ...f, enrollid: Number(e.target.value) }))} />
+                <Input type="number" placeholder="Ex: 1001" value={formData.enrollid || ''} onChange={(e) => setFormData((f) => ({ ...f, enrollid: Number(e.target.value) }))} />
                 <p className="text-xs text-slate-400">ID único no terminal</p>
               </div>
               <div className="space-y-1">
                 <Label>Nome *</Label>
-                <Input placeholder="Nome completo" value={formData.nome || ''} onChange={e => setFormData(f => ({ ...f, nome: e.target.value }))} />
+                <Input placeholder="Nome completo" value={formData.nome || ''} onChange={(e) => setFormData((f) => ({ ...f, nome: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1"><Label>Email</Label><Input type="email" placeholder="email@empresa.com" value={formData.email || ''} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>Departamento</Label><Input placeholder="RH, TI, Produção..." value={formData.departamento || ''} onChange={e => setFormData(f => ({ ...f, departamento: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Email</Label><Input type="email" placeholder="email@empresa.com" value={formData.email || ''} onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Departamento</Label><Input placeholder="RH, TI, Produção..." value={formData.departamento || ''} onChange={(e) => setFormData((f) => ({ ...f, departamento: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1"><Label>Cargo</Label><Input placeholder="Engenheiro, Operador..." value={formData.cargo || ''} onChange={e => setFormData(f => ({ ...f, cargo: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Cargo</Label><Input placeholder="Engenheiro, Operador..." value={formData.cargo || ''} onChange={(e) => setFormData((f) => ({ ...f, cargo: e.target.value }))} /></div>
               <div className="space-y-1">
                 <Label>Privilégio</Label>
-                <Select value={String(formData.privilege ?? 0)} onValueChange={v => setFormData(f => ({ ...f, privilege: Number(v) }))}>
+                <Select value={String(formData.privilege ?? 0)} onValueChange={(v) => setFormData((f) => ({ ...f, privilege: Number(v) }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="0">Normal</SelectItem><SelectItem value="14">Administrador</SelectItem></SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1"><Label>Nº Cartão RFID</Label><Input placeholder="Opcional" value={formData.card || ''} onChange={e => setFormData(f => ({ ...f, card: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>Senha Numérica</Label><Input type="password" placeholder="Opcional" value={formData.password || ''} onChange={e => setFormData(f => ({ ...f, password: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Nº Cartão RFID</Label><Input placeholder="Opcional" value={formData.card || ''} onChange={(e) => setFormData((f) => ({ ...f, card: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Senha Numérica</Label><Input type="password" placeholder="Opcional" value={formData.password || ''} onChange={(e) => setFormData((f) => ({ ...f, password: e.target.value }))} /></div>
             </div>
-            {terminals.length > 0 && (
-              <div className="space-y-2">
+            {terminals.length > 0 &&
+            <div className="space-y-2">
                 <Label>Terminais Associados</Label>
-                {isAdmin && (
-                  <select
-                    value={filterTerminalUser}
-                    onChange={e => { setFilterTerminalUser(e.target.value); setSelectedTerminals([]); }}
-                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  >
+                {isAdmin &&
+              <select
+                value={filterTerminalUser}
+                onChange={(e) => {setFilterTerminalUser(e.target.value);setSelectedTerminals([]);}}
+                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                
                     <option value="">Todos os utilizadores</option>
-                    {appUsers.map(u => (
-                      <option key={u.email} value={u.email}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
-                    ))}
-                  </select>
+                    {appUsers.map((u) =>
+                <option key={u.email} value={u.email}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
                 )}
+                  </select>
+              }
                 <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
-                  {filteredDialogTerminals.map(t => (
-                    <label key={t.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-2">
+                  {filteredDialogTerminals.map((t) =>
+                <label key={t.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-2">
                       <input type="checkbox" checked={selectedTerminals.includes(t.id)} onChange={() => toggleTerminal(t.id)} className="rounded" />
                       <span className="text-sm flex-1">{t.nome}</span>
                       <span className="text-xs text-slate-400">{t.local}</span>
                     </label>
-                  ))}
+                )}
                 </div>
               </div>
-            )}
-            <div className="space-y-1"><Label>Observações</Label><Textarea rows={2} value={formData.observacoes || ''} onChange={e => setFormData(f => ({ ...f, observacoes: e.target.value }))} /></div>
-            <div className="flex items-center gap-2"><Switch checked={formData.ativo !== false} onCheckedChange={v => setFormData(f => ({ ...f, ativo: v }))} /><Label>Ativo</Label></div>
+            }
+            <div className="space-y-1"><Label>Observações</Label><Textarea rows={2} value={formData.observacoes || ''} onChange={(e) => setFormData((f) => ({ ...f, observacoes: e.target.value }))} /></div>
+            <div className="flex items-center gap-2"><Switch checked={formData.ativo !== false} onCheckedChange={(v) => setFormData((f) => ({ ...f, ativo: v }))} /><Label>Ativo</Label></div>
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>Cancelar</Button>
               <Button className="flex-1 bg-teal-600 hover:bg-teal-700" disabled={saveMutation.isPending || !formData.enrollid || !formData.nome} onClick={() => saveMutation.mutate(formData)}>
@@ -771,15 +771,15 @@ export default function Utilizadores() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={open => !open && setDeleteId(null)}>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Eliminar utilizador?</AlertDialogTitle><AlertDialogDescription>Esta ação é permanente.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => { deleteMutation.mutate(deleteId); setDeleteId(null); }}>Eliminar</AlertDialogAction>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => {deleteMutation.mutate(deleteId);setDeleteId(null);}}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
+    </div>);
+
 }

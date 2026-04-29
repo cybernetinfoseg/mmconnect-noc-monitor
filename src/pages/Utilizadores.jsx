@@ -185,7 +185,8 @@ export default function Utilizadores() {
   const handleExportCSV = () => {
     const headers = ['enrollid', 'nome', 'email', 'departamento', 'cargo', 'card', 'privilege', 'ativo', 'observacoes'];
     const rows = filtered.map(u => headers.map(h => u[h] ?? ''));
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    // Use semicolon as separator for better Excel/LibreOffice column detection
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'utilizadores.csv'; a.click();
@@ -201,9 +202,10 @@ export default function Utilizadores() {
     const text = await file.text();
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     if (lines.length < 2) { toast.error('Ficheiro vazio ou inválido'); return; }
-    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    const sep = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].split(sep).map(h => h.replace(/"/g, '').trim());
     const rows = lines.slice(1).map(line => {
-      const vals = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+      const vals = line.split(sep);
       const obj = {};
       headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
       return obj;

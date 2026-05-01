@@ -57,10 +57,31 @@ async function checkTerminalActive(terminal) {
 }
 
 // ─── Helpers para ações agendadas ────────────────────────────────────────────
+/**
+ * Constrói a URL de conexão WebSocket para o terminal.
+ * Suporta o novo range 7100-7200 e a porta legada 7788.
+ */
 function buildTimmyWsUrl(terminal) {
-    const host = terminal.ip_publico || terminal.dns || '51.91.219.145';
-    const port = terminal.porta || 7788;
-    return `ws://${host}:${port}`;
+  // 1. Define o Host (IP ou DNS)
+  const host = terminal.ip_publico || terminal.dns || '51.91.219.145';
+  
+  // 2. Lógica de Porta:
+  // Se o terminal tiver uma porta específica salva no banco, usa ela.
+  // Caso contrário, verifica se é um terminal novo (range 7100) ou antigo (7788).
+  let port = terminal.porta;
+  
+  if (!port) {
+    if (terminal.tipo_conexao === 'websocket_cloud') {
+      // Se não houver porta definida, mas for websocket_cloud, 
+      // podemos usar a 7100 como padrão inicial do range.
+      port = 7100;
+    } else {
+      // Porta padrão para terminais antigos
+      port = 7788;
+    }
+  }
+
+  return `ws://${host}:${port}`;
 }
 
 async function sendTimmyCommand(terminal, command) {

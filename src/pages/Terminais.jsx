@@ -820,6 +820,7 @@ export default function Terminais() {
                       className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
                       <option value="zkteco">ZKTeco</option>
                       <option value="timmy">Timmy / THbio</option>
+                      <option value="timmy">M-Bio</option>
                       <option value="anviz">Anviz</option>
                       <option value="hikvision">Hikvision</option>
                       <option value="dahua">Dahua</option>

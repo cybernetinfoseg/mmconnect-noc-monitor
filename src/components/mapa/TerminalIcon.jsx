@@ -74,6 +74,18 @@ const icons = {
       <path d="M16 31 Q20 28 24 31" stroke="white" strokeWidth="1.6" strokeLinecap="round" fill="none"/>
     </svg>
   ),
+    // Face + wifi cloud (M-Bio)
+  timmy: ({ color, size }) => (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+      <rect x="2" y="2" width="36" height="36" rx="7" fill={color} stroke="white" strokeWidth="2"/>
+      <circle cx="20" cy="16" r="5" stroke="white" strokeWidth="1.8" fill="none"/>
+      <circle cx="18.3" cy="15" r="1" fill="white"/>
+      <circle cx="21.7" cy="15" r="1" fill="white"/>
+      <path d="M17.5 18.5 Q20 20 22.5 18.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+      <path d="M13 27.5 Q20 23 27 27.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" fill="none"/>
+      <path d="M16 31 Q20 28 24 31" stroke="white" strokeWidth="1.6" strokeLinecap="round" fill="none"/>
+    </svg>
+  ),
   // Iris/eye scan (Suprema)
   suprema: ({ color, size }) => (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none">

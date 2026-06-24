@@ -1,0 +1,65 @@
+{
+  "name": "ContactMessage",
+  "type": "object",
+  "properties": {
+    "from_email": {
+      "type": "string",
+      "description": "Email do remetente"
+    },
+    "from_name": {
+      "type": "string",
+      "description": "Nome do remetente"
+    },
+    "from_phone": {
+      "type": "string",
+      "description": "Telefone do remetente"
+    },
+    "message": {
+      "type": "string",
+      "description": "Conte\u00fado da mensagem"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "new_user_inquiry",
+        "general_contact",
+        "support_request"
+      ],
+      "description": "Tipo de contato"
+    },
+    "data_envio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora do envio"
+    },
+    "lido": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o admin leu a mensagem"
+    },
+    "respondido": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o admin respondeu"
+    },
+    "resposta_texto": {
+      "type": "string",
+      "description": "Texto da resposta enviada pelo admin"
+    },
+    "respondido_em": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora da resposta"
+    },
+    "respondido_por": {
+      "type": "string",
+      "description": "Email do admin que respondeu"
+    }
+  },
+  "required": [
+    "from_email",
+    "message",
+    "tipo",
+    "data_envio"
+  ]
+}

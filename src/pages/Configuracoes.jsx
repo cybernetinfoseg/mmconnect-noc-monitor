@@ -27,7 +27,7 @@ import P2sServerCode from '../components/configuracoes/P2sServerCode';
 import TimmyWsServerCode from '../components/configuracoes/TimmyWsServerCode';
 import MbioWsServerCode from '../components/configuracoes/MbioWsServerCode';
 
-const APP_ID = '697aa46c9998c30665e2e19a';
+const APP_ID = '6a03a4a955920c15fb675d2a';
 
 export default function Configuracoes() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);

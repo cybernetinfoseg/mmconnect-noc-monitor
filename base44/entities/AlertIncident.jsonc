@@ -1,0 +1,60 @@
+{
+  "name": "AlertIncident",
+  "type": "object",
+  "properties": {
+    "terminal_id": {
+      "type": "string",
+      "description": "ID do terminal"
+    },
+    "terminal_nome": {
+      "type": "string",
+      "description": "Nome do terminal"
+    },
+    "local": {
+      "type": "string",
+      "description": "Localiza\u00e7\u00e3o do terminal"
+    },
+    "cliente": {
+      "type": "string",
+      "description": "Cliente associado"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "offline",
+        "restored"
+      ],
+      "description": "Tipo do incidente"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Momento do incidente"
+    },
+    "resolvido": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o incidente foi resolvido"
+    },
+    "resolvido_em": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Momento da resolu\u00e7\u00e3o"
+    },
+    "duracao_minutos": {
+      "type": "number",
+      "description": "Dura\u00e7\u00e3o do incidente em minutos"
+    },
+    "notificado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a notifica\u00e7\u00e3o foi enviada"
+    }
+  },
+  "required": [
+    "terminal_id",
+    "terminal_nome",
+    "tipo",
+    "timestamp"
+  ]
+}

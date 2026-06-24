@@ -1,0 +1,35 @@
+{
+  "name": "PushSubscription",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do utilizador dono da subscri\u00e7\u00e3o"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Endpoint da subscri\u00e7\u00e3o Web Push"
+    },
+    "p256dh": {
+      "type": "string",
+      "description": "Chave p\u00fablica p256dh"
+    },
+    "auth": {
+      "type": "string",
+      "description": "Chave auth"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se a subscri\u00e7\u00e3o est\u00e1 ativa"
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "User agent do browser"
+    }
+  },
+  "required": [
+    "user_email",
+    "endpoint"
+  ]
+}

@@ -61,14 +61,13 @@
     },
     "modelo": {
       "type": "string",
-      "description": "Modelo do terminal (ex: ZKTeco MB20, Timmy TM-AI07F, M-BioFace v4)"
+      "description": "Modelo do terminal (ex: ZKTeco MB20, Timmy TM-AI07F)"
     },
     "fabricante": {
       "type": "string",
       "enum": [
         "zkteco",
         "timmy",
-        "mbio",
         "suprema",
         "anviz",
         "hikvision",

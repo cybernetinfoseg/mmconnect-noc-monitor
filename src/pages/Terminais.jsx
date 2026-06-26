@@ -820,7 +820,6 @@ export default function Terminais() {
                       className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
                       <option value="zkteco">ZKTeco</option>
                       <option value="timmy">Timmy / THbio</option>
-                      <option value="timmy">M-Bio</option>
                       <option value="anviz">Anviz</option>
                       <option value="hikvision">Hikvision</option>
                       <option value="dahua">Dahua</option>
@@ -876,7 +875,7 @@ export default function Terminais() {
             {formData.tipo_conexao === 'websocket_cloud' && (
               <div className="space-y-3">
                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700 space-y-1">
-                  <p className="font-semibold">📡 WebSocket Cloud — Timmy / THbio - M-Bio</p>
+                  <p className="font-semibold">📡 WebSocket Cloud — Timmy / THbio</p>
                   <p>O terminal conecta-se ao servidor via <strong>WebSocket persistente</strong> (protocolo JSON). Compatível com: <strong>Timmy TM-AI07F, TM-AIFace11F, TFS30, TFS50</strong> e outros modelos THbio.</p>
                   <p>O servidor <code className="bg-violet-100 px-1 rounded">timmy_ws_server.py</code> corre no Windows Server e escuta na porta configurada (padrão: 7788).</p>
                   <p className="text-violet-600">⚠️ O <strong>Número de Série (SN)</strong> é obrigatório — é como o servidor identifica o terminal. Aceda via: <em>MENU → Sys Info → Info → SN</em></p>
@@ -919,7 +918,7 @@ export default function Terminais() {
                       className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                     >
                       <option value="timmy">Timmy / THbio</option>
-                      <option value="outro">M-Bio</option>
+                      <option value="outro">Outro</option>
                     </select>
                   </div>
                 </div>

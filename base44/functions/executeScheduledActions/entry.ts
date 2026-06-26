@@ -7,7 +7,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // ─── Helpers de conexão (espelhados de terminalControl) ─────────────────────
 
 function buildTimmyWsUrl(terminal) {
-  const host = terminal.ip_publico || terminal.dns || '51.91.219.145';
+  const host = terminal.ip_publico || terminal.dns || '0.0.0.0';
   const port = terminal.porta || 7788;
   return `ws://${host}:${port}`;
 }

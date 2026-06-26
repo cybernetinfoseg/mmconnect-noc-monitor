@@ -1,0 +1,48 @@
+{
+  "name": "MaintenanceWindow",
+  "type": "object",
+  "properties": {
+    "terminal_id": {
+      "type": "string",
+      "description": "ID do terminal em manuten\u00e7\u00e3o"
+    },
+    "terminal_nome": {
+      "type": "string",
+      "description": "Nome do terminal (cache)"
+    },
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo/motivo da manuten\u00e7\u00e3o"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada da manuten\u00e7\u00e3o"
+    },
+    "inicio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "In\u00edcio da janela de manuten\u00e7\u00e3o"
+    },
+    "fim": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fim da janela de manuten\u00e7\u00e3o"
+    },
+    "criado_por": {
+      "type": "string",
+      "description": "Email do utilizador que criou"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se a janela de manuten\u00e7\u00e3o est\u00e1 ativa"
+    }
+  },
+  "required": [
+    "terminal_id",
+    "terminal_nome",
+    "titulo",
+    "inicio",
+    "fim"
+  ]
+}

@@ -25,6 +25,7 @@ import AgentSourceCode from '../components/configuracoes/AgentSourceCode';
 import NocServerCode from '../components/configuracoes/NocServerCode';
 import P2sServerCode from '../components/configuracoes/P2sServerCode';
 import TimmyWsServerCode from '../components/configuracoes/TimmyWsServerCode';
+import MbioWsServerCode from '../components/configuracoes/MbioWsServerCode';
 
 const APP_ID = '697aa46c9998c30665e2e19a';
 
@@ -363,6 +364,17 @@ export default function Configuracoes() {
                   <CardDescription>Para terminais Timmy/THbio: TM-AI07F, TM-AIFace11F, TFS30, TFS50 e outros.</CardDescription>
                 </CardHeader>
                 <CardContent><TimmyWsServerCode /></CardContent>
+              </Card>
+
+              <Card className="bg-white/80 backdrop-blur-sm border-rose-200/60">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Radio className="h-5 w-5 text-rose-600" />
+                    M-BioFace WebSocket Server
+                  </CardTitle>
+                  <CardDescription>Para terminais M-BioFace v4/v3: WebSocket com AutoSync, foto facial, impressão digital e LiveTimeSync.</CardDescription>
+                </CardHeader>
+                <CardContent><MbioWsServerCode /></CardContent>
               </Card>
             </TabsContent>
           )}

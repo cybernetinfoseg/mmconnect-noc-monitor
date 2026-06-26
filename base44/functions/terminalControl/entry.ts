@@ -67,14 +67,14 @@ async function sendAdmsCommand(terminal, action, params = {}) {
  * sendTimmyCommand — envia comando ao timmy_ws_server.py via HTTP (porta 7789).
  * O servidor mantém a sessão WebSocket com o terminal e faz o relay do comando.
  * 
- * Fluxo: Base44 → POST http://51.91.219.145:7789/cmd → timmy_ws_server.py → WS → Terminal → resposta
+ * Fluxo: Base44 → POST http://0.0.0.0:7789/cmd → timmy_ws_server.py → WS → Terminal → resposta
  * 
- * O servidor Timmy corre sempre em 51.91.219.145:7789 (IP público do NOC Server).
+ * O servidor Timmy corre sempre em 0.0.0.0:7789 (IP público do NOC Server).
  * O campo "Número de Série (SN)" é obrigatório para identificar o terminal.
  */
 async function sendTimmyCommand(terminal, command) {
   const ctrlPort = 7789; // porta HTTP de controlo do timmy_ws_server.py
-  const host = '51.91.219.145'; // Servidor Timmy central (NOC Server IP público)
+  const host = '0.0.0.0'; // Servidor Timmy central (NOC Server IP público)
   const sn = terminal.numero_serie || '';
   
   if (!sn) {

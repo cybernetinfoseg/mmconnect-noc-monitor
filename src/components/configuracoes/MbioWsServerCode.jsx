@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Copy, Check, Download, Server, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { appParams } from '@/lib/app-params';
 
 const MBIO_WS_CODE = `# mbio_ws_server.py — NOC Monitor: Servidor WebSocket Cloud (Protocolo M-BioFace)
 # Compatível com: M-BioFace v4, M-BioFace v3, e outros modelos M-Bio com WebSocket
@@ -17,7 +18,7 @@ const MBIO_WS_CODE = `# mbio_ws_server.py — NOC Monitor: Servidor WebSocket Cl
 # Config: C:\\ProgramData\\MbioWSServer\\config.json
 # {
 #   "API_KEY": "a_sua_api_key_pessoal",
-#   "APP_ID":  "697aa46c9998c30665e2e19a",
+#   "APP_ID":  "${appParams.appId}",
 #   "WS_PORT": 7600,
 #   "ModelFilter": "M-BioFacev4",
 #   "UseCartaoAsEnrollId": true,
@@ -638,7 +639,7 @@ export default function MbioWsServerCode() {
         <p className="text-slate-500 font-sans font-semibold mb-2 text-xs">📄 C:\ProgramData\MbioWSServer\config.json</p>
         <p className="text-slate-700">{`{`}</p>
         <p className="text-slate-700 pl-4">{`"API_KEY": "a_sua_api_key_pessoal",`}</p>
-        <p className="text-slate-700 pl-4">{`"APP_ID":  "697aa46c9998c30665e2e19a",`}</p>
+        <p className="text-slate-700 pl-4">{`"APP_ID":  "${appParams.appId}",`}</p>
         <p className="text-rose-700 pl-4 font-semibold">{`"WS_PORT": 7600,`}</p>
         <p className="text-slate-700 pl-4">{`"ModelFilter": "M-BioFacev4",`}</p>
         <p className="text-blue-700 pl-4">{`"UseCartaoAsEnrollId": true,`}</p>

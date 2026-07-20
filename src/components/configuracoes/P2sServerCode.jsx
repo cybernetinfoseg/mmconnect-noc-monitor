@@ -3,6 +3,7 @@ import { Copy, Check, Download, Server, ChevronDown, ChevronUp } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { appParams } from '@/lib/app-params';
 
 const P2S_SERVER_CODE = `# p2s_server.py — Servidor P2S (Push to Server) para Terminais Biométricos
 # Versão: 2.0  |  IP Servidor: 51.91.219.145
@@ -41,7 +42,7 @@ const P2S_SERVER_CODE = `# p2s_server.py — Servidor P2S (Push to Server) para 
 # Config: C:\\ProgramData\\P2SServer\\config.json
 # {
 #   "API_KEY":          "a_sua_api_key_pessoal",
-#   "APP_ID":           "697aa46c9998c30665e2e19a",
+#   "APP_ID":           "${appParams.appId}",
 #   "INTERVALO_REPORT": 20,
 #   "KEEPALIVE_TIMEOUT": 60,
 #   "STATUS_PORT":      9100
@@ -593,7 +594,7 @@ export default function P2sServerCode() {
         <p className="text-slate-500 font-sans font-semibold mb-2">📄 C:\ProgramData\P2SServer\config.json</p>
         <p className="text-slate-700">{`{`}</p>
         <p className="text-slate-700 pl-4">{`"API_KEY":          "a_sua_api_key_pessoal",`}</p>
-        <p className="text-slate-700 pl-4">{`"APP_ID":           "697aa46c9998c30665e2e19a",`}</p>
+        <p className="text-slate-700 pl-4">{`"APP_ID":           "${appParams.appId}",`}</p>
         <p className="text-slate-700 pl-4">{`"INTERVALO_REPORT": 20,`}</p>
         <p className="text-violet-700 pl-4 font-semibold">{`"KEEPALIVE_TIMEOUT": 60,`}</p>
         <p className="text-violet-700 pl-4 font-semibold">{`"STATUS_PORT": 9100`}</p>

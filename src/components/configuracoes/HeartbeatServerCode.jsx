@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Copy, Check, Download, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { appParams } from '@/lib/app-params';
 
 const HEARTBEAT_CODE = `# heartbeat_server.py — Serviço Heartbeat NOC Monitor
 # Corre no Windows Server (ex: 51.91.219.145)
@@ -19,7 +20,7 @@ const HEARTBEAT_CODE = `# heartbeat_server.py — Serviço Heartbeat NOC Monitor
 # Config: C:\\ProgramData\\HeartbeatNOC\\config.json
 # {
 #   "API_KEY": "a_sua_api_key_pessoal",
-#   "APP_ID":  "697aa46c9998c30665e2e19a",
+#   "APP_ID":  "${appParams.appId}",
 #   "INTERVALO_REPORT": 30
 # }
 #
@@ -400,7 +401,7 @@ export default function HeartbeatServerCode() {
         <p className="text-slate-500 text-xs font-sans font-semibold mb-2">📄 C:\ProgramData\HeartbeatNOC\config.json</p>
         <p className="text-slate-700">{`{`}</p>
         <p className="text-slate-700 pl-4">{`"API_KEY": "a_sua_api_key_pessoal",`}</p>
-        <p className="text-slate-700 pl-4">{`"APP_ID":  "697aa46c9998c30665e2e19a",`}</p>
+        <p className="text-slate-700 pl-4">{`"APP_ID":  "${appParams.appId}",`}</p>
         <p className="text-slate-700 pl-4">{`"INTERVALO_REPORT": 30`}</p>
         <p className="text-slate-700">{`}`}</p>
       </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Copy, Check, Code2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { appParams } from '@/lib/app-params';
 
 const ADMS_SERVER_CODE = `# adms_server.py — Servidor ADMS/iClock para terminais ZKTeco e Anviz
 # Instalacao: C:\\Program Files\\Base44Agent\\adms_server.py
@@ -11,7 +12,7 @@ const ADMS_SERVER_CODE = `# adms_server.py — Servidor ADMS/iClock para termina
 # config.json exemplo:
 # {
 #   "API_KEY": "a_sua_api_key_pessoal",
-#   "APP_ID":  "697aa46c9998c30665e2e19a",
+#   "APP_ID":  "${appParams.appId}",
 #   "ADMS_PORT": 8080
 # }
 #

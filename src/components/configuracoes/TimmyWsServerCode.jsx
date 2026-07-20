@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Copy, Check, Download, Server, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { appParams } from '@/lib/app-params';
 
 const TIMMY_WS_CODE = `# timmy_ws_server.py — NOC Monitor: Servidor WebSocket Cloud (Protocolo Timmy/THbio)
 # ✅ VERSÃO CORRIGIDA v2: Grace period para evitar falsos OFFLINE durante reconexão
@@ -16,7 +17,7 @@ const TIMMY_WS_CODE = `# timmy_ws_server.py — NOC Monitor: Servidor WebSocket 
 # Config: C:\\ProgramData\\TimmyWSServer\\config.json
 # {
 #   "API_KEY": "a_sua_api_key_pessoal",
-#   "APP_ID":  "697aa46c9998c30665e2e19a",
+#   "APP_ID":  "${appParams.appId}",
 #   "WS_PORT": 7788
 # }
 #
@@ -615,7 +616,7 @@ export default function TimmyWsServerCode() {
         <p className="text-slate-500 font-sans font-semibold mb-2 text-xs">📄 C:\ProgramData\TimmyWSServer\config.json</p>
         <p className="text-slate-700">{`{`}</p>
         <p className="text-slate-700 pl-4">{`"API_KEY": "a_sua_api_key_pessoal",`}</p>
-        <p className="text-slate-700 pl-4">{`"APP_ID":  "697aa46c9998c30665e2e19a",`}</p>
+        <p className="text-slate-700 pl-4">{`"APP_ID":  "${appParams.appId}",`}</p>
         <p className="text-slate-700 pl-4 font-semibold text-violet-700">{`"WS_PORT": 7788,`}</p>
         <p className="text-slate-700 pl-4 font-semibold text-blue-700">{`"CTRL_PORT": 7789,`}</p>
         <p className="text-slate-700 pl-4">{`"INTERVALO_REPORT": 10`}</p>

@@ -3,6 +3,7 @@ import { Copy, Check, Download, Server, ChevronDown, ChevronUp } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { appParams } from '@/lib/app-params';
 
 const NOC_SERVER_CODE = `# noc_server.py — NOC Monitor Windows Server
 # Servidor unificado para terminais biométricos (Heartbeat TCP + ADMS/Push HTTP + SDK-TCP)
@@ -24,7 +25,7 @@ const NOC_SERVER_CODE = `# noc_server.py — NOC Monitor Windows Server
 # Config: C:\\ProgramData\\NOCMonitor\\config.json
 # {
 #   "API_KEY": "a_sua_api_key_pessoal",
-#   "APP_ID":  "697aa46c9998c30665e2e19a",
+#   "APP_ID":  "${appParams.appId}",
 #   "INTERVALO_REPORT": 30,
 #   "ADMS_PORT": 8080,
 #   "CTRL_PORT": 7790
@@ -764,7 +765,7 @@ export default function NocServerCode() {
         <p className="text-slate-500 font-sans font-semibold mb-2 text-xs">📄 C:\ProgramData\NOCMonitor\config.json</p>
         <p className="text-slate-700">{`{`}</p>
         <p className="text-slate-700 pl-4">{`"API_KEY": "a_sua_api_key_pessoal",`}</p>
-        <p className="text-slate-700 pl-4">{`"APP_ID":  "697aa46c9998c30665e2e19a",`}</p>
+        <p className="text-slate-700 pl-4">{`"APP_ID":  "${appParams.appId}",`}</p>
         <p className="text-slate-700 pl-4">{`"INTERVALO_REPORT": 30,`}</p>
         <p className="text-slate-700 pl-4 font-semibold text-blue-700">{`"ADMS_PORT": 8080,`}</p>
         <p className="text-slate-700 pl-4 font-semibold text-emerald-700">{`"CTRL_PORT": 7790`}</p>

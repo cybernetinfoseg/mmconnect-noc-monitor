@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { appParams } from '@/lib/app-params';
 
 import TelegramConfig from '../components/configuracoes/TelegramConfig';
 import AdmsServerCode from '../components/configuracoes/AdmsServerCode';
@@ -27,7 +28,7 @@ import P2sServerCode from '../components/configuracoes/P2sServerCode';
 import TimmyWsServerCode from '../components/configuracoes/TimmyWsServerCode';
 import MbioWsServerCode from '../components/configuracoes/MbioWsServerCode';
 
-const APP_ID = '697aa46c9998c30665e2e19a';
+const APP_ID = appParams.appId;
 
 export default function Configuracoes() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
